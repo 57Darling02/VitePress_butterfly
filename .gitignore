@@ -5,3 +5,4 @@ posts
 public
 site_config.ts
 config.mts.timestamp-*
+.vitepress/theme/components/theme-default
