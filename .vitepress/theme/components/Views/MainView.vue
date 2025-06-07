@@ -12,9 +12,9 @@
                     <PostInfo />
                 </template>
                 <template #main-content>
-                    <content v-if="isMounted" class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
+                    <content v-show="isMounted" class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
                         style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
-                     <el-skeleton v-else :rows="8" animated :class="{ 'a-card': !isFocusMode }"/>
+                    <el-skeleton v-if="!isMounted" :rows="8" animated :class="{ 'a-card': !isFocusMode }"/>
                 </template>
                 <template #sidebar-non-stay>
                     <div class="fade-item" style="--delay:0.2s"><ProfileCard /></div>
