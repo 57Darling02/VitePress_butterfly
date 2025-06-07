@@ -12,7 +12,9 @@
                     <PostInfo />
                 </template>
                 <template #main-content>
-                    <content class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
+                    <content v-if="isMounted" class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
+                        style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
+                     <el-skeleton v-else :rows="8" animated :class="{ 'a-card': !isFocusMode }"
                         style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
                 </template>
                 <template #sidebar-non-stay>
@@ -31,7 +33,7 @@
 </template>
 <script lang='ts' setup>
 import { useData } from 'vitepress'
-import { computed, inject } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import DocView from './DocView.vue'
 import Toc from '../Toc.vue'
 import ProfileCard from '../default/ProfileCard.vue'
@@ -39,5 +41,11 @@ import PostInfo from '../default/PostInfo.vue'
 const data = useData()
 const frontmatter = computed(() => data.frontmatter.value)
 const isFocusMode = inject('isFocusMode')
+const isMounted = ref(false)
+onMounted(() => {
+    isMounted.value = true
+})
+
+
 </script>
 <style lang="scss" scoped></style>
