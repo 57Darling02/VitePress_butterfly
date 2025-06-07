@@ -14,8 +14,7 @@
                 <template #main-content>
                     <content v-if="isMounted" class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
                         style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
-                     <el-skeleton v-else :rows="8" animated :class="{ 'a-card': !isFocusMode }"
-                        style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
+                     <el-skeleton v-else :rows="8" animated :class="{ 'a-card': !isFocusMode }"/>
                 </template>
                 <template #sidebar-non-stay>
                     <div class="fade-item" style="--delay:0.2s"><ProfileCard /></div>
@@ -32,7 +31,7 @@
     </template>
 </template>
 <script lang='ts' setup>
-import { useData } from 'vitepress'
+import { onContentUpdated, useData } from 'vitepress'
 import { computed, inject, onMounted, ref } from 'vue'
 import DocView from './DocView.vue'
 import Toc from '../Toc.vue'
@@ -43,6 +42,9 @@ const frontmatter = computed(() => data.frontmatter.value)
 const isFocusMode = inject('isFocusMode')
 const isMounted = ref(false)
 onMounted(() => {
+    isMounted.value = true
+})
+onContentUpdated(() => {
     isMounted.value = true
 })
 
