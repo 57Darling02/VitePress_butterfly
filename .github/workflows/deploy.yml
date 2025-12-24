@@ -50,7 +50,6 @@ jobs:
 
           # 2. 清空并创建目标目录（避免残留文件冲突）
           rm -rf "${TARGET_DIR}"
-          mkdir -p "${TARGET_DIR}"
           mkdir -p posts # 确保 posts 目录存在
 
           # 3. 初始化 Git 并添加子模块
