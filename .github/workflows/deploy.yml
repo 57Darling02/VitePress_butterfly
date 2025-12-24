@@ -32,12 +32,7 @@ jobs:
       #   with:
       #     version: 9
       # - uses: oven-sh/setup-bun@v1 # 如果使用 Bun，请取消注释
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
-          submodules: recursive
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      
 
       - name: Dynamically add submodule to posts/doc
         run: |
@@ -60,7 +55,12 @@ jobs:
           git pull origin "${POST_BRANCH}"
           cd ../../
       
-      
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
+          submodules: recursive
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
