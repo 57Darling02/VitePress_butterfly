@@ -28,10 +28,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
       # - uses: pnpm/action-setup@v3 # 如果使用 pnpm，请取消此区域注释
       #   with:
       #     version: 9
@@ -40,7 +36,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
-  
+          submodules: recursive
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
       - name: Dynamically add submodule to posts/doc
         run: |
           # 1. 定义变量（从 Secrets 读取）
@@ -61,6 +59,8 @@ jobs:
           git checkout "${POST_BRANCH}"
           git pull origin "${POST_BRANCH}"
           cd ../../
+      
+      
 
       - name: Setup Node
         uses: actions/setup-node@v4
