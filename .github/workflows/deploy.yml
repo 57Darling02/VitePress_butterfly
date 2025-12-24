@@ -50,20 +50,16 @@ jobs:
           git init
           git submodule add --force "${POST_REPO}" doc
           git submodule update --init --remote doc
+          cd doc
+          git checkout "${POST_BRANCH}"
+          git pull origin "${POST_BRANCH}"
+          cd ../../
       
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
-          submodules: recursive
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      - name: Update submodules to latest
-        run: |
-          cd posts/doc
-          git checkout "${POST_BRANCH}"
-          git pull origin "${POST_BRANCH}"
-          cd ../../
-          git submodule status
+          
 
 
       - name: Setup Node
