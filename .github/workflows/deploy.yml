@@ -82,7 +82,7 @@ jobs:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy .vitepress/dist --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy .vitepress/dist --yes --prod --token=${{ secrets.VERCEL_TOKEN }}
 
   # 部署工作
   deploy:
