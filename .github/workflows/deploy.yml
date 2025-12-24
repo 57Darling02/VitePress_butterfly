@@ -42,14 +42,28 @@ jobs:
           fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
           submodules: recursive
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      - name: Update submodules to latest
+      - name: Dynamically add submodule to posts/doc
         run: |
+          # 1. 定义变量（从 Secrets 读取）
+          POST_REPO="${{ secrets.POST_REPO }}"
+          POST_BRANCH="${{ secrets.POST_BRANCH || 'main' }}"
+          TARGET_DIR="posts/doc" # 子模块挂载的目标目录（posts/ 下的 doc 文件夹）
+
+          # 2. 清空并创建目标目录（避免残留文件冲突）
+          rm -rf "${TARGET_DIR}"
+          mkdir -p "${TARGET_DIR}"
+          mkdir -p posts # 确保 posts 目录存在
+
+          # 3. 初始化 Git 并添加子模块
           cd posts
-          git checkout main
-          # 拉取子模块的最新代码
-          git pull origin main
-          cd ..
-          git submodule status
+          git init
+          git submodule add --force "${POST_REPO}" doc
+          git submodule update --init --remote doc
+          cd doc
+          git checkout "${POST_BRANCH}"
+          git pull origin "${POST_BRANCH}"
+          cd ../../
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
