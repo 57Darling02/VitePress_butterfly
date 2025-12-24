@@ -11,7 +11,7 @@ const config: ThemeConfig = {
 
   // 首页配置
   home: {
-    mainTitle: "My Awesome Site",
+    mainTitle: "My Site",
     subTitles: ['世界上只有一种英雄主义', '那就是在认清生活的真相后', '依然热爱生活'],//打字机效果的副标题，使用字符串列表
     firstViewHeight: 60, //首页第一屏的高度，默认为100vh
   },
