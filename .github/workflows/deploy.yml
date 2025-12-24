@@ -45,7 +45,7 @@ jobs:
       - name: Dynamically add submodule to posts/doc
         run: |
           # 1. 定义变量（从 Secrets 读取）
-          POST_REPO="${{ secrets.POST_REPO }}"
+          POST_REPO="${{ secrets.POST_REPO || 'https://github.com/57Darling02/blog-post.git' }}"
           POST_BRANCH="${{ secrets.POST_BRANCH || 'main' }}"
           TARGET_DIR="posts/doc" # 子模块挂载的目标目录（posts/ 下的 doc 文件夹）
 
