@@ -53,7 +53,9 @@ jobs:
           cd doc
           git checkout "${POST_BRANCH}"
           git pull origin "${POST_BRANCH}"
+          ls
           cd ../../
+
       
       - name: Checkout
         uses: actions/checkout@v4
