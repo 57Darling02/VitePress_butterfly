@@ -10,6 +10,8 @@ on:
 
   # 允许你从 Actions 选项卡手动运行此工作流程
   workflow_dispatch:
+  repository_dispatch:  # 新增：监听 Repository Dispatch 事件
+    types: [blog-post-updated]  # 匹配子模块仓库的 event-type
 
 # 设置 GITHUB_TOKEN 的权限，以允许部署到 GitHub Pages
 permissions:
@@ -28,42 +30,37 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # - uses: pnpm/action-setup@v3 # 如果使用 pnpm，请取消此区域注释
-      #   with:
-      #     version: 9
-      # - uses: oven-sh/setup-bun@v1 # 如果使用 Bun，请取消注释
-      
-
-      - name: Dynamically add submodule to posts/doc
-        run: |
-          # 1. 定义变量（从 Secrets 读取）
-          POST_REPO="${{ secrets.POST_REPO || 'https://github.com/57Darling02/blog-post.git' }}"
-          POST_BRANCH="${{ secrets.POST_BRANCH || 'main' }}"
-          TARGET_DIR="posts/doc" # 子模块挂载的目标目录（posts/ 下的 doc 文件夹）
-
-          # 2. 清空并创建目标目录（避免残留文件冲突）
-          rm -rf "${TARGET_DIR}"
-          mkdir -p posts # 确保 posts 目录存在
-
-          # 3. 初始化 Git 并添加子模块
-          cd posts
-          git init
-          git submodule add --force "${POST_REPO}" doc
-          git submodule update --init --remote doc
-          cd doc
-          git checkout "${POST_BRANCH}"
-          git pull origin "${POST_BRANCH}"
-          ls
-          cd ../../
-
-      
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
-          
-
-
+      - name: Dynamically add submodule to posts/doc
+        run: |
+          # 1. 定义变量（关键修改：读取已有的 PERSONAL_ACCESS_TOKEN）
+          POST_REPO="${{ secrets.POST_REPO || 'https://github.com/57Darling02/blog-post.git' }}"
+          POST_BRANCH="${{ secrets.POST_BRANCH || 'main' }}"
+          PRIVATE_PAT="${{ secrets.PERSONAL_ACCESS_TOKEN }}"
+          TARGET_DIR="posts/doc"
+          if [[ -n "${PRIVATE_PAT}" ]]; then
+            POST_REPO_AUTH=$(echo "${POST_REPO}" | sed "s|https://|https://${PRIVATE_PAT}@|")
+          else
+            POST_REPO_AUTH="${POST_REPO}"
+          fi
+          rm -rf "${TARGET_DIR}"
+          mkdir -p posts
+          cd posts
+          git init
+          git submodule add --force "${POST_REPO_AUTH}" doc
+          git submodule update --init --remote doc
+          cd doc
+          git checkout "${POST_BRANCH}"
+          git pull origin "${POST_BRANCH}"
+          ls # 打印目录内容，验证是否拉取成功
+          cd ../../
+      # - uses: pnpm/action-setup@v3 # 如果使用 pnpm，请取消此区域注释
+      #   with:
+      #     version: 9
+      # - uses: oven-sh/setup-bun@v1 # 如果使用 Bun，请取消注释
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
