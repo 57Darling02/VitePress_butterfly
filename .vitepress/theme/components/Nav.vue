@@ -1,13 +1,6 @@
 <template>
-    <div id="nav">
-        <!-- 左侧标题部分 -->
-        <a  id="title" :class="{ 'nav-hidden': !showNavbar }" href="" @mouseenter="showNavbar = !showNavbar" >
-            <el-text style="color: var(--vp-c-text-1);" id="title_text" truncated >{{ page?.title ? page.title :
-                theme.site_name }}</el-text>
-        </a>
-
-        <!-- 右侧菜单部分 -->
-        <div id="menu" :class="{ 'nav-hidden': !showNavbar }">
+    <div id="nav" :class="{ 'nav-hidden': !showNavbar }">
+        <div id="menu" >
             <a class="menu-fitem" href="/">
                 <span>
                     <i class="fa-solid fa-house"></i>首页
@@ -38,9 +31,8 @@
 </template>
 
 <script lang='ts' setup>
-import { useData, useRouter } from 'vitepress'
-const { theme, page, frontmatter } = useData()
-import { ref, computed, onUnmounted, watch } from 'vue'
+import { useData } from 'vitepress'
+const { theme} = useData()
 import { inject } from 'vue'
 // 获取全局状态和方法
 const showNavbar = inject('showNavbar')
@@ -96,34 +88,12 @@ $hide-offset: 100%;
     padding: 0 20px; // 调整内边距，让内容有合适的间距
     display: flex;
     overflow: hidden;
-
     transition: all $transition-time ease;
-    min-width: 200px; // 标题的最小宽度
-    max-width: 600px; // 菜单+标题的最大宽度
-}
-
-#title {
-    display: flex;
-    align-items: center; // 垂直居中
-    font-weight: 700;
-    max-width: 200px;
-    height: 100%;
-    text-decoration: none;
-    color: var(--vp-c-text-1);
-    transform: translateY(-100%);
-    opacity: 0;
-    transition: all $transition-time ease;
-    margin-right: auto;
-    
-    
-    width: 0;
-    min-width: 0;
     &.nav-hidden {
-        transform: translateY(0);
-        opacity: 1;
-        width: auto ;
+        transform: translateY(-100%) translateX(-50%);
     }
 }
+
 
 #menu {
     display: flex;
@@ -131,24 +101,6 @@ $hide-offset: 100%;
     height: 100%;
     margin-left: auto;
     transition: all $transition-time ease;
-    
-    width: auto;
-    min-width: 0;
-
-    &:not(.nav-hidden) {
-        transform: translateY(0);
-        opacity: 1;
-        width: fit-content ;
-    }
-    
-    &.nav-hidden {
-        transform: translateY(-100%);
-        opacity: 0;
-        width: 0;
-        min-width: 0;
-        pointer-events: none;
-    }
-
     el-dropdown,
     .menu-group {
         display: flex;
