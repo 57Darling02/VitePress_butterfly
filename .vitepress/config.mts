@@ -5,7 +5,13 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import mathjax3 from 'markdown-it-mathjax3'
-import myconfig from '../site_config'
+import fs from 'fs';
+import path from 'path';
+const postsConfigExists = fs.existsSync(path.resolve(__dirname, '../posts/site_config.ts'));
+const config = await import(postsConfigExists ? '../posts/site_config' : '../site_config');
+const myconfig = config.default || config;
+
+
 const customElements = [
   'mjx-container',
   'mjx-assistive-mml',
