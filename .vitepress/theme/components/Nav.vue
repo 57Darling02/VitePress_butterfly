@@ -45,22 +45,6 @@ import { inject } from 'vue'
 // 获取全局状态和方法
 const showNavbar = inject('showNavbar')
 const showSidebar = inject('showSidebar')
-const drawerContentVisible = ref(false)
-const handleBeforeClose = (done: () => void) => {
-    drawerContentVisible.value = false
-    setTimeout(done, 200)
-}
-watch(visible, (newVal) => {
-    if (newVal) { // 打开时
-        // 等待抽屉展开动画完成（根据你的scss中$transition-time: 0.3s; 设为300ms）
-        setTimeout(() => {
-            drawerContentVisible.value = true
-        }, 200)
-    } else { // 关闭时
-        // 立即销毁内容
-        drawerContentVisible.value = false
-    }
-})
 const { menuItems } = theme.value
 const handleMenuClick = (item) => {
     if (item.children?.length) return

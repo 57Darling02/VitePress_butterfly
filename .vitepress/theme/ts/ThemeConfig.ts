@@ -25,6 +25,7 @@ export default interface ThemeConfig {
   // 菜单栏
   menuToc: boolean;
   menuItems: MenuItem[];
+  friendlink?: FriendLink[];
 }
 
 
@@ -64,4 +65,9 @@ interface MenuItem {
   children: MenuChildItem[];
 }
 
-
+interface FriendLink {
+  Name: string;
+  Url: string;
+  Avatar: string;
+  Desc: string;
+}
