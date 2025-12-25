@@ -3,3 +3,4 @@ node_modules
 .vitepress/cache
 .vitepress/theme/components/theme-default
 .vitepress/config.mts.timestamp-*
+docs

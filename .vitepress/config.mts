@@ -5,10 +5,15 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import mathjax3 from 'markdown-it-mathjax3'
-import fs from 'fs';
-import path from 'path';
-const postsConfigExists = fs.existsSync(path.resolve(__dirname, '../posts/site_config.ts'));
-const config = await import(postsConfigExists ? '../posts/site_config' : '../site_config');
+let config;
+try {
+  // 优先尝试导入 posts 下的配置
+  config = (await import('../posts/doc/site_config')).default;
+} catch (error) {
+  // 导入失败（文件不存在/路径错），回退到根目录配置
+  config = (await import('../site_config')).default;
+}
+
 const myconfig = config.default || config;
 
 
