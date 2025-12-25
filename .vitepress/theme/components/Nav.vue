@@ -1,8 +1,8 @@
 <template>
     <div id="nav">
         <!-- 左侧标题部分 -->
-        <a href="/" id="title" :class="{ 'nav-hidden': !showNavbar }">
-            <el-text style="color: var(--vp-c-text-1);" id="title_text" truncated>{{ page?.title ? page.title :
+        <a  id="title" :class="{ 'nav-hidden': !showNavbar }" href="" @mouseenter="showNavbar = !showNavbar" >
+            <el-text style="color: var(--vp-c-text-1);" id="title_text" truncated >{{ page?.title ? page.title :
                 theme.site_name }}</el-text>
         </a>
 
@@ -62,6 +62,8 @@ const handleMenuClick = (item) => {
         }
     }
 }
+
+
 </script>
 
 <style lang="scss" scoped>

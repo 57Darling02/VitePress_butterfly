@@ -61,6 +61,8 @@ const formattedDate = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 #header-title {

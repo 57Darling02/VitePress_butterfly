@@ -82,6 +82,8 @@ const handleResize = () => {
     // 宽度大于748px显示侧边栏
     if(windowWidth.value <= 748) {
         showSidebar.value = false
+    }else {
+        showSidebar.value = true
     }
 }
 
@@ -94,7 +96,7 @@ const handleScroll = throttle(({ scrollTop }) => {
     const windowHeight = scrollbarRef.value?.wrapRef?.clientHeight || 0
     scrollingDown.value = currentY > lastScrollY.value
 
-    if (typeof window !== 'undefined' && currentY < 100 && (frontmatter.value.layout === 'doc' || frontmatter.value.layout === undefined) && window !== undefined) {
+    if (typeof window !== 'undefined' && currentY < 150 && (frontmatter.value.layout === 'doc' || frontmatter.value.layout === undefined) && window !== undefined) {
         window.history.replaceState(null, '', router.route.path.replace('.html', ''))
         showNavbar.value = true
     } else if (scrollingDown.value) {
