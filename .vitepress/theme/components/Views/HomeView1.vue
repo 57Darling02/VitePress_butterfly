@@ -16,7 +16,7 @@
             <ArticleCard :post="post" />
           </div>
           <div style="display: flex;justify-content: center;">
-            <el-pagination hide-on-single-page :total="posts.length" :current-page="currentPage" :page-size="pageSize" :pager-count="3"
+            <el-pagination hide-on-single-page :total="posts.length" :current-page="currentPage" :page-size="pageSize" :pager-count="5"
               layout="prev, pager, next, jumper" @current-change="handleCurrentChange" style="" />
           </div>
         </ClientOnly>

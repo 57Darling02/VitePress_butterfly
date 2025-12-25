@@ -8,16 +8,13 @@
     <div class="meta-info">
       <!-- 作者信息 -->
       <div class="author-info">
-        <i class="fa-solid fa-user"></i>
-        <span class="author">{{ author }}</span>
+        <i class="fa-solid fa-user">&nbsp;{{ author }}</i>
+        <a><i class="fa-solid fa-eye"><span id="busuanzi_value_page_pv">--</span>次</i></a>
+        
       </div>
       <div class="divider"></div>
-      <a><i class="fa-solid fa-eye"></i><span id="busuanzi_value_page_pv">--</span>次</a>
-      <!-- 分隔线 -->
-      <div class="divider"></div>
-      <!-- 发布日期 -->
       <div class="date-info">
-        <time :datetime="date"><i class="fa-solid fa-calendar"></i>{{ formattedDate }}</time>
+        <time :datetime="date"><i class="fa-solid fa-upload">&nbsp;发布于&nbsp;{{ formattedDate }}</i></time>
         <div class="divider"></div>
         <VPDocFooterLastUpdated v-if="lastUpdated" :lastUpdated="lastUpdated" />
       </div>

@@ -1,26 +1,47 @@
 <template>
     <Loading v-if="!isMounted" />
-    <Bg_StarrySkySass v-if="!(isFocusMode && (!frontmatter.layout || frontmatter.layout == 'doc'))" />
-    <transition name="el-fade-in">
-        <div id="control" v-if="showNavbar && lastScrollY > 100">
-            <div class="social-item" @click="backToTop">
-                <i class="fa-solid fa-chevron-up"></i>
-            </div>
-        </div>
-    </transition>
-
-
+    <Bg_StarrySkySass v-if="!isFocusMode" />
     <el-scrollbar height="100vh" ref="scrollbarRef" @scroll="handleScroll" wrap-style="max-width:100vw;" noresize>
         <el-header height="var(--nav-height)">
-            <ClientOnly><Nav /></ClientOnly>
+            <ClientOnly>
+                <Nav />
+            </ClientOnly>
         </el-header>
-            <NotFound v-if="page.isNotFound" />
-            <MainView v-else />
-            <el-footer>
-                <Footer />
-            </el-footer>
-        
+        <NotFound v-if="page.isNotFound" />
+        <MainView v-else />
+        <el-footer>
+            <Footer />
+        </el-footer>
     </el-scrollbar>
+    <div id="control">
+        <transition name="el-fade-in">
+            <div class="social-item" @click="backToTop" v-show="showNavbar && lastScrollY > 100">
+                <i class="fa-solid fa-chevron-up"></i>
+            </div>
+        </transition>
+        <div id="control-column">
+            <transition name="el-fade-in">
+                <div class="social-item" v-show="controlVisible">
+                    <VPSwitchAppearance />
+                </div>
+            </transition>
+            <transition name="el-fade-in">
+                <div class="social-item" v-show="controlVisible">
+                    <ToggleFocusModeBTN />
+                </div>
+            </transition>
+            <transition name="el-fade-in">
+                <div class="social-item" v-show="controlVisible">
+                    <ToggleSiderBar />
+                </div>
+            </transition>
+
+            <div class="social-item">
+                <VPNavBarHamburger :active="controlVisible" @click="controlVisible = !controlVisible" />
+            </div>
+
+        </div>
+    </div>
 
 </template>
 
@@ -46,13 +67,22 @@ const isMounted = ref(false)
 const scrollbarRef = ref()
 const contentContainer = ref()
 isDark.value = theme.value.isDark || isDark.value
+
+import VPNavBarHamburger from './components/default/VPNavBarHamburger.vue'
+const controlVisible = ref(false)
+import VPSwitchAppearance from './components/default/VPSwitchAppearance.vue'
+import ToggleFocusModeBTN from './components/default/ToggleFocusModeBTN.vue'
+import ToggleSiderBar from './components/default/ToggleSiderBar.vue'
+
 // 窗口宽度状态和尺寸变化处理
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 0)
 const handleResize = () => {
     if (typeof window === 'undefined') return
     windowWidth.value = window.innerWidth
     // 宽度大于748px显示侧边栏
-    showSidebar.value = windowWidth.value > 748
+    if(windowWidth.value <= 748) {
+        showSidebar.value = false
+    }
 }
 
 //实现导航栏滚动的隐藏和显示
@@ -94,7 +124,7 @@ onMounted(() => {
     contentContainer.value = scrollbarRef.value?.wrapRef?.querySelector('.el-scrollbar__view')
     const initialScrollTop = scrollbarRef.value?.wrapRef?.scrollTop || 0
     showNavbar.value = initialScrollTop < 100
-    // 添加窗口大小变化事件监听器
+    showSidebar.value = windowWidth.value > 748
     handleResize()
     window.addEventListener('resize', handleResize)
     setTimeout(() => {
@@ -113,9 +143,17 @@ onUnmounted(() => {
     bottom: 20px;
     right: 20px;
     z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+
+    #control-column {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
 }
-
-
-
-
 </style>

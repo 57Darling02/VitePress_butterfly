@@ -45,8 +45,8 @@ const formattedDate = computed(() => {
 <template>
     <div class="a-card">
         <a class="article-card" :href="props.post.link.replace('.html', '')">
-            <el-image v-if="props.post.cover && !props.mini" class="article-cover" :src="props.post.cover" :alt="props.post.title"
-                fit="cover" lazy />
+            <el-image v-if="props.post.cover && !props.mini" class="article-cover" :src="props.post.cover"
+                :alt="props.post.title" fit="cover" lazy />
             <article>
                 <h1 class="article-title">
                     {{ props.post.title ?? 'Untitled Article' }}
@@ -56,15 +56,16 @@ const formattedDate = computed(() => {
                 </p>
                 <div class="article-info" data-allow-mismatch>
                     <el-space wrap class="tag-group">
+                        <p v-if="formattedDate" class="article-words"><i class="fa-solid fa-upload">&nbsp;发布于&nbsp;{{
+                                formattedDate }}</i>
+                        </p>
+                        <VPDocFooterLastUpdated :lastUpdated="props.post.lastUpdated" />
+                        <i class="fa-solid fa-pen">&nbsp;{{ props.post.textNum }}字</i>
                         <el-tag v-for="(tag, index) in props.post.tags" :key="index" size="default" type="info"
                             effect="plain"
                             style="display: flex;justify-content: center;background-color: var(--vp-c-bg-soft);" round>
                             <i class="fa-solid fa-tag"></i>{{ tag }}
                         </el-tag>
-                        <p v-if="formattedDate" class="article-words"><i class="fa-solid fa-calendar"></i>{{
-                            formattedDate }}</p>
-                        <i class="fa-solid fa-pen"></i>{{ props.post.textNum }}字
-                        <VPDocFooterLastUpdated :lastUpdated="props.post.lastUpdated" />
                     </el-space>
                 </div>
             </article>

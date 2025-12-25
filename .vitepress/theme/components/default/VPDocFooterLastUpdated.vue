@@ -34,7 +34,7 @@ onMounted(() => {
 
 <template>
   <a v-if="theme?.lastUpdated.use">
-    <time :datetime="isoDatetime"><i class="fa-solid fa-calendar-plus"></i>{{ theme.lastUpdated?.text }}:{{ datetime }}</time>
+    <time :datetime="isoDatetime"><i class="fa-solid fa-calendar-lines-pen">&nbsp;{{ theme.lastUpdated?.text || '修改于' }}&nbsp;{{ datetime }}</i></time>
   </a>
 </template>
 

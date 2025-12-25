@@ -4,7 +4,7 @@
             <el-col :span="12" justify="start">
                 <a style="display: flex;width: 100%;height: 100%;justify-content: start; font-weight: 700;" href="/"
                     id="title">
-                    <el-text style="color: var(--vp-c-text-1);" truncated>{{ theme.site_name }}</el-text>
+                    <el-text style="color: var(--vp-c-text-1);" id="title_text" truncated>{{ theme.site_name }}</el-text>
                 </a>
             </el-col>
             <el-col :span="12" justify="end" style="flex-direction: column;">
@@ -29,47 +29,20 @@
                             </template>
                         </el-dropdown>
                     </div>
-                    <VPNavBarHamburger :active="visible" @click="visible = !visible"/>
                 </div>
             </el-col>
         </el-row>
     </div>
-    <el-drawer v-model="visible" :size="300" :destroy-on-close="true" :show-close="false" append-to-body
-        style="border-top-left-radius: 12px;border-bottom-left-radius: 12px;" :before-close="handleBeforeClose">
-        <template v-if="drawerContentVisible">
-            <el-row>
-                <el-col :span="12">主题模式: {{ useData().isDark ? '暗色' : '浅色' }}</el-col>
-                <el-col :span="12">
-                    <VPSwitchAppearance />
-                </el-col>
-                <el-col :span="12">专注模式: {{ isFocusMode ? '开启' : '关闭' }}</el-col>
-                <el-col :span="12">
-                    <ToggleFocusModeBTN />
-                </el-col>
-            </el-row>
-            <Drawer v-if="!showSidebar"/>
-            <!-- theme: {{ theme }}
-        page: {{ page }} -->
-            <!-- frontmatter: {{ frontmatter }} -->
-            <!-- <Submenu v-if="visible"/> -->
-        </template>
 
-    </el-drawer>
 </template>
 
 <script lang='ts' setup>
 import { useData, useRouter } from 'vitepress'
 const { theme, page, frontmatter } = useData()
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import VPSwitchAppearance from './default/VPSwitchAppearance.vue'
-import ToggleFocusModeBTN from './default/ToggleFocusModeBTN.vue'
-import VPNavBarHamburger from './default/VPNavBarHamburger.vue'
-
-import Drawer from './Drawer.vue'
 const visible = ref(false)
 import { inject } from 'vue'
 // 获取全局状态和方法
-const isFocusMode = inject('isFocusMode')
 const showNavbar = inject('showNavbar')
 const showSidebar = inject('showSidebar')
 const drawerContentVisible = ref(false)
@@ -205,6 +178,14 @@ $hide-offset: 100%;
     align-items: center;
     padding-right: 10px;
     padding-left: 10px;
+}
+
+#title_text {
+    transition: transform $transition-time ease;
+    
+    &:hover {
+        transform: scale(1.05);
+    }
 }
 
 .action-buttons {

@@ -20,7 +20,7 @@ const contentLoaderConfig = {
                     const plainText = page.src
                         .replace(/^---[\s\S]*?---/, '')
                         .replace(/(```[\s\S]*?```|#+\s+|\[.*?\]\(.*?\))/g, '')
-                        .substring(0, 30)
+                        .substring(0, 100)
                     excerpt = plainText + (plainText.length >= 30 ? '......' : '')
                     excerpt = excerpt.trim()
                     textNum = page.src.length
