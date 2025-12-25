@@ -19,14 +19,11 @@ permissions:
   pages: write
   id-token: write
 
-# 只允许同时进行一次部署，跳过正在运行和最新队列之间的运行队列
-# 但是，不要取消正在进行的运行，因为我们希望允许这些生产部署完成
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  # 构建工作
   build:
     runs-on: ubuntu-latest
     steps:
@@ -76,16 +73,11 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: .vitepress/dist
-
-      
-
   # 部署工作
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     needs: build
     runs-on: ubuntu-latest
     name: Deploy
@@ -93,13 +85,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy .vitepress/dist --yes --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       
 

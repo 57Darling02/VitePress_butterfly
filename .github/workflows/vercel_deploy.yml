@@ -1,0 +1,44 @@
+name: Vercel Production Deployment
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+on:
+  push:
+    branches:
+      - main
+jobs:
+  Deploy-Production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Dynamically add submodule to posts/doc
+        run: |
+          # 1. 定义变量（关键修改：读取已有的 PERSONAL_ACCESS_TOKEN）
+          POST_REPO="${{ secrets.POST_REPO || 'https://github.com/57Darling02/blog-post.git' }}"
+          POST_BRANCH="${{ secrets.POST_BRANCH || 'main' }}"
+          PRIVATE_PAT="${{ secrets.PERSONAL_ACCESS_TOKEN }}"
+          TARGET_DIR="posts/doc"
+          if [[ -n "${PRIVATE_PAT}" ]]; then
+            POST_REPO_AUTH=$(echo "${POST_REPO}" | sed "s|https://|https://${PRIVATE_PAT}@|")
+          else
+            POST_REPO_AUTH="${POST_REPO}"
+          fi
+          rm -rf "${TARGET_DIR}"
+          mkdir -p posts
+          cd posts
+          git init
+          git submodule add --force "${POST_REPO_AUTH}" doc
+          git submodule update --init --remote doc
+          cd doc
+          git checkout "${POST_BRANCH}"
+          git pull origin "${POST_BRANCH}"
+          ls # 打印目录内容，验证是否拉取成功
+          cd ../../
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
