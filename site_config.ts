@@ -64,6 +64,7 @@ const config: ThemeConfig = {
           icon: 'fa-solid fa-user-group',
           link: '/FriendLink/'
         },
+        
       ]
     },
   ],

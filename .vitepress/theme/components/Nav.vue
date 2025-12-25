@@ -1,50 +1,50 @@
 <template>
-    <div id="nav" style="flex: 1;" :class="{ 'nav-hidden': !(showNavbar || visible) }">
-        <el-row style="width: 100%;height: 100%;">
-            <el-col :span="12" justify="start">
-                <a style="display: flex;width: 100%;height: 100%;justify-content: start; font-weight: 700;" href="/"
-                    id="title">
-                    <el-text style="color: var(--vp-c-text-1);" id="title_text" truncated>{{ theme.site_name }}</el-text>
-                </a>
-            </el-col>
-            <el-col :span="12" justify="end" style="flex-direction: column;">
-                <div style="display: flex;height: 100%;justify-content: end;" id="menu">
-                    <div class="dropitem" v-if="showSidebar" style="padding-right: 10px;">
-                        <el-dropdown v-for="item in menuItems" :key="item.label" popper-class="custom-dropdown">
-                            <h3 class="menu-fitem">
-                                <span>
-                                    <i :class="item.icon"></i>
-                                    {{ item.label }}
-                                    <i class="fa-light fa-angle-up arrow-icon"></i>
-                                </span>
-                            </h3>
-                            <template #dropdown v-if="item.children?.length">
-                                <el-dropdown-menu>
-                                    <el-dropdown-item v-for="subitem in item.children" :key="subitem.key"
-                                        class="menu-item" @click="handleMenuClick(subitem)">
-                                        <i :class="subitem.icon"></i>
-                                        {{ subitem.label }}
-                                    </el-dropdown-item>
-                                </el-dropdown-menu>
-                            </template>
-                        </el-dropdown>
-                    </div>
-                </div>
-            </el-col>
-        </el-row>
-    </div>
+    <div id="nav">
+        <!-- 左侧标题部分 -->
+        <a href="/" id="title" :class="{ 'nav-hidden': !showNavbar }">
+            <el-text style="color: var(--vp-c-text-1);" id="title_text" truncated>{{ page?.title ? page.title :
+                theme.site_name }}</el-text>
+        </a>
 
+        <!-- 右侧菜单部分 -->
+        <div id="menu" :class="{ 'nav-hidden': !showNavbar }">
+            <a class="menu-fitem" href="/">
+                <span>
+                    <i class="fa-solid fa-house"></i>首页
+                </span>
+            </a>
+            <div class="dropitem">
+                <el-dropdown v-for="item in menuItems" :key="item.label" popper-class="custom-dropdown">
+                    <a class="menu-fitem" style="color: var(--vp-c-text-1);">
+                        <span>
+                            <i :class="item.icon"></i>
+                            {{ item.label }}
+                            <i class="fa-solid fa-caret-up arrow-icon" style="padding-top: 4%;"></i>
+                        </span>
+                    </a>
+                    <template #dropdown v-if="item.children?.length">
+                        <el-dropdown-menu>
+                            <el-dropdown-item v-for="subitem in item.children" :key="subitem.key" class="menu-item"
+                                @click="handleMenuClick(subitem)">
+                                <i :class="subitem.icon"></i>
+                                {{ subitem.label }}
+                            </el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script lang='ts' setup>
 import { useData, useRouter } from 'vitepress'
 const { theme, page, frontmatter } = useData()
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-const visible = ref(false)
+import { ref, computed, onUnmounted, watch } from 'vue'
 import { inject } from 'vue'
 // 获取全局状态和方法
 const showNavbar = inject('showNavbar')
-const showSidebar = inject('showSidebar')
+
 const { menuItems } = theme.value
 const handleMenuClick = (item) => {
     if (item.children?.length) return
@@ -53,18 +53,16 @@ const handleMenuClick = (item) => {
         const basePath = window.location.origin
         const fullPath = item.link.startsWith('/')
             ? `${basePath}${item.link}`
-            : `${basePath}/${item.link}`
-
-        if (item.link.startsWith('http')) {
-            window.open(item.link, '_blank')
+            : item.link
+        if (fullPath.startsWith(basePath)) {
+            window.open(fullPath, '_self') // 内部在当前标签页打开
         }
         else {
-            window.open(fullPath, '_blank') // 保持新标签页打开行为
+            window.open(fullPath, '_blank') // 外部保持新标签页打开行为
         }
     }
 }
 </script>
-
 
 <style lang="scss" scoped>
 // 定义变量
@@ -75,38 +73,83 @@ $line-spacing: 5px; // 线条间距
 $animation-duration: 0.3s; // 动画时长
 
 $nav-bg: var(--vp-c-bg-elv);
-$border-radius: 15px;
-$transition-time: 0.3s;
+$border-radius: 50px;
+$transition-time: 0.5s;
 $hide-offset: 100%;
-
 
 #nav {
     height: $nav-height;
-    width: 100%;
     position: fixed;
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 9999;
-    opacity: 0.8;
-    border-bottom: 1px solid transparent;
-    box-shadow: 0 0 0 rgba(202, 199, 199, 0);
-    border-bottom-left-radius: $border-radius;
-    border-bottom-right-radius: $border-radius;
-    background-color: $nav-bg;
-    transition: transform $transition-time ease;
+    opacity: 0.9; // 稍微提高不透明度以增强毛玻璃效果
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); // 半透明白色边框
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1); // 添加柔和阴影增强层次感
+    border-radius: $border-radius;
+    background-color: rgba(var(--vp-c-bg-rgb), 0.8); // 半透明白色背景
+    backdrop-filter: blur(5px); // 毛玻璃效果
+    -webkit-backdrop-filter: blur(12px); // Safari 浏览器兼容
+    padding: 0 20px; // 调整内边距，让内容有合适的间距
+    display: flex;
+    overflow: hidden;
 
+    transition: all $transition-time ease;
+    min-width: 200px; // 标题的最小宽度
+    max-width: 600px; // 菜单+标题的最大宽度
+}
+
+#title {
+    display: flex;
+    align-items: center; // 垂直居中
+    font-weight: 700;
+    max-width: 200px;
+    height: 100%;
+    text-decoration: none;
+    color: var(--vp-c-text-1);
+    transform: translateY(-100%);
+    opacity: 0;
+    transition: all $transition-time ease;
+    margin-right: auto;
+    
+    
+    width: 0;
+    min-width: 0;
     &.nav-hidden {
-        transform: translateY(-$hide-offset);
+        transform: translateY(0);
+        opacity: 1;
+        width: auto ;
     }
 }
 
 #menu {
-    align-items: center;
+    display: flex;
+    align-items: center; // 垂直居中
+    height: 100%;
+    margin-left: auto;
+    transition: all $transition-time ease;
+    
+    width: auto;
+    min-width: 0;
+
+    &:not(.nav-hidden) {
+        transform: translateY(0);
+        opacity: 1;
+        width: fit-content ;
+    }
+    
+    &.nav-hidden {
+        transform: translateY(-100%);
+        opacity: 0;
+        width: 0;
+        min-width: 0;
+        pointer-events: none;
+    }
 
     el-dropdown,
     .menu-group {
         display: flex;
-        justify-content: flex-end;
         gap: 12px;
         border: 0px;
     }
@@ -117,10 +160,10 @@ $hide-offset: 100%;
 
     .menu-fitem {
         display: flex;
-        align-items: center;
-        justify-content: center;
+        align-items: center; // 垂直居中
         line-height: 2;
         margin-left: 20px;
+        text-decoration: none;
     }
 
     .menu-fitem span {
@@ -129,12 +172,9 @@ $hide-offset: 100%;
         transition: background-size 0.3s;
         font-size: 1rem;
         white-space: nowrap;
-        /* 新增禁止换行属性 */
         display: inline-flex;
-        /* 使用弹性布局保持元素对齐 */
         align-items: center;
         gap: 6px;
-        /* 控制图标和文字间距 */
     }
 
     .menu-fitem span:hover {
@@ -153,22 +193,6 @@ $hide-offset: 100%;
 
     .menu-fitem:hover .arrow-icon {
         transform: rotate(180deg);
-    }
-
-    
-}
-
-#title {
-    align-items: center;
-    padding-right: 10px;
-    padding-left: 10px;
-}
-
-#title_text {
-    transition: transform $transition-time ease;
-    
-    &:hover {
-        transform: scale(1.05);
     }
 }
 

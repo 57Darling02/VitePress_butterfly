@@ -9,8 +9,7 @@
       <!-- 作者信息 -->
       <div class="author-info">
         <i class="fa-solid fa-user">&nbsp;{{ author }}</i>
-        <a><i class="fa-solid fa-eye"><span id="busuanzi_value_page_pv">--</span>次</i></a>
-        
+        <a><i class="fa-solid fa-eye">&nbsp;<span id="busuanzi_value_page_pv">--</span>次</i></a>
       </div>
       <div class="divider"></div>
       <div class="date-info">
@@ -55,9 +54,8 @@ const formattedDate = computed(() => {
   padding: 2rem;
   border-radius: 8px;
   margin-bottom: 2rem;
-  /* background: var(--vp-c-background); */
+  background-color: var(--vp-c-bg);
   backdrop-filter: blur(5px);
-  border-color: rgba(228, 195, 195, 0.619);
   display: flex;
   animation: fadeInUp 1s ease-in-out 0.2s forwards;
   display: flex;
