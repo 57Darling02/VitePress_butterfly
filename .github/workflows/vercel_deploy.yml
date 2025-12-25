@@ -6,6 +6,9 @@ on:
   push:
     branches:
       - main
+    workflow_dispatch:
+    repository_dispatch:  # 新增：监听 Repository Dispatch 事件
+      types: [blog-post-updated]  # 匹配子模块仓库的 event-type
 jobs:
   Deploy-Production:
     runs-on: ubuntu-latest
