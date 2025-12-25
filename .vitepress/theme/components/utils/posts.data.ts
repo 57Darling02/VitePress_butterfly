@@ -9,10 +9,10 @@ const contentLoaderConfig = {
     render: true,
     excerpt: true,
     async transform(rawData) {
+        const filteredData = rawData.filter(page => page.frontmatter?.layout);
         const data = await pMap(
-            rawData,
+            filteredData,
             async (page: any) => {
-                
                 const lastUpdated = await getLastUpdated(page.url);
                 let excerpt = page.excerpt
                 let textNum = 0
@@ -40,13 +40,16 @@ const contentLoaderConfig = {
             { concurrency: 64 }
         );
         // Sort the data based on the themeConfig.sortedMethor options
-        const sortedMethor:  "date" | "lastUpdated" = theme.sortedMethor || 'lastUpdated';
-        if (sortedMethor === 'date') {
-            data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        } else {
-            data.sort((a, b) => b.lastUpdated - a.lastUpdated);
+        const sortedMethor: "date" | "lastUpdated" = theme.sortedMethor || 'lastUpdated';
+        switch (sortedMethor) {
+            case 'lastUpdated':
+                data.sort((a, b) => b.lastUpdated - a.lastUpdated);
+                break;
+            case 'date':
+            default:
+                data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                break;
         }
-        
         return data;
     }
 }
