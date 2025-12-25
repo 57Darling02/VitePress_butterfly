@@ -29,6 +29,5 @@ export default {
     app.provide('isFocusMode', isFocusMode)
     app.provide('showNavbar', showNavbar)
     app.provide('showSidebar', showSidebar)
-    // app.component('MyGlobalComponent' /* ... */)
   }
 } satisfies Theme
