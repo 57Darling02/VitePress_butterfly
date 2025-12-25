@@ -21,7 +21,7 @@
                 </template>
                 <template #sidebar-stay>
                     <div class="fade-item" style="--delay:0.5s" v-if="!isFocusMode">
-                        <Toc class="a-card" style="height: 300px;display: flex;flex-direction: column;padding: 18px;"/>
+                        <Toc class="a-card" style="height: 80vh;display: flex;flex-direction: column;padding: 18px;"/>
                     </div>
                     <Toc style="background-color: var(--vp-sidebar-bg-color);" v-else />
                 </template>
