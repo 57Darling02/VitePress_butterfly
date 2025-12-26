@@ -82,7 +82,7 @@ $hide-offset: 100%;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2); // 半透明白色边框
     box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1); // 添加柔和阴影增强层次感
     border-radius: $border-radius;
-    background-color: rgba(var(--vp-c-bg-rgb), 0.8); // 半透明白色背景
+    background-color: rgba(var(--vp-c-bg-rgb), 0.5); // 半透明白色背景
     backdrop-filter: blur(5px); // 毛玻璃效果
     -webkit-backdrop-filter: blur(12px); // Safari 浏览器兼容
     padding: 0 20px; // 调整内边距，让内容有合适的间距
@@ -149,7 +149,70 @@ $hide-offset: 100%;
         transform: rotate(180deg);
     }
 }
+@media (max-width: 768px) {
+    #nav {
+        padding: 0 15px; // 减少内边距
+        max-width: 95%; // 限制最大宽度
+        min-width: auto; // 移除最小宽度限制
+    }
+    
+    #menu {
+        gap: 8px; // 减少间距
+        flex-wrap: nowrap; // 禁止换行
+        overflow-x: auto; // 允许水平滚动
+        overflow-y: hidden; // 隐藏垂直滚动
+        -webkit-overflow-scrolling: touch; // iOS平滑滚动
+        
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+        
+        &::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+        }
+        
+        .dropitem {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+        
+        .menu-fitem {
+            margin-left: 10px; // 减少左边距
+            flex-shrink: 0; // 禁止收缩，保持内容完整
+            
+            span {
+                font-size: 0.9rem; // 稍微减小字体大小
+                padding: 4px 8px; // 增加内边距便于点击
+            }
+        }
+        
+        // 确保el-dropdown在移动端保持水平
+        .el-dropdown {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+    }
+}
 
+// 超小屏幕适配
+@media (max-width: 480px) {
+    #menu {
+        gap: 6px;
+        
+        .dropitem {
+            gap: 6px;
+        }
+        
+        .menu-fitem {
+            margin-left: 8px;
+            
+            span {
+                font-size: 0.85rem;
+                padding: 3px 6px;
+            }
+        }
+    }
+}
 .action-buttons {
     display: flex;
     flex-direction: column;

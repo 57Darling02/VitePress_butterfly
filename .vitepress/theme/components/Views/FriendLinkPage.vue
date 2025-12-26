@@ -2,13 +2,13 @@
     <div class="links-page">
         <div class="archive-container">
             <div class="filter-section">
-                <h3 class="linkss-title">友链</h3>
+                <h3 class="linkss-title a-card">友链</h3>
             </div>
 
             <!-- 友链列表 -->
             <div class="links">
                 <ul>
-                    <li v-for="(link, index) in friendlinks" :key="index" class="link-item">
+                    <li v-for="(link, index) in friendlinks" :key="index" class="a-card" >
                         <a :href="link.Url" target="_blank" rel="noopener noreferrer">
                             <div class="link-avatar-wrapper">
                                 <img :src="link.Avatar" :alt="link.Name" />
@@ -58,7 +58,7 @@ const friendlinks = computed(() => {
     border-radius: 8px;
     margin-bottom: 20px;
     text-align: center;
-    height: 500px;
+    
 }
 
 /* 标题样式 */
@@ -70,6 +70,7 @@ const friendlinks = computed(() => {
     letter-spacing: 2px;
     font-weight: bold;
     color: #2c3e50;
+    padding: 20px;
 }
 
 /* 布局样式 */
@@ -130,7 +131,6 @@ const friendlinks = computed(() => {
 span.sitename {
     font-size: 20px;
     margin: 8px 8px 0 8px;
-    color: var(--link-card-text);
     display: block;
     transition: all 0.4s ease-in-out;
     overflow: hidden;
@@ -144,7 +144,6 @@ span.sitename {
     font-size: 14px;
     margin: 0 8px;
     text-overflow: ellipsis;
-    color: var(--link-card-text);
     overflow: hidden;
     white-space: nowrap;
     line-height: 30px;

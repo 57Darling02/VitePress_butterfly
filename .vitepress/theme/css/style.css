@@ -12,6 +12,11 @@
   --nav-height: 48px;
   /* 重构elementpluscss */
   --el-bg-color: var(--vp-c-bg);
+  --vp-c-bg-rgb: 255, 255, 255;
+}
+
+.dark {
+  --vp-c-bg-rgb: 18, 18, 18; 
 }
 
 
@@ -51,6 +56,9 @@ footer {
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   outline: none;
+  background-color: rgba(var(--vp-c-bg-rgb), 0.8);
+  backdrop-filter: blur(5px); 
+  -webkit-backdrop-filter: blur(12px); 
 }
 
 .a-card:hover {

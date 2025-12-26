@@ -17,6 +17,7 @@
             <template v-if="!isFocusMode">
                 <slot name="sidebar-non-stay"/>
                 <div class="sidebar-stay" :class="{ 'nav-hidden': !showNavbar }">
+                    
                     <slot name="sidebar-stay"/>
                 </div>
             </template>

@@ -152,15 +152,13 @@ onContentUpdated(() => {
 <template>
   <div style="min-height: 0; height: 100%; display: flex; flex-direction: column;">
     <span class="toc-title" style="font-weight: 600; height: 25px;">
-      <i class="fas fa-columns" />&nbsp;
-      目录导航
-      <el-button
+      <i class="fa-solid fa-compass">&nbsp;目录导航</i>
+      &nbsp;&nbsp;
+      <el-button class="fa-solid fa-location-dot" style="background-color: transparent;"
         type="default"
         size="small"
         @click="move2current_anchor"
       >
-        锚点定位
-        <i class="fa-regular fa-circle-dot"></i>
       </el-button>
     </span>
 

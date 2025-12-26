@@ -1,5 +1,5 @@
 <template>
-  <div id="article-header">
+  <div id="article-header" class="a-card">
     <!-- 标题区域 -->
     <div id="header-title">
       <h1>{{ title }}</h1>
@@ -14,9 +14,9 @@
       <div class="divider"></div>
       <div class="date-info">
         <time :datetime="date"><i class="fa-solid fa-upload">&nbsp;发布于&nbsp;{{ formattedDate }}</i></time>
-        <div class="divider"></div>
-        <VPDocFooterLastUpdated v-if="lastUpdated" :lastUpdated="lastUpdated" />
       </div>
+      <div class="divider"></div>
+        <VPDocFooterLastUpdated v-if="lastUpdated" :lastUpdated="lastUpdated" />
     </div>
   </div>
 </template>
@@ -28,13 +28,15 @@ import { data as posts } from '../utils/posts.data.ts'
 import VPDocFooterLastUpdated from './VPDocFooterLastUpdated.vue'
 
 const { frontmatter, theme, page } = useData()
-const lastUpdated = page.value?.lastUpdated
+
 const {
   title = "Untitled Article",
   author = frontmatter.value?.author || theme.value?.author || "Unknown Author",
   date = '',
 } = frontmatter.value
 
+const post = posts.find(post => post.path === page.path)
+const lastUpdated = post?.lastUpdated
 const formattedDate = computed(() => {
   if (!date) return 'Unknown date'
   try {
@@ -54,8 +56,6 @@ const formattedDate = computed(() => {
   padding: 2rem;
   border-radius: 8px;
   margin-bottom: 2rem;
-  background-color: var(--vp-c-bg);
-  backdrop-filter: blur(5px);
   display: flex;
   animation: fadeInUp 1s ease-in-out 0.2s forwards;
   display: flex;
@@ -63,6 +63,7 @@ const formattedDate = computed(() => {
   align-items: center;
   width: fit-content;
   margin: 0 auto;
+  background-color: rgba(var(--vp-c-bg-rgb), 0.5);
 }
 
 #header-title {

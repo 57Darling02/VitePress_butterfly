@@ -14,12 +14,30 @@
         </el-footer>
     </el-scrollbar>
     <div id="control">
+
         <transition name="el-fade-in">
-            <div class="social-item" @click="backToTop" v-show="showNavbar && lastScrollY > 100">
-                <i class="fa-solid fa-chevron-up"></i>
+            <Toc class="a-card" v-if="controlVisible && !showSidebar && page.frontmatter.layout === 'doc'"
+                style="height: 40vh;display: flex;flex-direction: column;padding: 18px;" />
+        </transition>
+        <transition name="el-fade-in">
+            <div class="social-item" v-show="showSidebar">
+                <ToggleSiderBar />
             </div>
         </transition>
         <div id="control-column">
+            <transition name="el-fade-in">
+                <div class="social-item" @click="backToTop" v-show="showNavbar && lastScrollY > 100">
+                    <i class="fa-solid fa-chevron-up"></i>
+                </div>
+
+            </transition>
+
+
+            <transition name="el-fade-in">
+                <div class="social-item" v-show="controlVisible&&!showSidebar">
+                    <ToggleSiderBar />
+                </div>
+            </transition>
             <transition name="el-fade-in">
                 <div class="social-item" v-show="controlVisible">
                     <VPSwitchAppearance />
@@ -28,11 +46,6 @@
             <transition name="el-fade-in">
                 <div class="social-item" v-show="controlVisible">
                     <ToggleFocusModeBTN />
-                </div>
-            </transition>
-            <transition name="el-fade-in">
-                <div class="social-item" v-show="controlVisible">
-                    <ToggleSiderBar />
                 </div>
             </transition>
 
@@ -55,6 +68,8 @@ import Footer from './components/Footer.vue'
 import MainView from './components/Views/MainView.vue'
 import NotFound from './components/Views/NotFound.vue'
 import Loading from './components/default/Loading.vue'
+import Toc from './components/Toc.vue'
+
 import Bg_StarrySkySass from './components/default/Bg_StarrySkySass.vue'
 import { useRouter } from 'vitepress'
 const router = useRouter()
@@ -80,9 +95,9 @@ const handleResize = () => {
     if (typeof window === 'undefined') return
     windowWidth.value = window.innerWidth
     // 宽度大于748px显示侧边栏
-    if(windowWidth.value <= 748) {
+    if (windowWidth.value <= 748) {
         showSidebar.value = false
-    }else {
+    } else {
         showSidebar.value = true
     }
 }

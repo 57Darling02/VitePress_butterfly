@@ -3,10 +3,13 @@
     <DocView>
       <template #doc-header>
         <div class="firstview">
-          <el-text truncated type="success" size="large" class="main-title">
-            <h2 class="main-title">{{ mainTitle }}</h2>
-          </el-text>
-          <h3 class="subtitle multipleStrings"></h3>
+          
+          <div class="a-card" id="main-title">
+            <el-text truncated style="color: var(--vp-c-text);">{{ mainTitle }}</el-text>
+            <h3 class="subtitle multipleStrings"></h3>
+          </div>
+          
+          
         </div>
       </template>
       <template #main-content>
@@ -16,8 +19,8 @@
             <ArticleCard :post="post" />
           </div>
           <div style="display: flex;justify-content: center;">
-            <el-pagination hide-on-single-page :total="posts.length" :current-page="currentPage" :page-size="pageSize" :pager-count="5"
-              layout="prev, pager, next, jumper" @current-change="handleCurrentChange" style="" />
+            <el-pagination hide-on-single-page :total="posts.length" :current-page="currentPage" :page-size="pageSize" :pager-count="5" 
+              layout="prev, pager, next, jumper" @current-change="handleCurrentChange" background/>
           </div>
         </ClientOnly>
       </template>
@@ -63,7 +66,7 @@ onMounted(() => {
     speed: 100,
     breakLines: false,
     lifeLike: true,
-    loop: true,
+    loop: false,
     cursor: {
       autoStart: true,
       animation: { opacity: 0 }
@@ -86,15 +89,19 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.main-title {
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-  color: wheat;
+#main-title {
+  width: 60%;
+  min-width: 300px;
+  max-width: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px;
+  background-color: rgba(var(--vp-c-bg-rgb), 0.5);
 }
 
 .subtitle {
-  font-size: 1.5rem;
-  min-height: 2em;
-  color: antiquewhite;
+  font: 1.2em sans-serif;
 }
 </style>
