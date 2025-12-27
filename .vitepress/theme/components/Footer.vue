@@ -1,24 +1,24 @@
 <template>
     <div class="footer a-card" :class="{ 'footer-hidden': !showFooter }">
         <el-text style="width: 100%;text-align: center;">
-            
-            <i v-if="page?.title"><i class="fa-solid fa-location-dot"></i>&nbsp;{{ page?.title}}</i>
+
+            <i v-if="page?.title"><i class="fa-solid fa-location-dot"></i>{{formattedFilePath}} - {{ page?.title }}</i>
             <i v-else>&nbsp;{{ message }}</i>
         </el-text>
         <el-tag size="small" type="success" effect="plain" v-if="copyright" round>
             {{ copyright }}
         </el-tag>
         <el-tag size="default" type="success" effect="plain" v-if="createdTime" round>
-            ⚙️&nbsp;博客已运行:{{ isMounted ? formattedTime : '' }}
+            <span class="gear-icon">⚙️</span>&nbsp;博客已运行:{{ isMounted ? formattedTime : '' }}
         </el-tag>
-        <el-text style="width: 100%;text-align: center;" size="small"><span id="vercount_container_site_pv" style='display:none'>本站总访问量<span
-                    id="vercount_value_site_pv" />次</span></el-text>
+        <el-text style="width: 100%;text-align: center;" size="small"><span id="vercount_container_site_pv"
+                style='display:none'>本站总访问量<span id="vercount_value_site_pv" />次</span></el-text>
     </div>
 </template>
 
 <script lang='ts' setup>
 import { useData } from 'vitepress'
-import { inject, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 
 const { theme, page } = useData()
 const footer = theme.value.footer || {}
@@ -41,7 +41,16 @@ const formatTime = (diff: number) => {
     if (minutes > 0) return `${minutes}分${seconds}秒`
     return `${seconds}秒`
 }
-
+const formattedFilePath = computed(() => {
+  if (!page.value?.filePath) return ''
+  
+  const filePath = page.value.filePath
+  // 去除开头的 "posts/"
+  let result = filePath.replace(/^posts\//, '')
+  // 去除结尾的 "/**.md" 部分
+  result = result.replace(/\/[^/]*\.md$/, '')
+  return result
+})
 let intervalId: number | null = null
 
 onMounted(() => {
@@ -71,7 +80,7 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .footer {
     display: flex;
-
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
     align-items: center;
     justify-content: center;
     padding: 10px;
@@ -91,6 +100,29 @@ onUnmounted(() => {
 
     &:hover {
         transform: translateX(-50%);
+    }
+
+    // 齿轮图标旋转动画
+    .gear-icon {
+        display: inline-block;
+        animation: gear-rotate 2s linear infinite;
+        transform-origin: center;
+    }
+
+    // 旋转动画关键帧
+    @keyframes gear-rotate {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    // 可选：添加悬停暂停效果
+    .gear-icon:hover {
+        animation-play-state: paused;
     }
 }
 </style>
