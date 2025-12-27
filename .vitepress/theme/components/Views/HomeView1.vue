@@ -74,7 +74,7 @@ onMounted(() => {
     }
   }).go()
   const isFocusMode = inject('isFocusMode')
-  const firstViewHeight = theme.value?.home?.firstViewHeight || '100'
+  const firstViewHeight = theme.value?.home?.firstViewHeight || '60'
   const firstView = document.querySelector('.firstview')
   if (firstView) {
       firstView.style.height = firstViewHeight + 'vh'
