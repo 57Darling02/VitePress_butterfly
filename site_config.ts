@@ -8,7 +8,6 @@ const config: ThemeConfig = {
   author: '57Darling02',
   defaultFocusMode: false, // 专注内容模式开关的默认值 ,专注开启后将关闭图片背景等
   isDark: null, // 是否默认开启深色模式, null 则会跟随系统
-
   // 首页配置
   home: {
     mainTitle: "My Site",
