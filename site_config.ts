@@ -6,7 +6,7 @@ const config: ThemeConfig = {
   site_description: "这是一个使用 VitePress 构建的文档站点。",
   site_url: "/",
   author: '57Darling02',
-  defaultFocusMode: false, // 是否默认开启焦点模式
+  defaultFocusMode: false, // 专注内容模式开关的默认值 ,专注开启后将关闭图片背景等
   isDark: null, // 是否默认开启深色模式, null 则会跟随系统
 
   // 首页配置
@@ -16,11 +16,11 @@ const config: ThemeConfig = {
     firstViewHeight: 60, //首页第一屏的高度，默认为100vh
   },
   pageSize: 8, //首页文章列表分页大小，默认为8
-  sortedMethor : 'date', //排序方式，默认为lastUpdated，可选值为lastUpdated、date
+  sortedMethor : 'date', //排序方式，默认为lastUpdated，可选值为lastUpdated、date分别按照最后更新时间和创建时间排序
 
   // 背景
   background: '/wallpaper/1.webp',
-  bg_rainfall: true, //是否开启背景雨
+  bg_rainfall: true, //是否开启背景雨特效
 
   // 最后更新时间相关选项
   lastUpdated: {
@@ -31,7 +31,7 @@ const config: ThemeConfig = {
   // 侧边简介卡
   avatar: "https://resource-un4.pages.dev/article/yjtp.webp", //头像地址
   name: '57Darling02',
-  position: '全栈开发、优化算法爱好者',
+  position: 'NPC',
   bio: '红红火火恍恍惚惚',
   socialLinks: [
     {
@@ -40,13 +40,15 @@ const config: ThemeConfig = {
       url: 'https://github.com/57Darling02/'
     }
   ],
+
+  //页脚配置
   footer: {
     message: 'Released under the MIT License.',
-    copyright: 'Copyright © 2025-present My Awesome Site'
+    copyright: 'Copyright © 2025-present My Awesome Site',
+    createdTime: '2023-01-01',
   },
 
-  //菜单栏
-  menuToc: true, //是否显示文章目录
+  //上方胶囊导航栏配置
   menuItems: [
     {
       label: '更多',
@@ -70,6 +72,7 @@ const config: ThemeConfig = {
     
   ],
 
+  // 友链配置
   friendlink: [
     {
       Name: "57Darling02的的博客",

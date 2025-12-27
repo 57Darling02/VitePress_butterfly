@@ -3,7 +3,7 @@
         <el-row :gutter="20">
             <!-- 允许列表区块 -->
             <el-col :span="12" :xs="24">
-                <div class="filter-section">
+                <div class="a-card filter-section">
                     <h3>包含以下标签之一 🎯</h3>
                     <el-checkbox-group v-model="AllowList" size="small" :max="4">
                         <el-space wrap>
@@ -17,7 +17,7 @@
 
             <!-- 排除列表区块 -->
             <el-col :span="12" :xs="24">
-                <div class="filter-section">
+                <div class="a-card filter-section">
                     <h3>排除任意标签 🚫</h3>
                     <el-checkbox-group v-model="ExclusionList" size="small" :max="4">
                         <el-space wrap>
@@ -87,11 +87,9 @@ const filteredPosts = computed(() => {
 }
 
 .filter-section {
-    background: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 20px;
-    
 }
 
 .result-section {
@@ -106,7 +104,6 @@ const filteredPosts = computed(() => {
 }
 
 h3 {
-    color: #2c3e50;
     margin-bottom: 15px;
     font-size: 1.2em;
 }

@@ -9,46 +9,44 @@
         </el-header>
         <NotFound v-if="page.isNotFound" />
         <MainView v-else />
-        <el-footer>
+
+        <el-footer style="height: 200px;">
             <Footer />
         </el-footer>
+
+
     </el-scrollbar>
     <div id="control">
-
         <transition name="el-fade-in">
-            <Toc class="a-card" v-if="controlVisible && !showSidebar && page.frontmatter.layout === 'doc'"
-                style="height: 40vh;display: flex;flex-direction: column;padding: 18px;" />
-        </transition>
-        <transition name="el-fade-in">
-            <div class="social-item" v-show="showSidebar">
-                <ToggleSiderBar />
+            <div class="social-item" @click="backToTop" v-show="showNavbar && lastScrollY > 100">
+                <i class="fa-solid fa-chevron-up"></i>
             </div>
         </transition>
+        <transition name="el-fade-in">
+            <Toc class="a-card" v-if="controlVisible && !showSidebar && page.frontmatter.layout === 'doc'"
+                style="height: 40vh;width: 300px;;display: flex;flex-direction: column;padding: 18px;" />
+        </transition>
+
+
         <div id="control-column">
-            <transition name="el-fade-in">
-                <div class="social-item" @click="backToTop" v-show="showNavbar && lastScrollY > 100">
-                    <i class="fa-solid fa-chevron-up"></i>
-                </div>
-
-            </transition>
-
 
             <transition name="el-fade-in">
-                <div class="social-item" v-show="controlVisible&&!showSidebar">
+                <div class="social-item" v-show="controlVisible || showSidebar">
                     <ToggleSiderBar />
                 </div>
             </transition>
-            <transition name="el-fade-in">
-                <div class="social-item" v-show="controlVisible">
-                    <VPSwitchAppearance />
-                </div>
-            </transition>
+
             <transition name="el-fade-in">
                 <div class="social-item" v-show="controlVisible">
                     <ToggleFocusModeBTN />
                 </div>
             </transition>
 
+            <transition name="el-fade-in">
+                <div class="social-item" v-show="controlVisible">
+                    <VPSwitchAppearance />
+                </div>
+            </transition>
             <div class="social-item">
                 <VPNavBarHamburger :active="controlVisible" @click="controlVisible = !controlVisible" />
             </div>
@@ -77,6 +75,10 @@ const router = useRouter()
 const isFocusMode = inject('isFocusMode')
 const showNavbar = inject('showNavbar', ref(true))
 const showSidebar = inject('showSidebar', ref(true))
+const showFooter = inject('showFooter', ref(false))
+// 移动端状态
+const isMobile = inject('isMobile', ref(false))
+
 // 获取全局控件
 const isMounted = ref(false)
 const scrollbarRef = ref()
@@ -96,8 +98,10 @@ const handleResize = () => {
     windowWidth.value = window.innerWidth
     // 宽度大于748px显示侧边栏
     if (windowWidth.value <= 748) {
+        isMobile.value = true
         showSidebar.value = false
     } else {
+        isMobile.value = false
         showSidebar.value = true
     }
 }
@@ -105,6 +109,12 @@ const handleResize = () => {
 //实现导航栏滚动的隐藏和显示
 const lastScrollY = ref(0)
 const scrollingDown = ref(false)
+const checkPageHeight = () => {
+    if (!isMounted.value) return
+    const docHeight = contentContainer.value?.scrollHeight || 0
+    const winHeight = scrollbarRef.value?.wrapRef?.clientHeight || 0
+    if (docHeight <= winHeight) showFooter.value = true
+}
 const handleScroll = throttle(({ scrollTop }) => {
     if (!isMounted.value) return // 挂载前不处理
     const currentY = scrollTop
@@ -123,6 +133,9 @@ const handleScroll = throttle(({ scrollTop }) => {
 
     if (currentY + windowHeight >= documentHeight - 100) {
         showNavbar.value = true
+        showFooter.value = true
+    } else {
+        showFooter.value = false
     }
     lastScrollY.value = currentY
 }, 250)
@@ -133,6 +146,7 @@ const backToTop = () => {
 }
 onContentUpdated(() => {
     backToTop()
+    checkPageHeight()
 })
 
 // 挂载处理
@@ -146,6 +160,7 @@ onMounted(() => {
     window.addEventListener('resize', handleResize)
     setTimeout(() => {
         isMounted.value = true
+        checkPageHeight()
     }, 800)
 })
 onUnmounted(() => {

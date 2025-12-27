@@ -23,7 +23,6 @@ export default interface ThemeConfig {
   // 页脚
   footer: FooterConfig;
   // 菜单栏
-  menuToc: boolean;
   menuItems: MenuItem[];
   friendlink?: FriendLink[];
 }
@@ -48,8 +47,9 @@ interface SocialLink {
 }
 
 interface FooterConfig {
-  message: string;
-  copyright: string;
+  message?: string;
+  copyright?: string;
+  createdTime?: string;
 }
 
 interface MenuChildItem {

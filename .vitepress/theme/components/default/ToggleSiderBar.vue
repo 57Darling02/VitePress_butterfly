@@ -1,5 +1,8 @@
 <template>
-    <i class="fa-jelly-slash fa-regular fa-sidebar-flip" @click="toggleSidebar"></i>
+    <i :class="[
+        'fas',
+        showSidebar ? 'fa-chevron-right' : 'fa-sidebar-flip'
+    ]" @click="toggleSidebar"></i>
 </template>
 
 <script setup lang="ts">

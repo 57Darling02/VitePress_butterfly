@@ -3,24 +3,25 @@
     <DocView>
       <template #doc-header>
         <div class="firstview">
-          
+
           <div class="a-card" id="main-title">
             <el-text truncated style="color: var(--vp-c-text);">{{ mainTitle }}</el-text>
             <h3 class="subtitle multipleStrings"></h3>
           </div>
-          
-          
+
+
         </div>
       </template>
       <template #main-content>
         <ClientOnly>
           <!-- <ArticleCard class="a-card" v-for="(post, index) in currentPosts" :post="post" style="margin: 0px 5px 10px;"  /> -->
-          <div class="fade-item" v-for="(post, index) in currentPosts" :key="post.link" style="padding: 0px 5px 12px;" :style="{ '--delay': (0.2 + index * 0.05) + 's' }">
+          <div class="fade-item" v-for="(post, index) in currentPosts" :key="post.link" style="padding: 0px 5px 12px;"
+            :style="{ '--delay': (0.2 + index * 0.05) + 's' }">
             <ArticleCard :post="post" />
           </div>
           <div style="display: flex;justify-content: center;">
-            <el-pagination hide-on-single-page :total="posts.length" :current-page="currentPage" :page-size="pageSize" :pager-count="5" 
-              layout="prev, pager, next, jumper" @current-change="handleCurrentChange" background/>
+            <el-pagination hide-on-single-page :total="posts.length" :current-page="currentPage" :page-size="pageSize"
+              :pager-count="5" layout="prev, pager, next, jumper" @current-change="handleCurrentChange" background />
           </div>
         </ClientOnly>
       </template>
@@ -32,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, inject, watch } from 'vue'
 import { useData } from 'vitepress'
 const { theme } = useData()
 import TypeIt from 'typeit'
@@ -72,8 +73,15 @@ onMounted(() => {
       animation: { opacity: 0 }
     }
   }).go()
-  const firstViewHeight = theme.value?.home?.firstViewHeight || '100'
-  document.querySelector('.firstview').style.height = firstViewHeight + 'vh'
+  const isFocusMode = inject('isFocusMode')
+  watch(isFocusMode, (newVal) => {
+    const firstViewHeight = theme.value?.home?.firstViewHeight || '100'
+    const firstView = document.querySelector('.firstview')
+    if (firstView) {
+      firstView.style.height = newVal ? '' : firstViewHeight + 'vh'
+    }
+  })
+
 })
 
 onUnmounted(() => {
@@ -82,7 +90,6 @@ onUnmounted(() => {
 </script>
 <style>
 .firstview {
-  height: 50vh;
   display: flex;
   flex-direction: column;
   justify-content: center;

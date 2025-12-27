@@ -40,6 +40,7 @@ $time: 2.5s;
     display: flex;
     justify-content: center;
     align-items: center;
+
     .dot {
         position: absolute;
         left: 50%;
@@ -55,6 +56,7 @@ $time: 2.5s;
         @for $i from 2 through $n {
             &:nth-child(#{$i}) {
                 transform: rotate($pDeg * ($i - 1));
+
                 &::before,
                 &::after {
                     animation-delay: - calc($time / $n) * ($i - 1) * 6;
@@ -74,7 +76,7 @@ $time: 2.5s;
         }
 
         &::before {
-            background-color: red;
+            background-color: black;
             top: -100%;
             animation: rotation-black $time infinite;
 
@@ -101,7 +103,7 @@ $time: 2.5s;
         }
 
         &::after {
-            background-color: blueviolet;
+            background-color: whitesmoke;
             top: 100%;
             animation: rotation-white $time infinite;
 

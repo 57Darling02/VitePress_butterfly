@@ -205,4 +205,50 @@ onContentUpdated(() => {
   display: flex;
   overflow: hidden;
 }
+/* 为el-tree节点添加圆角样式 */
+.el-tree {
+  .el-tree-node {
+    border-radius: 8px;
+    margin: 2px 0;
+    
+    .el-tree-node__content {
+      border-radius: 8px;
+      padding: 4px 0;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: rgba(64, 158, 255, 0.08);
+        border-radius: 8px;
+      }
+    }
+    
+    &.is-current {
+      > .el-tree-node__content {
+        background-color: rgba(64, 158, 255, 0.12);
+        border-radius: 8px;
+      }
+    }
+  }
+  
+  /* 为锚点链接添加圆角 */
+  .el-anchor-link {
+    .el-anchor-link__title {
+      border-radius: 8px;
+      padding: 0 8px;
+      transition: all 0.2s ease;
+    }
+    
+    &.is-active {
+      .el-anchor-link__title {
+        background-color: rgba(64, 158, 255, 0.12);
+        border-radius: 8px;
+      }
+    }
+    
+    &:hover .el-anchor-link__title {
+      background-color: rgba(64, 158, 255, 0.08);
+      border-radius: 8px;
+    }
+  }
+}
 </style>
