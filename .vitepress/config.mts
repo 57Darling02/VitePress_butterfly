@@ -112,7 +112,6 @@ export default defineConfigWithTheme<ThemeConfig>({
   themeConfig: myconfig,
   ignoreDeadLinks: true,
   lastUpdated: true,
-  srcExclude: ['**/README.md', '**/模板.md'],
   vite: {
     ssr: {
       noExternal: ['element-plus']
