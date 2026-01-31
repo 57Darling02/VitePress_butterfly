@@ -8,7 +8,7 @@ import mathjax3 from 'markdown-it-mathjax3'
 let config;
 try {
   // 优先尝试导入 posts 下的配置
-  config = (await import('../posts/doc/site_config')).default;
+  config = (await import('../posts/site_config')).default;
 } catch (error) {
   // 导入失败（文件不存在/路径错），回退到根目录配置
   config = (await import('../site_config')).default;
