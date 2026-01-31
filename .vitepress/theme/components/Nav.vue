@@ -38,7 +38,7 @@ import { inject } from 'vue'
 const showNavbar = inject('showNavbar')
 
 const { menuItems } = theme.value
-const handleMenuClick = (item) => {
+const handleMenuClick = (item: any) => {
     if (item.children?.length) return
     if (item.link) {
         // 生成完整路径
@@ -70,11 +70,12 @@ $nav-bg: var(--vp-c-bg-elv);
 $border-radius: 50px;
 $transition-time: 0.5s;
 $hide-offset: 100%;
+$nav-gap: 4px;
 
 #nav {
-    height: $nav-height;
+    height: calc(#{$nav-height} - #{$nav-gap} * 2); 
     position: fixed;
-    top: 0;
+    top: $nav-gap;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
