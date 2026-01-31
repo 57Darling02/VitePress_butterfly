@@ -11,6 +11,7 @@
   },
   "scripts": {
     "dev": "vitepress dev --host 0.0.0.0",
+    "fetch-posts": "node scripts/fetch-posts.js",
     "preview": "vitepress preview",
     "docs:build": "vitepress build",
     "build": "vitepress build --outDir docs"
