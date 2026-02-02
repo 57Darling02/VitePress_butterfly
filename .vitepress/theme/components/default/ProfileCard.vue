@@ -33,7 +33,7 @@ const {
   socialLinks = [],
   border = true
 } = theme.value
-const defaultAvatar = '/default-avatar.png'
+const defaultAvatar = '\image\image.png'
 const handleAvatarError = (e) => {
   e.target.src = defaultAvatar
 }
