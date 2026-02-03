@@ -64,6 +64,7 @@ const formattedDate = computed(() => {
   width: fit-content;
   margin: 0 auto;
   background-color: rgba(var(--vp-c-bg-rgb), 0.5);
+  max-width: 80%;
 }
 
 #header-title {

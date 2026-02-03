@@ -22,11 +22,23 @@ jobs:
           POST_BRANCH: ${{ secrets.POST_BRANCH }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: yarn fetch-posts
+      - name: Check if Vercel Token exists
+        id: check-vercel-token
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "has_vercel_token=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_vercel_token=false" >> $GITHUB_OUTPUT
+          fi
       - name: Install Vercel CLI
+        if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
         run: npm install --global vercel@latest
       - name: Pull Vercel Environment Information
+        if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build Project Artifacts
+        if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy Project Artifacts to Vercel
+        if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
