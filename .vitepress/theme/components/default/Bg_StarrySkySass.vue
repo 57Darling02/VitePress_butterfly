@@ -13,12 +13,12 @@
 </template>
 <script lang='ts' setup>
 import { useData } from 'vitepress'
-import { inject, ref } from 'vue'
+import { inject, ref ,computed } from 'vue'
 const { theme } = useData()
 const BGIMG_url = theme.value.background || ''
 // 移动端状态
 const isMobile = inject('isMobile', ref(false))
-const bg_rainfall = theme.value.bg_rainfall && !isMobile.value
+const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
 
 </script>
 <style lang="scss" scoped>
