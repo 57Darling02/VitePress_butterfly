@@ -1,194 +1,155 @@
+# VitePress-Butterfly Theme
+
+<p align="center">
+  <img src="https://img.shields.io/badge/VitePress-1.6.3-646cff?style=flat-square&logo=vite&logoColor=white" alt="VitePress" />
+  <img src="https://img.shields.io/badge/Element%20Plus-2.9.5-409eff?style=flat-square&logo=element-plus&logoColor=white" alt="Element Plus" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
+</p>
+
+A card-style blog theme based on [VitePress](https://vitepress.dev/) and [Element Plus](https://element-plus.org/), inspired by the Butterfly theme. It supports both **Single Repository** (easiest to start) and **Dual Repository** (content separation) modes.
+
+Turn your Obsidian notes into a **dynamic blog** effortlessly!
+
+## ✨ Features
+
+- **Zero Config Start**: Just fork and write. No complex setup required for basic usage.
+- **Obsidian Friendly**: Seamless workflow for Obsidian users.
+- **Dual Modes**: 
+  - 📂 **Single Repo**: Simple and direct. Code and posts in one place.
+  - 🔗 **Dual Repo**: Advanced separation. Keep your source code public and posts private.
+- **Static Optimization**: Powered by Vite for blazing fast loading times.
+- **GitHub Actions**: Automated deployment workflow included.
+
+## 🚀 Quick Start (Single Repo Mode)
+
+**Recommended for most users.**
+
+1.  **Fork this repository** to your GitHub account.
+2.  **Rename** the repository to `[your-username].github.io` (optional, for default Pages URL).
+3.  **Clone** to your local machine:
+    ```bash
+    git clone https://github.com/your-username/VitePress-Butterfly.git
+    cd VitePress-Butterfly
+    ```
+4.  **Install Dependencies**:
+    ```bash
+    pnpm install
+    ```
+5.  **Start Writing**:
+    Create your Markdown files in the `posts/` directory.
+    ```bash
+    # Example: Create a new post
+    echo "# My First Post" > posts/hello-world.md
+    ```
+6.  **Run Dev Server**:
+    ```bash
+    pnpm dev
+    ```
+    Visit `http://localhost:5173` to see your blog.
+
+7.  **Deploy**:
+    Push your changes to GitHub. The included GitHub Actions workflow will automatically build and deploy your site.
+    *(Note: Ensure GitHub Pages source is set to "GitHub Actions" in your repository settings)*
+
 ---
-title: VitePress-Butterfly 主题 README
-date: 2024-05-20
-author: 57Darling02
-layout: doc
----
 
-# VitePress-Butterfly 主题
+## 🛠 Advanced Usage (Dual Repo Mode)
 
-基于VitePress和Element Plus的卡片式仿butterfly主题。
-结合obsidian成为**动态博客**方案！
+**For users who want to keep their Markdown source private or separate.**
 
-##  功能
+In this mode, this repository serves as the "Engine", and another repository serves as the "Content".
 
-- 静态博客，不需要服务器也能有自己的个人网站
-- vitepress完善的工作流自动构建，只需要首次配置
-- vite的静态资源自动优化，不需要图床也能够插入图片
-## 概览
-将静态博客和文章分成两个仓库，一个用于博客仓库通过将文章仓库作为子模块引入文章。博客仓库负责博客网页样式配置等，而文章仓库仅仅用于存放要发布的文章。
+### 1. Setup Content Repo
+Create a new repository (e.g., `blog-posts`) and put your Markdown files there.
 
+### 2. Configure Engine Repo
+In your "Engine" repository (this one), go to **Settings > Secrets and variables > Actions** and add:
 
-## 法一：快速从零开始搭建一个博客
+| Name | Description | Example |
+|------|-------------|---------|
+| `POST_REPO` | URL of your content repository | `https://github.com/username/blog-posts.git` |
+| `POST_BRANCH` | (Optional) Branch to fetch | `main` |
+| `PERSONAL_ACCESS_TOKEN` | (Required if private) GitHub PAT | `ghp_xxxxxx` |
 
-### 1.获取模板
-分别将下面两个模板项目fork到自己的仓库：
+### 3. Setup Auto-Trigger (Optional)
+To automatically rebuild your site when you push new posts to the **Content Repo**, you need to set up a workflow in your `blog-posts` repository.
 
-1. [57Darling02/blog-post(github.com)](https://github.com/57Darling02/blog-post)
-2. [57Darling02/VitePress_butterfly(github.com)](https://github.com/57Darling02/VitePress_butterfly)
+1.  In your **Content Repo**, create `.github/workflows/trigger.yml`.
+2.  Copy the content from `posts/.github/workflows/trigger.yml` (found in this repo) or use the template below:
+    ```yaml
+    name: Trigger Main Blog Repo Build
 
+    on:
+      push:
+        branches: [main]
 
-第一个用于存放文章，可以设为私密
-第二个放网页源码，必须公开，推荐命名为`[你的GITHUB账号.github.io]`
+    jobs:
+      trigger:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Trigger main repo build
+            uses: peter-evans/repository-dispatch@v3
+            with:
+              token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+              repository: username/VitePress-Butterfly  # Replace with your Engine Repo
+              event-type: blog-post-updated
+    ```
+3.  Add `PERSONAL_ACCESS_TOKEN` to your **Content Repo's** Secrets.
 
-
-### 2.配置变量
-
-##### 创建 GitHub 个人访问令牌（PAT）
-
-1. 打开 GitHub → 右上角头像 → `Settings` → `Developer settings` → `Personal access tokens` → `Tokens (classic)`；
-2. 点击 `Generate new token (classic)`；
-3. 配置：
-    - `Note`：填 `blog-access`；
-    - `Expiration`：选 `No expiration`（或按需设置）；
-    - `Scopes`：勾选 `repo`（全选 repo 相关权限）；
-4. 点击 `Generate token`，**复制生成的 Token（只显示一次，务必保存）**。
-##### 配置两个仓库的PAT和相关变量
-##### 将 PAT 添加到仓库的 Secrets
-
-1. 仓库 → `Settings` → `Secrets and variables` → `Actions` → `New repository secret`；
-2. `Name`：填 `PERSONAL_ACCESS_TOKEN`；
-3. `Value`：粘贴生成的 PAT；
-4. 点击 `Add secret`。
-
-两个仓库中都添加键值对
-`PERSONAL_ACCESS_TOKEN` 为键，对应值为 生成的PAT
-
-另外，在文章仓库中添加：
-`BLOG_REPO`为键，对应值为 "用户名/源码仓库" 如：
-`[你的GITHUB账号]/[你的GITHUB账号].github.io`
-或者
-`57Darling02/VitePress_butterfly
-
-在源码仓库中添加：
-`POST_REPO`为键，对应值为 "文章仓库链接" 如：
-`https://github.com/57Darling02/blog-post.git`
-
-### 3.修改博客配置
-在源码仓库中找到`site_config.ts`,copy一份到你的文章仓库，在修改`site_config.ts`对博客首页进行自定义配置。
-> 文章仓库的`site_config.ts`会优先起作用
-
-将网站变成你的形状😤修改 site_config.ts进行主题配置信息，更改首页背景图、网站名称、侧边栏个人信息等等。
-
-
-
-github page中改变部署来源为 action
-![[附件/Pasted image 20251225014512.png]]
-### 4.将文章仓库克隆到本地并写作
-
-github进入文章仓库中，将其克隆到本地
-例如：
+### 4. Local Development
+To fetch remote posts locally, set the environment variables before running the fetch script:
 ```bash
-git clone https://github.com/your-username/blog-post.git
-cd blog-post
+# Windows (PowerShell)
+$env:POST_REPO="https://github.com/username/blog-posts.git"; pnpm fetch-posts
+
+# Mac/Linux
+export POST_REPO="https://github.com/username/blog-posts.git" && pnpm fetch-posts
 ```
 
-写出你的第一篇文章
+## ⚙️ Configuration
 
-> [!Notice]
-> 只有配置了`layout: doc`才会发布在博客
-> 这意味着如果你不希望公开一篇博文，只要没有`layout: doc`即可
-```md
+### Site Config
+Edit `site_config.yml` in the root directory to customize your blog:
+
+```yaml
+site_name: "My Awesome Blog"
+author: "Your Name"
+socialLinks:
+  - name: 'GitHub'
+    icon: 'fa-brands fa-github'
+    url: 'https://github.com/...'
+# ... see file for more options
+```
+
+### Post Frontmatter
+Add these fields to the top of your Markdown files:
+
+```yaml
 ---
-title: 文章标题
+title: My Post Title
 date: 2024-03-20
-author: 作者
-layout: doc
----
-
-# Hello World!
-这是一篇文章，蛤蛤蛤！！！外币巴伯....
-
-```
-
-
-写完之后git上传到github即可。
-推荐使用obsidian，可以直接在obsidian中将克隆下来的文章仓库打开，并利用第三方插件git更快速的修改文章。
-
-> [!WARNING]
->  需要配置obsidian的内部链接类型为 **相对位置**，调整 **附件位置**
-
-![[附件/Pasted image 20251225014058.png]]
-
-
-
-
-
-### 自定义域名
-完成之前的步骤后，`[你的GITHUB账号]/[你的GITHUB账号].github.io`这个域名应该已经可用。但是如果你希望使用自己的域名，下面提供了两个方法。
-
-1. 使用github直接自定义域名。很方便不需要其他配置。
->[!WARNING]
->如果需要使用github托管多个静态网页，这种方法无法绑定多个域名。
-2. 使用vercel+github action,唯一缺点就是需要为vercel额外配置一些参数。
-
-
-
-#### 1.直接用github
-配置域名
-![[附件/Pasted image 20251225014856.png]]
-将域名的DNS指向github提供的服务器IP，具体IP请看：
-[管理 GitHub Pages 站点的自定义域 - GitHub 文档](https://docs.github.com/zh/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
-
-> [!TIPS]
-> 虽然文档中写顶级域名才直接用AAAA或者A记录，子域需要用CNAME，但如果你只有一个github page，那么直接给子域名添加A或AAAA记录也没问题。
-
-
-
-
-#### 2.Vercel部署
-如果要部署的网页不止一个，那么你的github page就无法将不同的页面映射到不同的域名上。此时需要借助vercel部署。
-
-模板的workflow中还有一个`vercel.yml`，还需要额外配置三个参数。
-`VERCEL_ORG_ID` `VERCEL_PROJECT_ID` `VERCEL_TOKEN`
-
-![[附件/Pasted image 20251225111143.png]]
-[Two Ways to Find Vercel ORG_ID and PROJECT_ID (codenote.net)](https://codenote.net/en/posts/how-to-find-vercel-org-project-ids/)
-简单来说：
-1. 在vercel中配置token
-2. 关联github仓库
-3. 获取`Project ID` 和`Team ID`
-	并将它们分别配置为`VERCEL_TOKEN` `VERCEL_TOKEN`和`VERCEL_ORG_ID`
-## 主题更新
-
-在源码仓库中点击更新上游即可
-
-
-或者使用命令行，打开源码仓库终端执行
-
-```bash
-git remote add upstream https://github.com/57Darling02/VitePress_butterfly.git
-
-git fetch upstream && git checkout main && git reset --hard upstream/main && git push origin main --force
-```
-
-
-### 目录结构
-
-```plainText
-Blog/                   # 项目根目录
-├── .vitepress/         # 主题组件 不会为这部分提供文档 (一般不用动)
-│   ├── theme/
-│   ├── site_config.ts  # 模板文件，可以复制到根目录下修改使用          
-│   ├── config.mjs   
-│   ├── index.js
-│   └── ...   
-├── site_config.ts     # 站点配置 自定义的配置，主要修改这个文件来配置站点信息
-├── posts/             # Markdown文章
-├── public/            # 静态资源 例如背景图片，例如 public/a.png 则配置中对应 /a.png
-└── package.json       # 依赖配置 (一般不用动)
-```
-### 文章规范
-
-```markdown
----
-title: 文章标题
-date: 2024-03-20
-author: 作者
-cover: url... 
-layout: doc # 可选布局
+author: Me
+layout: doc   # Required to show up in the blog list
+cover: /path/to/image.png # Optional
 ---
 ```
-贡献
-欢迎贡献代码和反馈问题。
 
+## 📂 Project Structure
+
+```text
+VitePress-Butterfly/
+├── .vitepress/          # Theme Core (avoid editing unless necessary)
+├── posts/               # Your Content (Markdown files go here)
+├── public/              # Static assets (images, favicon)
+├── scripts/             # Build scripts
+├── site_config.yml      # Main configuration file
+└── package.json
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+[MIT](LICENSE) © 2024-present 57Darling02
