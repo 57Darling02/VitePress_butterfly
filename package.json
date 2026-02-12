@@ -1,6 +1,7 @@
 {
   "devDependencies": {
     "@types/cross-spawn": "^6.0.6",
+    "@types/js-yaml": "^4.0.9",
     "element-plus": "^2.9.5",
     "markdown-it-mathjax3": "^4.3.2",
     "sass": "^1.89.0",
@@ -19,6 +20,7 @@
   "dependencies": {
     "cross-spawn": "^7.0.6",
     "element-plus": "^2.9.5",
+    "js-yaml": "^4.1.1",
     "lodash-es": "^4.17.21",
     "p-map": "^7.0.3",
     "typeit": "^8.8.7"

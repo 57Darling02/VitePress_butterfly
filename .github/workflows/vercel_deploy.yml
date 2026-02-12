@@ -1,7 +1,9 @@
 name: Vercel Production Deployment
+
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
 on:
   push:
     branches:
@@ -9,36 +11,49 @@ on:
   workflow_dispatch:
   repository_dispatch:  # 新增：监听 Repository Dispatch 事件
     types: [blog-post-updated]  # 匹配子模块仓库的 event-type
+
 jobs:
   Deploy-Production:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
       - name: Install Dependencies
-        run: yarn install
+        run: pnpm install --frozen-lockfile
+
       - name: Fetch Posts
         env:
-          POST_REPO: ${{ secrets.POST_REPO }}
-          POST_BRANCH: ${{ secrets.POST_BRANCH }}
-          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        run: yarn fetch-posts
+          POST_REPO: ${{ secrets['POST_REPO'] }}
+          POST_BRANCH: ${{ secrets['POST_BRANCH'] }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets['PERSONAL_ACCESS_TOKEN'] }}
+        run: pnpm fetch-posts
+
       - name: Check if Vercel Token exists
         id: check-vercel-token
         run: |
-          if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
+          if [ -n "${{ secrets['VERCEL_TOKEN'] }}" ]; then
             echo "has_vercel_token=true" >> $GITHUB_OUTPUT
           else
             echo "has_vercel_token=false" >> $GITHUB_OUTPUT
           fi
+
       - name: Install Vercel CLI
         if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
-        run: npm install --global vercel@latest
+        run: pnpm add -g vercel@latest
+
       - name: Pull Vercel Environment Information
         if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token=${{ secrets['VERCEL_TOKEN'] }}
+
       - name: Build Project Artifacts
         if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token=${{ secrets['VERCEL_TOKEN'] }}
+
       - name: Deploy Project Artifacts to Vercel
         if: steps.check-vercel-token.outputs.has_vercel_token == 'true'
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --token=${{ secrets['VERCEL_TOKEN'] }}

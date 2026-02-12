@@ -5,16 +5,12 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import mathjax3 from 'markdown-it-mathjax3'
-let config;
-try {
-  // 优先尝试导入 posts 下的配置
-  config = (await import('../posts/site_config')).default;
-} catch (error) {
-  // 导入失败（文件不存在/路径错），回退到根目录配置
-  config = (await import('../site_config')).default;
-}
+import { loadSiteConfig } from './theme/utils/configLoader'
 
-const myconfig = config.default || config;
+// 加载配置（不再依赖源码中的 TS 定义，而是直接读取 JSON）
+const rawConfig = loadSiteConfig();
+// 使用 ThemeConfig 类型断言，确保在编写 config.mts 时有类型提示
+const myconfig = rawConfig as ThemeConfig;
 
 
 const customElements = [

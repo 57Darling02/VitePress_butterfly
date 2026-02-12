@@ -1,0 +1,65 @@
+# Site Information
+site_name: "My Awesome Site"
+site_description: "这是一个使用 VitePress 构建的博客站点。"
+site_url: "/"
+author: "57Darling02"
+
+# Visual Experience
+defaultFocusMode: false        # 专注模式默认开关（开启后隐藏背景图）
+isDark: null                   # 默认主题色：null(跟随系统) | true(深色) | false(浅色)
+background: "/wallpaper/1.webp" # 全局背景图路径
+bg_rainfall: true              # 启用背景雨滴特效
+
+# Home Page Configuration
+home:
+  mainTitle: "My Site"
+  subTitles:
+    - "世界上只有一种英雄主义"
+    - "那就是在认清生活的真相后"
+    - "依然热爱生活"
+  firstViewHeight: 60          # 首屏高度百分比 (vh)，建议 60-100
+
+# Post List Configuration
+pageSize: 8                    # 每页显示文章数量
+sortedMethor: "date"           # 排序方式: "date" | "lastUpdated"
+
+lastUpdated:
+  use: true                    # 是否显示最后更新时间
+  text: ""                     # 自定义前缀文本
+
+# Sidebar Profile Card
+avatar: "https://resource-un4.pages.dev/article/yjtp.webp"
+name: "57Darling02"
+position: "NPC"                # 职位/角色标签
+bio: "红红火火恍恍惚惚"          # 个人简介
+socialLinks:
+  - name: "GitHub"
+    icon: "fa-brands fa-github"
+    url: "https://github.com/57Darling02/"
+
+# Navbar Configuration
+menuItems:
+  - label: "更多"
+    icon: "fa-solid fa-compass"
+    children:
+      - key: "tags"
+        label: "标签"
+        icon: "fa-solid fa-tags"
+        link: "/Tags/"
+      - key: "friends"
+        label: "友链"
+        icon: "fa-solid fa-user-group"
+        link: "/FriendLink/"
+
+# Friend Links
+friendlink:
+  - Name: "57Darling02的的博客"
+    Url: "https://57darling02.github.io"
+    Avatar: "http://q1.qlogo.cn/g?b=qq&nk=1628820774&s=100"
+    Desc: "这是一个示例博客描述"
+
+# Footer Configuration
+footer:
+  message: "Released under the MIT License."
+  copyright: "Copyright © 2025-present My Awesome Site"
+  createdTime: "2023-01-01"

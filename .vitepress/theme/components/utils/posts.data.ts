@@ -1,6 +1,8 @@
 import { createContentLoader } from "vitepress";
-import theme from "../../../../site_config";
+import { loadSiteConfig } from "../../utils/configLoader";
 import pMap from "p-map";
+
+const theme = loadSiteConfig() as any;
 import fs from "fs";
 import path from "path";
 import { spawn } from "cross-spawn";
@@ -8,7 +10,7 @@ const contentLoaderConfig = {
     includeSrc: true,
     render: true,
     excerpt: true,
-    async transform(rawData) {
+    async transform(rawData: any[]) {
         const filteredData = rawData.filter(page => page.frontmatter?.layout);
         const data = await pMap(
             filteredData,
@@ -30,7 +32,7 @@ const contentLoaderConfig = {
                     date: page.frontmatter.date,
                     link: page.url,
                     excerpt: excerpt,
-                    tags: (page.frontmatter.tags?.split(/[,\s]+/) ?? []).map(tag => tag.trim()),
+                    tags: (page.frontmatter.tags?.split(/[,\s]+/) ?? []).map((tag: string) => tag.trim()),
                     cover: page.frontmatter.cover || '',
                     lastUpdated: lastUpdated as number || new Date(page.frontmatter.date).getTime() || new Date().getTime(),
                     textNum,
@@ -59,9 +61,9 @@ export default loader;
 // export default createContentLoader('posts/**/*.md', contentLoaderConfig)
 
 // getLastUpdated function to fetch the last update time of a markdown file
-async function getLastUpdated(url) {
+async function getLastUpdated(url: string) {
     // Access global VITEPRESS_CONFIG
-    const siteConfig = globalThis.VITEPRESS_CONFIG;
+    const siteConfig = (globalThis as any).VITEPRESS_CONFIG;
 
     let file = url.replace(/(^|\/)$/, "$1index");
     file = file.replace(/(\.html)?$/, ".md");
