@@ -100,7 +100,7 @@ $nav-gap: 4px;
     display: flex;
     align-items: center; // 垂直居中
     height: 100%;
-    margin-left: auto;
+    margin: 0 auto; // 水平居中
     transition: all $transition-time ease;
     el-dropdown,
     .menu-group {
@@ -117,7 +117,7 @@ $nav-gap: 4px;
         display: flex;
         align-items: center; // 垂直居中
         line-height: 2;
-        margin-left: 20px;
+        margin: 0 10px; // 左右均匀间距，保持视觉平衡
         text-decoration: none;
     }
 

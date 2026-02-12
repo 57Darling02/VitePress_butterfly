@@ -115,7 +115,7 @@ const checkPageHeight = () => {
     const winHeight = scrollbarRef.value?.wrapRef?.clientHeight || 0
     if (docHeight <= winHeight) showFooter.value = true
 }
-const handleScroll = throttle(({ scrollTop }) => {
+const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
     if (!isMounted.value) return // 挂载前不处理
     const currentY = scrollTop
     const windowHeight = scrollbarRef.value?.wrapRef?.clientHeight || 0

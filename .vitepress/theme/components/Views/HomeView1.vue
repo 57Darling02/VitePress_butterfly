@@ -20,13 +20,15 @@
             <ArticleCard :post="post" />
           </div>
           <div style="display: flex;justify-content: center;">
-            <el-pagination hide-on-single-page :total="posts.length" :current-page="currentPage" :page-size="pageSize"
+            <el-pagination hide-on-single-page :total="filteredPosts.length" :current-page="currentPage" :page-size="pageSize"
               :pager-count="5" layout="prev, pager, next, jumper" @current-change="handleCurrentChange" background />
           </div>
         </ClientOnly>
       </template>
       <template #sidebar-stay>
         <ProfileCard />
+        <MenuCard />
+        <TagFilterCard :posts="posts" v-model:selectedTags="selectedTags" />
       </template>
     </DocView>
   </div>
@@ -39,18 +41,39 @@ const { theme } = useData()
 import TypeIt from 'typeit'
 import DocView from './DocView.vue'
 import ProfileCard from '../default/ProfileCard.vue'
+import MenuCard from '../default/MenuCard.vue'
+import TagFilterCard from '../default/TagFilterCard.vue'
 import ArticleCard from '../default/ArticleCard.vue'
 import { data as posts } from '../utils/posts.data.ts'
+
+// 标签筛选状态
+const selectedTags = ref([])
 
 // 分页状态
 const currentPage = ref(1)
 const pageSize = ref(theme.value.pageSize || 8)  // 每页最多8条
 
-// 计算当前页显示的帖子
+// 计算过滤后的文章
+const filteredPosts = computed(() => {
+  if (selectedTags.value.length === 0) {
+    return posts
+  }
+  return posts.filter(post => {
+    if (!post.tags) return false
+    return selectedTags.value.some(tag => post.tags.includes(tag))
+  })
+})
+
+// 计算当前页显示的帖子（基于过滤后的结果）
 const currentPosts = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return posts.slice(start, end)
+  return filteredPosts.value.slice(start, end)
+})
+
+// 当标签筛选变化时，重置页码
+watch(selectedTags, () => {
+  currentPage.value = 1
 })
 
 // 分页切换事件
