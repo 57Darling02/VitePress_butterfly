@@ -1,21 +1,14 @@
-# 构建 VitePress 站点并将其部署到 GitHub Pages 的示例工作流程
-#
 name: Deploy VitePress site to Pages
 
 on:
-  # 在针对 `main` 分支的推送上运行。如果你
-  # 使用 `master` 分支作为默认分支，请将其更改为 `master`
   push:
     branches: [main]
-
-  # 允许你从 Actions 选项卡手动运行此工作流程
   workflow_dispatch:
-  repository_dispatch:  # 新增：监听 Repository Dispatch 事件
-    types: [blog-post-updated]  # 匹配子模块仓库的 event-type
+  repository_dispatch:
+    types: [blog-post-updated]
 
-# 设置 GITHUB_TOKEN 的权限，以允许部署到 GitHub Pages
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -30,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -46,22 +39,43 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Fetch Posts
+      - name: Fetch Posts (optional)
         env:
           POST_REPO: ${{ secrets['POST_REPO'] }}
           POST_BRANCH: ${{ secrets['POST_BRANCH'] }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets['PERSONAL_ACCESS_TOKEN'] }}
         run: pnpm fetch-posts
+        continue-on-error: true
 
       - name: Build with VitePress
         run: pnpm docs:build
 
-      - name: Upload artifact
+      - name: Package site bundle
+        run: |
+          tar -czf vitepress-dist.tar.gz -C .vitepress dist
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .vitepress/dist
 
-  # 部署工作
+      - name: Upload run artifact (downloadable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitepress-dist-${{ github.run_number }}
+          path: vitepress-dist.tar.gz
+          retention-days: 14
+
+      - name: Publish bundle to Release (latest)
+        uses: softprops/action-gh-release@v2
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        with:
+          tag_name: site-build-latest
+          name: Site Build Latest
+          body: Automated bundle from commit ${{ github.sha }}
+          files: vitepress-dist.tar.gz
+
   deploy:
     environment:
       name: github-pages
