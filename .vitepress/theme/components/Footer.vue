@@ -85,7 +85,8 @@ onUnmounted(() => {
     justify-content: center;
     padding: 10px;
     padding-top: 25px;
-    width: 80%;
+    width: 98%;
+    max-width: 1190px;
     position: fixed;
     bottom: 10px;
     left: 50%;

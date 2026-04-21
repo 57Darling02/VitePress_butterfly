@@ -57,7 +57,7 @@ const formattedDate = computed(() => {
   border-radius: 8px;
   margin-bottom: 2rem;
   display: flex;
-  animation: fadeInUp 1s ease-in-out 0.2s forwards;
+  
   display: flex;
   flex-direction: column;
   align-items: center;

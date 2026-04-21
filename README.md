@@ -16,7 +16,7 @@
 
 ### 1. 写文章与基础配置
 
-1. 把文章放到仓库根目录 `posts/` 下即可，本地文章不要求 `layout: doc`。
+1. 把文章放到仓库根目录 `posts/` 下即可。
 2. 根目录 `site_config.yml` 用于定制网站效果（站点名称、首页文案、菜单、页脚等）。
 
 ### 2. 本地部署（可跳过）
@@ -66,22 +66,23 @@ npm run build
    - `VERCEL_PROJECT_ID`
    - `VERCEL_TOKEN`
 
-### 4. 进阶用法：外联知识库（可选）
+### 4. 进阶用法：外联知识库（推荐/可选）
 
-你可以把 Markdown 知识库仓库作为外部内容源接入本项目。
+你可以把 Markdown 知识库仓库作为外部内容源，快速同步至本项目。
 
 注意：
-1. 该功能依赖第 3 节的工作流托管。
-2. 启用外联知识库后，本仓库 `posts/` 本地文章会被忽略，构建内容来自外联仓库。
+1. 每次同步外部知识库内容， `posts/` 本地文章会被覆盖。
+2. 该功能适配第 3 节的工作流托管。托管方案会在每次构建时自动同步知识库内容。
 
-#### 4.1 关联知识库
+#### 4.1 关联和同步知识库
 
 在 GitHub 仓库 `Settings -> Secrets and variables -> Actions` 配置Repository secrets：
 1. `WIKI_URL`：知识库仓库 Git URL（例如 `https://github.com/yourname/your-wiki.git`）
 2. `WIKI_BRANCH`：可选，默认 `main`
 3. `PAT`：可选，私有仓库需要
+使用托管方案不需要手动同步知识库
 
-#### 4.1.1 开发者本地测试关联脚本
+#### 4.1.1 本地同步知识库
 
 Windows PowerShell:
 
@@ -101,19 +102,29 @@ export PAT="ghp_xxx" # 私有仓库时需要
 npm run fetch-posts
 ```
 
-#### 4.2 公开文章规则
+#### 4.2 规则
 
+4.2.1 公开文章
 外联知识库并不会全部公开。  
 仅当 Markdown 能正确解析 frontmatter，且包含 `layout: doc` 时，该文章会被保留并展示到网站。
+
+4.2.2 配置文件优先级
+如果知识库根目录中存在 `site_config.yml`，将被优先使用（忽略本仓库的`site_config.yml`配置）。
+因此，推荐将`site_config.yml`复制进知识库根目录中，则可以使用`update_theme.sh`快速更新样式。
 
 #### 4.3 知识库更新后自动同步网站
 
 本仓库工作流监听 `repository_dispatch` 的 `contents-updated` 事件。  
 你可以在知识库仓库配置一个触发工作流，在更新后通知博客仓库重建。
+需要在触发方仓库（文章/知识库仓库）添加 
+1. `BLOG_REPO` secret，值为目标博客仓库全名（`owner/repo`）
+2. `PAT` secret。
+
 
 示例：
 
 ```yaml
+# Place this workflow in your content/wiki repository (not the blog repo).
 name: Trigger Blog Rebuild
 
 on:
@@ -127,10 +138,11 @@ jobs:
       - name: Dispatch event to blog repo
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.PAT }}
-          repository: yourname/your-blog-repo
+          token: ${{ secrets.PAT }} # PAT stored in the content/wiki repo
+          repository: ${{ secrets.BLOG_REPO }} # e.g. 57Darling02/57Darling02.github.io
           event-type: contents-updated
 ```
+
 
 ---
 
