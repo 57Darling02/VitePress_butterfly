@@ -6,6 +6,24 @@ const theme = loadSiteConfig() as any;
 import fs from "fs";
 import path from "path";
 import { spawn } from "cross-spawn";
+
+function normalizeTags(rawTags: unknown): string[] {
+    if (Array.isArray(rawTags)) {
+        return rawTags
+            .flatMap((tag) => normalizeTags(tag))
+            .filter(Boolean);
+    }
+
+    if (typeof rawTags === "string") {
+        return rawTags
+            .split(/[,\s]+/)
+            .map((tag) => tag.trim())
+            .filter(Boolean);
+    }
+
+    return [];
+}
+
 const contentLoaderConfig = {
     includeSrc: true,
     render: true,
@@ -31,7 +49,7 @@ const contentLoaderConfig = {
                     date: page.frontmatter.date,
                     link: page.url,
                     excerpt: excerpt,
-                    tags: (page.frontmatter.tags?.split(/[,\s]+/) ?? []).map((tag: string) => tag.trim()),
+                    tags: normalizeTags(page.frontmatter?.tags),
                     cover: page.frontmatter.cover || '',
                     lastUpdated: lastUpdated as number || new Date(page.frontmatter.date).getTime() || new Date().getTime(),
                     textNum,
