@@ -28,6 +28,14 @@ function main() {
     console.log(
       `[fetch-posts] markdown scanned: ${result.scanned}, kept: ${result.kept}, removed: ${result.removed}`
     );
+    if (result.keptFiles.length > 0) {
+      console.log('[fetch-posts] kept markdown files:');
+      for (const file of result.keptFiles) {
+        console.log(`  - ${file}`);
+      }
+    } else {
+      console.log('[fetch-posts] kept markdown files: (none)');
+    }
     return;
   }
 
@@ -61,10 +69,13 @@ function sanitizeMarkdownPosts(directory) {
   const files = listMarkdownFiles(directory);
   let kept = 0;
   let removed = 0;
+  const keptFiles = [];
 
   for (const file of files) {
     if (shouldKeepMarkdown(file)) {
       kept += 1;
+      const relativePath = path.relative(directory, file).split(path.sep).join('/');
+      keptFiles.push(relativePath);
       continue;
     }
 
@@ -76,6 +87,7 @@ function sanitizeMarkdownPosts(directory) {
     scanned: files.length,
     kept,
     removed,
+    keptFiles,
   };
 }
 
