@@ -11,9 +11,8 @@ const contentLoaderConfig = {
     render: true,
     excerpt: true,
     async transform(rawData: any[]) {
-        const filteredData = rawData.filter(page => page.frontmatter?.layout);
         const data = await pMap(
-            filteredData,
+            rawData,
             async (page: any) => {
                 const lastUpdated = await getLastUpdated(page.url);
                 let excerpt = page.excerpt

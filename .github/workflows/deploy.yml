@@ -1,20 +1,24 @@
-name: Deploy VitePress site to Pages
+name: Deploy Site
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
   repository_dispatch:
-    types: [blog-post-updated]
+    types: [contents-updated]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 concurrency:
-  group: pages
+  group: site-deploy
   cancel-in-progress: false
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
   build:
@@ -41,49 +45,79 @@ jobs:
 
       - name: Fetch Posts (optional)
         env:
-          POST_REPO: ${{ secrets['POST_REPO'] }}
-          POST_BRANCH: ${{ secrets['POST_BRANCH'] }}
-          PERSONAL_ACCESS_TOKEN: ${{ secrets['PERSONAL_ACCESS_TOKEN'] }}
+          WIKI_URL: ${{ secrets.WIKI_URL }}
+          WIKI_BRANCH: ${{ secrets.WIKI_BRANCH }}
+          PAT: ${{ secrets.PAT }}
         run: pnpm fetch-posts
         continue-on-error: true
 
       - name: Build with VitePress
         run: pnpm docs:build
 
-      - name: Package site bundle
-        run: |
-          tar -czf vitepress-dist.tar.gz -C .vitepress dist
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .vitepress/dist
 
-      - name: Upload run artifact (downloadable)
+      - name: Upload reusable site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vitepress-dist-${{ github.run_number }}
-          path: vitepress-dist.tar.gz
-          retention-days: 14
+          name: site-dist
+          path: .vitepress/dist
+          retention-days: 7
 
-      - name: Publish bundle to Release (latest)
-        uses: softprops/action-gh-release@v2
-        if: github.event_name != 'pull_request'
-        continue-on-error: true
-        with:
-          tag_name: site-build-latest
-          name: Site Build Latest
-          body: Automated bundle from commit ${{ github.sha }}
-          files: vitepress-dist.tar.gz
-
-  deploy:
+  deploy-pages:
+    name: Deploy GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    name: Deploy
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-vercel:
+    name: Deploy Vercel (optional)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Vercel config
+        id: vercel-check
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ] && [ -n "${{ secrets.VERCEL_ORG_ID }}" ] && [ -n "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip Vercel deploy (missing config)
+        if: steps.vercel-check.outputs.enabled != 'true'
+        run: echo "Skip Vercel deploy because VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID is not fully configured."
+
+      - name: Download built site artifact
+        if: steps.vercel-check.outputs.enabled == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: site-dist
+          path: .site-dist
+
+      - name: Setup Node
+        if: steps.vercel-check.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Vercel CLI
+        if: steps.vercel-check.outputs.enabled == 'true'
+        run: npm install -g vercel@latest
+
+      - name: Deploy static build to Vercel
+        if: steps.vercel-check.outputs.enabled == 'true'
+        run: |
+          TARGET_DIR=".site-dist"
+          if [ -d ".site-dist/dist" ]; then
+            TARGET_DIR=".site-dist/dist"
+          fi
+          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} "$TARGET_DIR"
