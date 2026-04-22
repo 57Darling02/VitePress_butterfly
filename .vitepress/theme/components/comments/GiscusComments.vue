@@ -40,7 +40,7 @@ interface ParsedGiscusConfig {
     loading: string
 }
 
-const { theme, frontmatter } = useData<ThemeConfig>()
+const { theme, frontmatter, isDark } = useData<ThemeConfig>()
 const comments = computed(() => theme.value.comments)
 const page = computed(() => frontmatter.value as DocFrontmatter)
 
@@ -67,6 +67,11 @@ const giscus = computed<ParsedGiscusConfig>(() => {
     const mapping = page.value.commentId ? 'specific' : (readAttr(script, 'data-mapping') || 'pathname')
     const term = page.value.commentId ? String(page.value.commentId) : readAttr(script, 'data-term')
 
+    const configuredTheme = readAttr(script, 'data-theme') || 'preferred_color_scheme'
+    const resolvedTheme = configuredTheme === 'preferred_color_scheme'
+        ? (isDark.value ? 'dark' : 'light')
+        : configuredTheme
+
     return {
         host,
         repo: readAttr(script, 'data-repo') || '',
@@ -79,7 +84,7 @@ const giscus = computed<ParsedGiscusConfig>(() => {
         reactionsEnabled: readAttr(script, 'data-reactions-enabled') || '1',
         emitMetadata: readAttr(script, 'data-emit-metadata') || '0',
         inputPosition: readAttr(script, 'data-input-position') || 'bottom',
-        theme: readAttr(script, 'data-theme') || 'preferred_color_scheme',
+        theme: resolvedTheme,
         lang: readAttr(script, 'data-lang') || 'zh-CN',
         loading: readAttr(script, 'data-loading') || 'lazy',
     }
