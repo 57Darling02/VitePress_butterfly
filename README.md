@@ -152,7 +152,7 @@ jobs:
 
 根目录 `site_config.yml`为配置文件，推荐将其复制到posts/或关联知识库的根目录中修改：
 
-1.配置网站标题、作者名称和社交链接。
+#### 1.配置网站标题、作者名称和社交链接。
 进入[fontawesome](https://fontawesome.com/search)选取自己喜欢的图标。
 
 ```yaml
@@ -164,7 +164,7 @@ socialLinks:
     url: "https://github.com/..."
 ```
 
-2.配置资源
+#### 2.配置资源
 
 在posts/public 或 知识库根目录/public下放置图片，即可直接使用。
 
@@ -184,9 +184,8 @@ avatar: "https://resource-un4.pages.dev/article/yjtp.webp"
 
 
 
-### Post Frontmatter（推荐）
-
-虽然本地模式不强制 `layout: doc`，但建议为文章补充 frontmatter，获得更完整的展示效果：
+### 写文章
+#### 1.设置文章属性
 
 ```yaml
 ---
@@ -197,6 +196,17 @@ layout: doc
 cover: /path/to/image.png
 ---
 ```
+1.1 外联知识库时，`layout: doc`才会被发布
+1.2 cover封面不能直接使用文章内部的插图！可以使用public或者网络图片
+
+#### 2.文章内部插图
+
+文章内部插图相对简单，只需要使用相对位置即可。obsidian配置如图：![alt text](public\image\image1.png)
+
+
+### 更多有趣的文章呈现
+好玩又有用的文字展示效果、甚至嵌入自己写的网页或vue组件，
+参考 👉[文档](https://vitepress.dev/zh/guide/markdown)
 
 ### Project Structure
 

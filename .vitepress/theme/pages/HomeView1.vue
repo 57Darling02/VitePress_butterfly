@@ -196,5 +196,16 @@ onUnmounted(() => {
   border-color: transparent !important;
 }
 
+@media (max-width: 480px) {
+  .firstview-profile {
+    display: flex;
+    justify-content: center;
+  }
+
+  .firstview-profile .profile-card {
+    margin: 0 auto;
+  }
+}
+
 
 </style>
