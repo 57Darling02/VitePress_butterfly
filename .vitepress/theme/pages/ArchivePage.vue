@@ -44,8 +44,8 @@
 </template>
 <script setup>
 import { ref, computed } from 'vue'
-import { data as posts } from '../utils/posts.data.ts'
-import ArticleCard from '../default/ArticleCard.vue'
+import { data as posts } from '../data/posts.data.ts'
+import ArticleCard from '../components/cards/ArticleCard.vue'
 
 const Tags = ref([])
 const ExclusionList = ref([])

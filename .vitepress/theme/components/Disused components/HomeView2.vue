@@ -30,9 +30,9 @@
 </template>
 <script lang='ts' setup>
 import { inject } from 'vue';
-import { data as posts } from '../utils/posts.data.ts'
-import ArticleCard from '../default/ArticleCard.vue';
-import ProfileCard from '../default/ProfileCard.vue';
+import { data as posts } from '../../data/posts.data.ts'
+import ArticleCard from '../cards/ArticleCard.vue';
+import ProfileCard from '../cards/ProfileCard.vue';
 import { useData } from 'vitepress'
 const { theme, frontmatter, page } = useData()
 

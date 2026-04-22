@@ -1,5 +1,5 @@
 // import { defineConfig } from 'vitepress'
-import ThemeConfig from './theme/ts/ThemeConfig'
+import ThemeConfig from './theme/types/ThemeConfig'
 import { defineConfigWithTheme } from 'vitepress'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'

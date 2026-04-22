@@ -33,10 +33,10 @@
 <script lang='ts' setup>
 import { onContentUpdated, useData } from 'vitepress'
 import { computed, inject, onMounted, ref } from 'vue'
-import DocView from './DocView.vue'
-import Toc from '../Toc.vue'
-import ProfileCard from '../default/ProfileCard.vue'
-import PostInfo from '../default/PostInfo.vue'
+import DocView from '../layouts/DocView.vue'
+import Toc from '../components/navigation/Toc.vue'
+import ProfileCard from '../components/cards/ProfileCard.vue'
+import PostInfo from '../components/cards/PostInfo.vue'
 const data = useData()
 const frontmatter = computed(() => data.frontmatter.value)
 const isFocusMode = inject('isFocusMode')

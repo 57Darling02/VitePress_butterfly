@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useData } from 'vitepress'
 const { theme, lang } = useData()
-import VPDocFooterLastUpdated from './VPDocFooterLastUpdated.vue'
+import VPDocFooterLastUpdated from '../controls/VPDocFooterLastUpdated.vue'
 const props = defineProps({
     post: {
         type: Object,

@@ -61,14 +61,14 @@ import { inject, onMounted, onUnmounted, ref } from 'vue'
 import { throttle } from 'lodash-es'
 import { useData, onContentUpdated } from 'vitepress'
 const { theme, page, frontmatter, isDark } = useData()
-import Nav from './components/Nav.vue'
-import Footer from './components/Footer.vue'
-import MainView from './components/Views/MainView.vue'
-import NotFound from './components/Views/NotFound.vue'
-import Loading from './components/default/Loading.vue'
-import Toc from './components/Toc.vue'
+import Nav from '../components/navigation/Nav.vue'
+import Footer from '../components/navigation/Footer.vue'
+import MainView from '../pages/MainView.vue'
+import NotFound from '../pages/NotFound.vue'
+import Loading from '../components/effects/Loading.vue'
+import Toc from '../components/navigation/Toc.vue'
 
-import Bg_StarrySkySass from './components/default/Bg_StarrySkySass.vue'
+import Bg_StarrySkySass from '../components/effects/Bg_StarrySkySass.vue'
 import { useRouter } from 'vitepress'
 const router = useRouter()
 // 获取全局状态
@@ -85,11 +85,11 @@ const scrollbarRef = ref()
 const contentContainer = ref()
 isDark.value = theme.value.isDark || isDark.value
 
-import VPNavBarHamburger from './components/default/VPNavBarHamburger.vue'
+import VPNavBarHamburger from '../components/controls/VPNavBarHamburger.vue'
 const controlVisible = ref(false)
-import VPSwitchAppearance from './components/default/VPSwitchAppearance.vue'
-import ToggleFocusModeBTN from './components/default/ToggleFocusModeBTN.vue'
-import ToggleSiderBar from './components/default/ToggleSiderBar.vue'
+import VPSwitchAppearance from '../components/controls/VPSwitchAppearance.vue'
+import ToggleFocusModeBTN from '../components/controls/ToggleFocusModeBTN.vue'
+import ToggleSiderBar from '../components/controls/ToggleSiderBar.vue'
 
 // 窗口宽度状态和尺寸变化处理
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 0)

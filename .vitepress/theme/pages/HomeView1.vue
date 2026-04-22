@@ -39,12 +39,12 @@ import { ref, onMounted, onUnmounted, computed, inject, watch } from 'vue'
 import { useData } from 'vitepress'
 const { theme } = useData()
 import TypeIt from 'typeit'
-import DocView from './DocView.vue'
-import ProfileCard from '../default/ProfileCard.vue'
-import MenuCard from '../default/MenuCard.vue'
-import TagFilterCard from '../default/TagFilterCard.vue'
-import ArticleCard from '../default/ArticleCard.vue'
-import { data as posts } from '../utils/posts.data.ts'
+import DocView from '../layouts/DocView.vue'
+import ProfileCard from '../components/cards/ProfileCard.vue'
+import MenuCard from '../components/cards/MenuCard.vue'
+import TagFilterCard from '../components/cards/TagFilterCard.vue'
+import ArticleCard from '../components/cards/ArticleCard.vue'
+import { data as posts } from '../data/posts.data.ts'
 
 // 标签筛选状态
 const selectedTags = ref([])

@@ -24,8 +24,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useData } from 'vitepress'
-import { data as posts } from '../utils/posts.data.ts'
-import VPDocFooterLastUpdated from './VPDocFooterLastUpdated.vue'
+import { data as posts } from '../../data/posts.data.ts'
+import VPDocFooterLastUpdated from '../controls/VPDocFooterLastUpdated.vue'
 
 const { frontmatter, theme, page } = useData()
 

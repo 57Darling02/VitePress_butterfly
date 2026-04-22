@@ -1,5 +1,5 @@
 import { createContentLoader } from "vitepress";
-import { loadSiteConfig } from "../../utils/configLoader";
+import { loadSiteConfig } from "../utils/configLoader";
 import pMap from "p-map";
 
 const theme = loadSiteConfig() as any;

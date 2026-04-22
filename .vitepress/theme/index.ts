@@ -5,10 +5,10 @@ import DefaultTheme from 'vitepress/theme'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/display.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
-import Layout from './Layout.vue'
+import Layout from './layouts/AppLayout.vue'
 import './css/style.css'
 import '../static/fontawesome/css/all.min.css'
-import useVisitData from './ts/useVisitData'
+import useVisitData from './composables/useVisitData'
 
 export default {
   
