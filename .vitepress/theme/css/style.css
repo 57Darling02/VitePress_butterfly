@@ -15,6 +15,11 @@
   --vp-c-bg-rgb: 255, 255, 255;
 }
 
+html:not(.dark) {
+  --vp-c-bg: #f8f8f8;
+  --vp-c-bg-rgb: 250, 250, 250;
+}
+
 .dark {
   --vp-c-bg-rgb: 18, 18, 18;
 }

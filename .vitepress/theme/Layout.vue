@@ -1,6 +1,6 @@
 <template>
     <Loading v-if="!isMounted" />
-    <Bg_StarrySkySass v-if="!isFocusMode" />
+    <Bg_StarrySkySass v-if="!isFocusMode && !isDark" />
     <el-scrollbar height="100vh" ref="scrollbarRef" @scroll="handleScroll" wrap-style="max-width:100vw;" noresize>
         <el-header height="var(--nav-height)">
             <ClientOnly>

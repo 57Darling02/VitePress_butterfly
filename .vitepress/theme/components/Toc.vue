@@ -30,6 +30,40 @@ interface Node {
 
 const headers = shallowRef<Node[]>([])
 
+const normalizeAnchor = (anchor: string): string => {
+  if (!anchor) return ''
+  const hashIndex = anchor.indexOf('#')
+  return hashIndex >= 0 ? anchor.slice(hashIndex) : anchor
+}
+
+const findPathToNode = (nodes: Node[], target: string, path: string[] = []): string[] => {
+  for (const node of nodes) {
+    const currentPath = [...path, node.value]
+    if (node.value === target) return currentPath
+    if (node.children.length > 0) {
+      const childPath = findPathToNode(node.children, target, currentPath)
+      if (childPath.length > 0) return childPath
+    }
+  }
+  return []
+}
+
+const syncExpandedToCurrent = (anchor: string): void => {
+  const key = normalizeAnchor(anchor)
+  if (!key) return
+
+  const currentPath = findPathToNode(headers.value, key)
+  const expandedKeys = new Set(currentPath)
+  const treeStore = (treeRef.value as any)?.store
+  const nodesMap = treeStore?.nodesMap
+  if (!nodesMap) return
+
+  Object.values(nodesMap).forEach((node: any) => {
+    if (!node?.data?.children?.length) return
+    node.expanded = expandedKeys.has(node.key)
+  })
+}
+
 // 获取页面标题
 const getHeaders = (range: any): Node[] => {
   if (range === false) {
@@ -99,10 +133,12 @@ const buildTree = (data: Node[], min: number, max: number): Node[] => {
 const anchor_change = (e: string): void => {
   if (typeof window === 'undefined') return
   
-  treeRef.value?.setCurrentKey(e)
+  const currentAnchor = normalizeAnchor(e)
+  treeRef.value?.setCurrentKey(currentAnchor)
+  syncExpandedToCurrent(currentAnchor)
   
   nextTick(() => {
-    window.history.replaceState(null, '', e)
+    window.history.replaceState(null, '', currentAnchor)
     move2current_anchor()
   })
 }
@@ -141,11 +177,23 @@ const move2current_anchor = (): void => {
 onMounted(() => {
   scrollContainer.value = getScrollContainer()
   headers.value = getHeaders(frontmatter.value.outline ?? theme.value.outline ?? 'deep')
+  nextTick(() => {
+    const currentHash = typeof window === 'undefined' ? '' : normalizeAnchor(window.location.hash)
+    if (!currentHash) return
+    treeRef.value?.setCurrentKey(currentHash)
+    syncExpandedToCurrent(currentHash)
+  })
 })
 
 // 监听内容更新
 onContentUpdated(() => {
   headers.value = getHeaders(frontmatter.value.outline ?? theme.value.outline ?? 'deep')
+  nextTick(() => {
+    const currentHash = typeof window === 'undefined' ? '' : normalizeAnchor(window.location.hash)
+    if (!currentHash) return
+    treeRef.value?.setCurrentKey(currentHash)
+    syncExpandedToCurrent(currentHash)
+  })
 })
 </script>
 
@@ -167,7 +215,7 @@ onContentUpdated(() => {
       :container="scrollContainer"
       :offset="45"
       direction="vertical"
-      style="background-color: transparent; min-height: 0; height: 100%; display: flex; flex-direction: column;"
+      style="background-color: transparent; min-height: 0; flex: 1; display: flex; flex-direction: column;"
       :marker="false"
       :select-scroll-top="true"
       @change="anchor_change"

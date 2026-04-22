@@ -27,8 +27,8 @@
       </template>
       <template #sidebar-stay>
         <ProfileCard />
-        <MenuCard />
         <TagFilterCard :posts="posts" v-model:selectedTags="selectedTags" />
+        <MenuCard />
       </template>
     </DocView>
   </div>

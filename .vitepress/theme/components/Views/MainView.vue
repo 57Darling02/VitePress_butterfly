@@ -21,7 +21,8 @@
                 </template>
                 <template #sidebar-stay>
                     <div class="fade-item" style="--delay:0.5s">
-                        <Toc class="a-card" style="height: 80vh;display: flex;flex-direction: column;padding: 18px;"/>
+                        <Toc class="a-card"
+                            :style="{ height: isFocusMode ? '90vh' : '40vh', display: 'flex', flexDirection: 'column', padding: '18px' }" />
                     </div>
                 </template>
             </DocView>
