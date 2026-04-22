@@ -25,10 +25,11 @@
 </template>
 
 <script setup lang="ts">
-import { useData } from 'vitepress'
+import { useData, useRouter } from 'vitepress'
 import { ref, onMounted } from 'vue'
 
 const { theme } = useData()
+const router = useRouter()
 const { menuItems } = theme.value
 
 // 展开状态管理
@@ -66,16 +67,18 @@ const handleSubMenuClick = (item: any) => {
 }
 
 const navigate = (link: string) => {
-  const basePath = window.location.origin
-  const fullPath = link.startsWith('/')
-    ? `${basePath}${link}`
-    : link
-    
-  if (fullPath.startsWith(basePath)) {
-    window.open(fullPath, '_self')
-  } else {
-    window.open(fullPath, '_blank')
+  if (typeof window === 'undefined') return
+
+  const targetUrl = new URL(link, window.location.href)
+  const fullPath = targetUrl.toString()
+  const isInternalLink = targetUrl.origin === window.location.origin
+
+  if (isInternalLink) {
+    void router.go(`${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`)
+    return
   }
+
+  window.open(fullPath, '_blank')
 }
 </script>
 

@@ -1,7 +1,7 @@
 <template>
     <div id="nav" :class="{ 'nav-hidden': !showNavbar }">
         <div id="menu">
-            <a class="menu-fitem" href="/">
+            <a class="menu-fitem" href="/" @click.prevent="handleHomeClick">
                 <span>
                     <i class="fa-solid fa-house"></i>{{ showSidebar ? '首页' : '' }}
                 </span>
@@ -59,12 +59,13 @@
 
 <script lang="ts" setup>
 import type { DropdownInstance } from 'element-plus'
-import { useData } from 'vitepress'
+import { useData, useRouter } from 'vitepress'
 import { computed, inject, onBeforeUnmount, ref } from 'vue'
 import type ThemeConfig from '../../types/ThemeConfig'
 import APlayerWidget from '../player/APlayerWidget.vue'
 
 const { theme } = useData<ThemeConfig>()
+const router = useRouter()
 const showNavbar = inject('showNavbar')
 const showSidebar = inject('showSidebar', ref(true))
 const menuItems = computed(() => (theme.value.menuItems || []) as any[])
@@ -155,18 +156,37 @@ const musicPlayer = computed(() => {
 })
 const shouldShowMusicPlayer = computed(() => musicPlayer.value.enabled && Boolean(musicPlayer.value.url))
 
-const handleMenuClick = (item: any) => {
+const isModifiedEvent = (event?: MouseEvent) => {
+    if (!event) return false
+    return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0
+}
+
+const navigateTo = (link: string, event?: MouseEvent) => {
+    if (typeof window === 'undefined') return
+
+    const targetUrl = new URL(link, window.location.href)
+    const isInternalLink = targetUrl.origin === window.location.origin
+    const targetPath = `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`
+
+    if (isInternalLink && !isModifiedEvent(event)) {
+        void router.go(targetPath)
+        return
+    }
+
+    const targetWindow = isInternalLink ? '_self' : '_blank'
+    window.open(targetUrl.toString(), targetWindow, isInternalLink ? undefined : 'noopener,noreferrer')
+}
+
+const handleHomeClick = (event: MouseEvent) => {
+    navigateTo('/', event)
+}
+
+const handleMenuClick = (item: any, event?: MouseEvent) => {
     closeMenuPanel()
     if (item.children?.length) return
     if (!item.link) return
 
-    const basePath = window.location.origin
-    const fullPath = item.link.startsWith('/') ? `${basePath}${item.link}` : item.link
-    if (fullPath.startsWith(basePath)) {
-        window.open(fullPath, '_self')
-    } else {
-        window.open(fullPath, '_blank')
-    }
+    navigateTo(item.link, event)
 }
 
 const syncRectFromElement = (
