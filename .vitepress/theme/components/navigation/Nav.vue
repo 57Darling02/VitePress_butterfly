@@ -7,9 +7,9 @@
                 </span>
             </a>
             <div class="dropitem">
-                <el-dropdown v-for="item in menuItems" :key="item.label" popper-class="custom-dropdown">
+                <el-dropdown v-for="item in menuItems" :key="item.label" popper-class="custom-dropdown"  :show-arrow="false">
                     <a class="menu-fitem" style="color: var(--vp-c-text-1);">
-                        <span>
+                        <span >
                             <i :class="item.icon"></i>
                             {{ item.label }}
                             <i class="fa-solid fa-caret-up arrow-icon" style="padding-top: 4%;"></i>

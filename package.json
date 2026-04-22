@@ -2,7 +2,7 @@
   "devDependencies": {
     "@types/cross-spawn": "^6.0.6",
     "@types/js-yaml": "^4.0.9",
-    "element-plus": "^2.9.5",
+    "element-plus": "^2.13.7",
     "markdown-it-mathjax3": "^4.3.2",
     "sass": "^1.89.0",
     "unplugin-auto-import": "^0.17.4",
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "cross-spawn": "^7.0.6",
-    "element-plus": "^2.9.5",
+    "element-plus": "^2.13.7",
     "js-yaml": "^4.1.1",
     "lodash-es": "^4.17.21",
     "p-map": "^7.0.3",

@@ -5,14 +5,20 @@
             <i v-if="page?.title"><i class="fa-solid fa-location-dot"></i>{{formattedFilePath}} - {{ page?.title }}</i>
             <i v-else>&nbsp;{{ message }}</i>
         </el-text>
-        <el-tag size="small" type="success" effect="plain" v-if="copyright" round>
+        <el-text size="default" v-if="copyright">
             {{ copyright }}
-        </el-tag>
-        <el-tag size="default" type="success" effect="plain" v-if="createdTime" round>
-            <span class="gear-icon">⚙️</span>&nbsp;博客已运行:{{ isMounted ? formattedTime : '' }}
-        </el-tag>
-        <el-text style="width: 100%;text-align: center;" size="small"><span id="vercount_container_site_pv"
-                style='display:none'>本站总访问量<span id="vercount_value_site_pv" />次</span></el-text>
+        </el-text>
+        <el-text style="width: 100%;text-align: center;" size="small">
+            <span id="vercount_container_site_pv" style='display:none'>
+                本站总访问量<span id="vercount_value_site_pv" />次
+                &nbsp;|&nbsp;
+            </span>
+            <a v-if="createdTime">
+                <span class="gear-icon">⏣</span>&nbsp;博客已运行:{{ isMounted ? formattedTime : '' }}
+            </a>
+            
+        </el-text>
+            
     </div>
 </template>
 
