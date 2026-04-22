@@ -14,7 +14,9 @@
                 <template #main-content>
                     <content v-show="isMounted" class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
                         style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
-                    <el-skeleton v-if="!isMounted" :rows="8" animated :class="{ 'a-card': !isFocusMode }"/>
+                    <el-skeleton v-if="!isMounted" :rows="8" animated :class="{ 'a-card': !isFocusMode }" />
+                    <GiscusComments v-if="isMounted" class="fade-item comments-panel" :class="{ 'a-card': !isFocusMode }"
+                        style="--delay:0.1s" />
                 </template>
                 <template #sidebar-non-stay>
                     <div class="fade-item" style="--delay:0.2s"><ProfileCard /></div>
@@ -37,6 +39,7 @@ import DocView from '../layouts/DocView.vue'
 import Toc from '../components/navigation/Toc.vue'
 import ProfileCard from '../components/cards/ProfileCard.vue'
 import PostInfo from '../components/cards/PostInfo.vue'
+import GiscusComments from '../components/comments/GiscusComments.vue'
 const data = useData()
 const frontmatter = computed(() => data.frontmatter.value)
 const isFocusMode = inject('isFocusMode')
@@ -50,4 +53,11 @@ onContentUpdated(() => {
 
 
 </script>
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.comments-panel {
+    margin-top: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 24px 30px;
+}
+</style>

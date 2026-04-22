@@ -24,6 +24,7 @@ export default interface ThemeConfig {
   footer: FooterConfig;
   // 菜单栏
   menuItems: MenuItem[];
+  comments?: CommentsConfig;
   friendlink?: FriendLink[];
 }
 
@@ -70,4 +71,9 @@ interface FriendLink {
   Url: string;
   Avatar: string;
   Desc: string;
+}
+
+interface CommentsConfig {
+  enabled: boolean;
+  script?: string;
 }
