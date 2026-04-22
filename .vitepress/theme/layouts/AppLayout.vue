@@ -138,11 +138,14 @@ const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
 }, 250)
 
 // 控制栏
-const backToTop = () => {
-    scrollbarRef.value?.wrapRef?.scrollTo({ top: 0, behavior: 'smooth' })
+const backToTop = (smooth = true) => {
+    scrollbarRef.value?.wrapRef?.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' })
 }
 onContentUpdated(() => {
-    backToTop()
+    const hasHash = typeof window !== 'undefined' && Boolean(window.location.hash)
+    if (!hasHash) {
+        backToTop(false)
+    }
     checkPageHeight()
 })
 
