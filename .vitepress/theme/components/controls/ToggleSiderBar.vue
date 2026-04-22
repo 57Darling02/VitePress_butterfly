@@ -1,7 +1,7 @@
 <template>
     <i :class="[
         'fas',
-        showSidebar ? 'fa-chevron-right' : 'fa-sidebar-flip'
+        showSidebar ? 'fa-outdent' : 'fa-sidebar-flip'
     ]" @click="toggleSidebar"></i>
 </template>
 
@@ -12,3 +12,9 @@ const toggleSidebar = () => {
     showSidebar.value = !showSidebar.value
 }
 </script>
+
+<style scoped>
+.fa-outdent {
+    transform: rotate(180deg);
+}
+</style>

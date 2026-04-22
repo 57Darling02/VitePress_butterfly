@@ -200,13 +200,14 @@ onContentUpdated(() => {
 <template>
   <div style="min-height: 0; height: 100%; display: flex; flex-direction: column;">
     <span class="toc-title" style="font-weight: 600; height: 25px;">
-      <i class="fa-solid fa-compass">&nbsp;目录导航</i>
+      <!-- <i class="fa-solid fa-location-dot"></i> -->&nbsp;大纲
       &nbsp;&nbsp;
-      <el-button class="fa-solid fa-location-dot" style="background-color: transparent;"
+      <el-button style="background-color: transparent;" round
         type="default"
         size="small"
         @click="move2current_anchor"
       >
+      🎯
       </el-button>
     </span>
 
