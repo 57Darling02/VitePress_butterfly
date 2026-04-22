@@ -7,9 +7,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import mathjax3 from 'markdown-it-mathjax3'
 import { loadSiteConfig } from './theme/utils/configLoader'
 
-// 加载配置（不再依赖源码中的 TS 定义，而是直接读取 JSON）
 const rawConfig = loadSiteConfig();
-// 使用 ThemeConfig 类型断言，确保在编写 config.mts 时有类型提示
 const myconfig = rawConfig as ThemeConfig;
 
 
