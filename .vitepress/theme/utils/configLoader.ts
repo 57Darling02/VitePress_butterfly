@@ -2,6 +2,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
 
+function sanitizeInlineScriptValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return value.replace(/<\/script>/gi, '<\\/script>');
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeInlineScriptValue);
+  }
+  if (value && typeof value === 'object') {
+    const output: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      output[key] = sanitizeInlineScriptValue(nested);
+    }
+    return output;
+  }
+  return value;
+}
+
 /**
  * 加载站点配置
  * 策略：优先加载 posts/site_config.yml，如果不存在则加载根目录的 site_config.yml
@@ -34,5 +51,5 @@ export function loadSiteConfig() {
     console.error('❌ [Config Loader] Failed to parse configuration file:', e);
   }
 
-  return config;
+  return sanitizeInlineScriptValue(config);
 }
