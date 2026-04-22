@@ -69,8 +69,6 @@ import Loading from '../components/effects/Loading.vue'
 import Toc from '../components/navigation/Toc.vue'
 
 import Bg_StarrySkySass from '../components/effects/Bg_StarrySkySass.vue'
-import { useRouter } from 'vitepress'
-const router = useRouter()
 // 获取全局状态
 const isFocusMode = inject('isFocusMode')
 const showNavbar = inject('showNavbar', ref(true))
@@ -122,7 +120,6 @@ const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
     scrollingDown.value = currentY > lastScrollY.value
 
     if (typeof window !== 'undefined' && currentY < 150 && (frontmatter.value.layout === 'doc' || frontmatter.value.layout === undefined) && window !== undefined) {
-        window.history.replaceState(null, '', router.route.path.replace('.html', ''))
         showNavbar.value = true
     } else if (scrollingDown.value) {
         showNavbar.value = false

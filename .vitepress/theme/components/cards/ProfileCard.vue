@@ -1,18 +1,29 @@
 <template>
   <div class="a-card profile-card" :class="{ 'has-border': border }" id="profile-card">
-    <!-- 头像区域 -->
     <div class="avatar-wrapper">
-      <img :src="avatar" :alt="name" class="avatar" @error="handleAvatarError">
+      <img :src="avatar" :alt="name" class="avatar" @error="handleAvatarError" />
     </div>
-    <!-- 个人信息 -->
+
     <div class="profile-content">
-      <h2 class="name">{{ name }}</h2>
-      <div class="position">{{ position }}</div>
-      <p class="bio">{{ bio }}</p>
-      <!-- 社交链接 -->
+      
+      <template v-if="hasBeforeSocialSlot">
+        <slot name="before-social" />
+      </template>
+      <template v-else>
+        <h4 class="name">{{ name }}</h4>
+        <div class="position">{{ position }}</div>
+        <p class="bio">{{ bio }}</p>
+      </template>
+
       <div class="social-links">
-        <a v-for="(link, index) in socialLinks" :key="index" :href="link.url" target="_blank" class="social-item"
-          :title="link.name">
+        <a
+          v-for="(link, index) in socialLinks"
+          :key="index"
+          :href="link.url"
+          target="_blank"
+          class="social-item"
+          :title="link.name"
+        >
           <i :class="link.icon"></i>
         </a>
       </div>
@@ -21,29 +32,34 @@
 </template>
 
 <script setup>
+import { computed, useSlots } from 'vue'
 import { useData } from 'vitepress'
 
 const { theme } = useData()
+const slots = useSlots()
 
 const {
-  avatar = "",
-  name = '未命名',
-  position = '全栈开发者',
-  bio = '热爱技术，乐于分享',
+  avatar = '',
+  name = 'Unnamed',
+  position = 'Developer',
+  bio = 'Loves building and sharing.',
   socialLinks = [],
-  border = true
+  border = true,
 } = theme.value
+
 const defaultAvatar = '/image/image.png'
+const hasBeforeSocialSlot = computed(() => !!slots['before-social'])
+
 const handleAvatarError = (e) => {
   e.target.src = defaultAvatar
 }
 </script>
 
 <style lang="scss">
-#profile-card{
+#profile-card {
   padding: 10px 10px 10px;
 }
-/* 头像样式 */
+
 .avatar-wrapper {
   width: 100px;
   height: 100px;
@@ -53,20 +69,20 @@ const handleAvatarError = (e) => {
   border: 3px solid var(--vp-c-brand);
   transition: transform 0.3s ease;
 }
+
 .avatar {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* 个人信息 */
 .profile-content {
   text-align: center;
 }
 
 .name {
   margin: 0 0 8px;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   color: var(--vp-c-text-1);
 }
 
@@ -85,7 +101,6 @@ const handleAvatarError = (e) => {
   max-width: 240px;
 }
 
-/* 社交链接 */
 .social-links {
   display: flex;
   justify-content: center;
@@ -114,7 +129,6 @@ const handleAvatarError = (e) => {
   font-size: 1.1rem;
 }
 
-/* 响应式调整 */
 @media (max-width: 480px) {
   .profile-card {
     width: 260px;

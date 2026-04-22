@@ -62,10 +62,9 @@ footer {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   outline: none;
   background-color: rgba(var(--vp-c-bg-rgb), 0.8);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid transparent;
-  /* 添加透明边框，避免悬停时的突兀变化 */
 
 }
 

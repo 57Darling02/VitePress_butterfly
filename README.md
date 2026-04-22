@@ -150,7 +150,10 @@ jobs:
 
 ### Site Config
 
-编辑根目录 `site_config.yml`：
+根目录 `site_config.yml`为配置文件，推荐将其复制到posts/或关联知识库的根目录中修改：
+
+1.配置网站标题、作者名称和社交链接。
+进入[fontawesome](https://fontawesome.com/search)选取自己喜欢的图标。
 
 ```yaml
 site_name: "My Awesome Blog"
@@ -160,6 +163,26 @@ socialLinks:
     icon: "fa-brands fa-github"
     url: "https://github.com/..."
 ```
+
+2.配置资源
+
+在posts/public 或 知识库根目录/public下放置图片，即可直接使用。
+
+例如：背景图放置在 posts\public\wallpaper\1.webp 或者知识库根目录\public\wallpaper\1.webp
+则`site_config.yml`中配置
+```yaml
+background: "/wallpaper/2.webp"
+```
+即可调用。
+
+或者使用网络图床资源: 
+例如：`site_config.yml`中配置
+```yaml
+avatar: "https://resource-un4.pages.dev/article/yjtp.webp" 
+```
+即成功配置头像
+
+
 
 ### Post Frontmatter（推荐）
 
