@@ -51,6 +51,16 @@ menuItems:
         icon: "fa-solid fa-user-group"
         link: "/FriendLink/"
 
+# Music Player Configuration
+musicPlayer:
+  enabled: false               # 是否在导航栏启用音乐播放器
+  url: "https://music.163.com/song/media/outer/url?id=3372997533.mp3"            # 可用本地 public 资源或在线音频链接
+  name: "lofi bbox"
+  artist: "Shi Nian Yi Shi"
+  cover: "https://p2.music.126.net/5GL5jxLP9LCi6HpqXwKJfQ==/109951173099535524.jpg"
+  autoplay: true
+  volume: 0.6                 # 0 ~ 1
+
 # Friend Links
 friendlink:
   - Name: "57Darling02的的博客"

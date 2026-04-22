@@ -24,6 +24,8 @@ export default interface ThemeConfig {
   footer: FooterConfig;
   // 菜单栏
   menuItems: MenuItem[];
+  musicPlayer?: MusicPlayerConfig;
+  musicTrack?: MusicTrackConfig;
   comments?: CommentsConfig;
   friendlink?: FriendLink[];
 }
@@ -64,6 +66,25 @@ interface MenuItem {
   label: string;
   icon: string;
   children: MenuChildItem[];
+}
+
+interface MusicPlayerConfig {
+  enabled: boolean;
+  url?: string;
+  name?: string;
+  artist?: string;
+  cover?: string;
+  autoplay?: boolean;
+  volume?: number;
+}
+
+interface MusicTrackConfig {
+  url: string;
+  name: string;
+  artist: string;
+  cover: string;
+  autoplay?: boolean;
+  volume?: number;
 }
 
 interface FriendLink {

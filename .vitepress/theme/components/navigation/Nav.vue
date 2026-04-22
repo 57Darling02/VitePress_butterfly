@@ -1,223 +1,397 @@
 <template>
     <div id="nav" :class="{ 'nav-hidden': !showNavbar }">
-        <div id="menu" >
+        <div id="menu">
             <a class="menu-fitem" href="/">
                 <span>
-                    <i class="fa-solid fa-house"></i>首页
+                    <i class="fa-solid fa-house"></i>{{ showSidebar ? '首页' : '' }}
                 </span>
             </a>
-            <div class="dropitem">
-                <el-dropdown v-for="item in menuItems" :key="item.label" popper-class="custom-dropdown"  :show-arrow="false">
-                    <a class="menu-fitem" style="color: var(--vp-c-text-1);">
-                        <span >
-                            <i :class="item.icon"></i>
-                            {{ item.label }}
-                            <i class="fa-solid fa-caret-up arrow-icon" style="padding-top: 4%;"></i>
-                        </span>
-                    </a>
-                    <template #dropdown v-if="item.children?.length">
-                        <el-dropdown-menu>
-                            <el-dropdown-item v-for="subitem in item.children" :key="subitem.key" class="menu-item"
-                                @click="handleMenuClick(subitem)">
-                                <i :class="subitem.icon"></i>
-                                {{ subitem.label }}
-                            </el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
-            </div>
+
+            <a v-for="item in menuItems" :key="item.label"
+                :class="['menu-fitem', { 'menu-fitem-active': menuPanelVisible && activeMenuItem?.label === item.label }]"
+                @mouseenter="handleMenuTriggerMouseEnter(item, $event)" @mouseleave="scheduleCloseMenuPanel"
+                @click.prevent="handleMenuTriggerClick(item, $event)">
+                <span>
+                    <i :class="item.icon" class="arrow-icon"></i>
+                    {{ showSidebar ? item.label : '' }}
+                </span>
+            </a>
+
+            <a v-if="shouldShowMusicPlayer" ref="musicTriggerRef"
+                :class="['menu-fitem', 'menu-fitem-music', { 'menu-fitem-active': musicPanelVisible }]"
+                @mouseenter="openMusicPanel" @mouseleave="scheduleCloseMusicPanel" @click.prevent="handleMusicTriggerClick">
+                <span>
+                    <i class="fa-solid fa-compact-disc music-icon" :class="{ 'music-icon-rotating': isMusicPlaying }"></i>
+                    {{ showSidebar ? '音乐' : '' }}
+                </span>
+            </a>
         </div>
     </div>
+
+    <el-dropdown ref="menuDropdownRef" :virtual-ref="menuVirtualTriggerRef" :popper-style="popperStyle"
+        :show-arrow="false" :hide-on-click="false" :popper-options="menuPopperOptions" virtual-triggering trigger="click"
+        placement="bottom-start" @visible-change="onMenuPanelVisibleChange">
+        <template #dropdown>
+            <div class="menu-panel-shell" @mouseenter="cancelCloseMenuPanel" @mouseleave="scheduleCloseMenuPanel">
+                <el-dropdown-menu>
+                    <el-dropdown-item v-for="subitem in activeMenuItem?.children || []" :key="subitem.key" class="menu-item"
+                        @click="handleMenuClick(subitem)">
+                        <i :class="subitem.icon"></i>
+                        {{ subitem.label }}
+                    </el-dropdown-item>
+                </el-dropdown-menu>
+            </div>
+        </template>
+    </el-dropdown>
+
+    <el-dropdown v-if="shouldShowMusicPlayer" ref="musicDropdownRef" :virtual-ref="musicVirtualTriggerRef" :popper-style="popperStyle"
+        :show-arrow="false" :hide-on-click="false" :popper-options="musicPopperOptions" virtual-triggering trigger="click"
+        placement="bottom-start" @visible-change="onMusicPanelVisibleChange">
+        <template #dropdown>
+            <div class="music-player-shell" @mouseenter="cancelCloseMusicPanel" @mouseleave="scheduleCloseMusicPanel">
+                <APlayerWidget :url="musicPlayer.url" :name="musicPlayer.name" :artist="musicPlayer.artist"
+                    :cover="musicPlayer.cover" :autoplay="musicPlayer.autoplay" :volume="musicPlayer.volume"
+                    @playing-change="isMusicPlaying = $event" />
+            </div>
+        </template>
+    </el-dropdown>
 </template>
 
-<script lang='ts' setup>
+<script lang="ts" setup>
+import type { DropdownInstance } from 'element-plus'
 import { useData } from 'vitepress'
-const { theme} = useData()
-import { inject } from 'vue'
-// 获取全局状态和方法
-const showNavbar = inject('showNavbar')
+import { computed, inject, onBeforeUnmount, ref } from 'vue'
+import type ThemeConfig from '../../types/ThemeConfig'
+import APlayerWidget from '../player/APlayerWidget.vue'
 
-const { menuItems } = theme.value
+const { theme } = useData<ThemeConfig>()
+const showNavbar = inject('showNavbar')
+const showSidebar = inject('showSidebar', ref(true))
+const menuItems = computed(() => (theme.value.menuItems || []) as any[])
+
+const menuDropdownRef = ref<DropdownInstance>()
+const menuPanelVisible = ref(false)
+const activeMenuItem = ref<any | null>(null)
+
+const musicDropdownRef = ref<DropdownInstance>()
+const musicPanelVisible = ref(false)
+const isMusicPlaying = ref(false)
+const musicTriggerRef = ref<HTMLElement | null>(null)
+
+const menuTriggerRect = ref(
+    DOMRect.fromRect({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+    }),
+)
+const menuVirtualTriggerRef = ref({
+    getBoundingClientRect: () => menuTriggerRect.value,
+})
+
+const musicTriggerRect = ref(
+    DOMRect.fromRect({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+    }),
+)
+const musicVirtualTriggerRef = ref({
+    getBoundingClientRect: () => musicTriggerRect.value,
+})
+
+const popperStyle = {
+    border: 'none',
+    borderRadius: '18px',
+    overflow: 'hidden',
+    background: 'transparent',
+    boxShadow: 'none',
+}
+
+const menuPopperOptions = {
+    modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
+}
+const musicPopperOptions = {
+    modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
+}
+
+let menuCloseTimer: ReturnType<typeof setTimeout> | null = null
+let musicCloseTimer: ReturnType<typeof setTimeout> | null = null
+
+const defaultMusicPlayer = {
+    name: 'Music',
+    artist: '',
+    cover: '',
+    autoplay: true,
+    volume: 0.6,
+}
+const normalizeVolume = (value?: number) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return defaultMusicPlayer.volume
+    return Math.min(Math.max(value, 0), 1)
+}
+
+const rawMusicPlayerConfig = computed(() => {
+    if (theme.value.musicPlayer) return theme.value.musicPlayer
+    if (!theme.value.musicTrack) return null
+    return {
+        enabled: true,
+        ...theme.value.musicTrack,
+    }
+})
+
+const musicPlayer = computed(() => {
+    const config = rawMusicPlayerConfig.value
+    return {
+        enabled: Boolean(config?.enabled),
+        url: config?.url?.trim() || '',
+        name: config?.name?.trim() || defaultMusicPlayer.name,
+        artist: config?.artist?.trim() || defaultMusicPlayer.artist,
+        cover: config?.cover?.trim() || defaultMusicPlayer.cover,
+        autoplay: typeof config?.autoplay === 'boolean' ? config.autoplay : defaultMusicPlayer.autoplay,
+        volume: normalizeVolume(config?.volume),
+    }
+})
+const shouldShowMusicPlayer = computed(() => musicPlayer.value.enabled && Boolean(musicPlayer.value.url))
+
 const handleMenuClick = (item: any) => {
+    closeMenuPanel()
     if (item.children?.length) return
-    if (item.link) {
-        // 生成完整路径
-        const basePath = window.location.origin
-        const fullPath = item.link.startsWith('/')
-            ? `${basePath}${item.link}`
-            : item.link
-        if (fullPath.startsWith(basePath)) {
-            window.open(fullPath, '_self') // 内部在当前标签页打开
-        }
-        else {
-            window.open(fullPath, '_blank') // 外部保持新标签页打开行为
-        }
+    if (!item.link) return
+
+    const basePath = window.location.origin
+    const fullPath = item.link.startsWith('/') ? `${basePath}${item.link}` : item.link
+    if (fullPath.startsWith(basePath)) {
+        window.open(fullPath, '_self')
+    } else {
+        window.open(fullPath, '_blank')
     }
 }
 
+const syncRectFromElement = (
+    element: HTMLElement | null | undefined,
+    targetRect: typeof menuTriggerRect,
+) => {
+    if (!element) return
+    const rect = element.getBoundingClientRect()
+    targetRect.value = DOMRect.fromRect({
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+    })
+}
 
+const cancelCloseMenuPanel = () => {
+    if (!menuCloseTimer) return
+    clearTimeout(menuCloseTimer)
+    menuCloseTimer = null
+}
+
+const closeMenuPanel = () => {
+    cancelCloseMenuPanel()
+    menuDropdownRef.value?.handleClose()
+}
+
+const scheduleCloseMenuPanel = () => {
+    cancelCloseMenuPanel()
+    menuCloseTimer = setTimeout(closeMenuPanel, 140)
+}
+
+const openMenuPanel = (item: any, triggerEl: HTMLElement) => {
+    if (!item.children?.length) return
+    cancelCloseMenuPanel()
+    activeMenuItem.value = item
+    syncRectFromElement(triggerEl, menuTriggerRect)
+    menuDropdownRef.value?.handleOpen()
+}
+
+const handleMenuTriggerMouseEnter = (item: any, event: MouseEvent) => {
+    openMenuPanel(item, event.currentTarget as HTMLElement)
+}
+
+const handleMenuTriggerClick = (item: any, event: MouseEvent) => {
+    const triggerEl = event.currentTarget as HTMLElement
+    if (!item.children?.length) {
+        handleMenuClick(item)
+        return
+    }
+
+    const isSameTrigger = activeMenuItem.value?.label === item.label
+    if (menuPanelVisible.value && isSameTrigger) {
+        closeMenuPanel()
+        return
+    }
+
+    openMenuPanel(item, triggerEl)
+}
+
+const onMenuPanelVisibleChange = (visible: boolean) => {
+    menuPanelVisible.value = visible
+    if (!visible) activeMenuItem.value = null
+}
+
+const cancelCloseMusicPanel = () => {
+    if (!musicCloseTimer) return
+    clearTimeout(musicCloseTimer)
+    musicCloseTimer = null
+}
+
+const closeMusicPanel = () => {
+    cancelCloseMusicPanel()
+    musicDropdownRef.value?.handleClose()
+}
+
+const scheduleCloseMusicPanel = () => {
+    cancelCloseMusicPanel()
+    musicCloseTimer = setTimeout(closeMusicPanel, 140)
+}
+
+const openMusicPanel = () => {
+    cancelCloseMusicPanel()
+    syncRectFromElement(musicTriggerRef.value, musicTriggerRect)
+    musicDropdownRef.value?.handleOpen()
+}
+
+const handleMusicTriggerClick = () => {
+    syncRectFromElement(musicTriggerRef.value, musicTriggerRect)
+    if (musicPanelVisible.value) {
+        closeMusicPanel()
+        return
+    }
+    openMusicPanel()
+}
+
+const onMusicPanelVisibleChange = (visible: boolean) => {
+    musicPanelVisible.value = visible
+}
+
+onBeforeUnmount(() => {
+    cancelCloseMenuPanel()
+    cancelCloseMusicPanel()
+})
 </script>
 
 <style lang="scss" scoped>
-// 定义变量
-$nav-height: var(--nav-height); // 导航栏高度变量
-$icon-size: 16px; // 正方形图标尺寸变量
-$line-height: 2px; // 线条高度
-$line-spacing: 5px; // 线条间距
-$animation-duration: 0.3s; // 动画时长
-
-$nav-bg: var(--vp-c-bg-elv);
+$nav-height: var(--nav-height);
 $border-radius: 50px;
 $transition-time: 0.5s;
-$hide-offset: 100%;
 $nav-gap: 4px;
 
 #nav {
-    height: calc(#{$nav-height} - #{$nav-gap} * 2); 
+    height: calc(#{$nav-height} - #{$nav-gap} * 2);
     position: fixed;
     top: $nav-gap;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
-    opacity: 0.9; // 稍微提高不透明度以增强毛玻璃效果
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2); // 半透明白色边框
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1); // 添加柔和阴影增强层次感
+    opacity: 0.9;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
     border-radius: $border-radius;
-    background-color: rgba(var(--vp-c-bg-rgb), 0.5); // 半透明白色背景
-    backdrop-filter: blur(5px); // 毛玻璃效果
-    -webkit-backdrop-filter: blur(12px); // Safari 浏览器兼容
-    padding: 0 20px; // 调整内边距，让内容有合适的间距
+    background-color: rgba(var(--vp-c-bg-rgb), 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0 20px;
     display: flex;
     overflow: hidden;
     transition: all $transition-time ease;
+
     &.nav-hidden {
         transform: translateY(-100%) translateX(-50%);
     }
 }
 
-
 #menu {
     display: flex;
-    align-items: center; // 垂直居中
+    align-items: center;
+    gap: 6px;
     height: 100%;
-    margin: 0 auto; // 水平居中
+    margin: 0 auto;
     transition: all $transition-time ease;
-    el-dropdown,
-    .menu-group {
-        display: flex;
-        gap: 12px;
-        border: 0px;
-    }
 
-    [class*="el-"]:focus-visible {
+    [class*='el-']:focus-visible {
         outline: none !important;
     }
 
     .menu-fitem {
-        display: flex;
-        align-items: center; // 垂直居中
-        line-height: 2;
-        margin: 0 10px; // 左右均匀间距，保持视觉平衡
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        padding: 8px 10px;
         text-decoration: none;
+        user-select: none;
     }
 
     .menu-fitem span {
-        background: linear-gradient(to right, #3498db, #2980b9) no-repeat left bottom;
-        background-size: 0 5px;
-        transition: background-size 0.3s;
+        position: relative;
         font-size: 1rem;
         white-space: nowrap;
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        padding-bottom: 3px;
     }
 
-    .menu-fitem span:hover {
-        background-size: 100% 5px;
+    .menu-fitem span::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -4px;
+        height: 4px;
+        border-radius: 999px;
+        background: linear-gradient(to right, #3498db, #2980b9);
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition: transform 0.25s ease;
+        pointer-events: none;
     }
 
-    .sbbtn {
-        display: none;
+    .menu-fitem:hover span::after,
+    .menu-fitem.menu-fitem-active span::after {
+        transform: scaleX(1);
     }
 
     .arrow-icon {
-        margin-left: 8px;
-        transition: transform 0.3s ease;
-        display: inline-block;
+        transition: transform 0.25s ease;
     }
 
-    .menu-fitem:hover .arrow-icon {
+    .menu-fitem.menu-fitem-active .arrow-icon {
         transform: rotate(180deg);
     }
-}
-@media (max-width: 768px) {
-    #nav {
-        padding: 0 15px; // 减少内边距
-        max-width: 95%; // 限制最大宽度
-        min-width: auto; // 移除最小宽度限制
+
+    .menu-fitem-music {
+        cursor: pointer;
     }
-    
-    #menu {
-        gap: 8px; // 减少间距
-        flex-wrap: nowrap; // 禁止换行
-        overflow-x: auto; // 允许水平滚动
-        overflow-y: hidden; // 隐藏垂直滚动
-        -webkit-overflow-scrolling: touch; // iOS平滑滚动
-        
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE and Edge */
-        
-        &::-webkit-scrollbar {
-            display: none; /* Chrome, Safari and Opera */
-        }
-        
-        .dropitem {
-            display: flex;
-            gap: 8px;
-            flex-wrap: nowrap;
-        }
-        
-        .menu-fitem {
-            margin-left: 10px; // 减少左边距
-            flex-shrink: 0; // 禁止收缩，保持内容完整
-            
-            span {
-                font-size: 0.9rem; // 稍微减小字体大小
-                padding: 4px 8px; // 增加内边距便于点击
-            }
-        }
-        
-        // 确保el-dropdown在移动端保持水平
-        .el-dropdown {
-            flex-shrink: 0;
-            white-space: nowrap;
-        }
+
+    .music-icon {
+        transform-origin: center;
+    }
+
+    .music-icon-rotating {
+        animation: music-spin 2s linear infinite;
     }
 }
 
-// 超小屏幕适配
-@media (max-width: 480px) {
-    #menu {
-        gap: 6px;
-        
-        .dropitem {
-            gap: 6px;
-        }
-        
-        .menu-fitem {
-            margin-left: 8px;
-            
-            span {
-                font-size: 0.85rem;
-                padding: 3px 6px;
-            }
-        }
+@keyframes music-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
     }
 }
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px 0;
+
+.music-player-shell {
+
+    padding: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--vp-c-bg);
 }
 </style>
