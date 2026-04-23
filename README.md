@@ -148,9 +148,11 @@ jobs:
 
 ## 配置指南
 
+所有定制化内容皆可在posts/下实现，（关联知识库本质就是将知识库同步到posts/中）
+
 ### Site Config
 
-根目录 `site_config.yml`为配置文件，推荐将其复制到posts/或关联知识库的根目录中修改：
+`site_config.yml`为配置文件，推荐从根目录获取模板并将其复制到`posts/site_config.yml`或关联知识库的根目录：
 
 #### 1.配置网站标题、作者名称和社交链接。
 进入[fontawesome](https://fontawesome.com/search)选取自己喜欢的图标。
@@ -171,7 +173,7 @@ socialLinks:
 例如：背景图放置在 posts\public\wallpaper\1.webp 或者知识库根目录\public\wallpaper\1.webp
 则`site_config.yml`中配置
 ```yaml
-background: "/wallpaper/2.webp"
+background: "/wallpaper/1.webp"
 ```
 即可调用。
 
