@@ -129,16 +129,4 @@ const handleAvatarError = (e) => {
   font-size: 1.1rem;
 }
 
-@media (max-width: 480px) {
-  .profile-card {
-    width: 260px;
-    padding: 20px;
-    max-width: 100%;
-  }
-
-  .avatar-wrapper {
-    width: 80px;
-    height: 80px;
-  }
-}
 </style>

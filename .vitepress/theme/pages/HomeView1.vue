@@ -4,7 +4,7 @@
       <template #doc-header>
         <div ref="firstViewRef" class="firstview">
           <div ref="topProfileRef" class="firstview-profile">
-            <ProfileCard class="no-hover-card" style="background-color: transparent;backdrop-filter:none;">
+            <ProfileCard class="no-hover-card" style="background-color: transparent;backdrop-filter:none;box-shadow: none;">
               <template #before-social>
                 <div class="a-card no-hover-card" id="main-title" style="background-color: rgba(var(--vp-c-bg-rgb), 0.6);backdrop-filter: blur(8px);">
                   <el-text truncated style="color: var(--vp-c-text);">{{ mainTitle }}</el-text>
@@ -196,16 +196,6 @@ onUnmounted(() => {
   border-color: transparent !important;
 }
 
-@media (max-width: 480px) {
-  .firstview-profile {
-    display: flex;
-    justify-content: center;
-  }
-
-  .firstview-profile .profile-card {
-    margin: 0 auto;
-  }
-}
 
 
 </style>
