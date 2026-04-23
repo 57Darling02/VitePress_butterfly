@@ -192,7 +192,7 @@ onUnmounted(() => {
 
 .firstview-profile .no-hover-card:hover {
   transform: none !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: none !important;
   border-color: transparent !important;
 }
 

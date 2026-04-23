@@ -23,7 +23,7 @@ export default {
         useVisitData()
       }
     }
-    const isFocusMode = ref(siteData.value.themeConfig.defaultFocusMode || false) // 专注内容模式
+    const isFocusMode = ref(false) // 无特效模式
     const showNavbar = ref(true)
     const showSidebar = ref(true)
     const showFooter = ref(false)

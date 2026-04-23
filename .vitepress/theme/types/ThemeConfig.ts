@@ -4,7 +4,6 @@ export default interface ThemeConfig {
   site_description: string;
   site_url: string;
   author: string;
-  defaultFocusMode: boolean;
   isDark: boolean | null;
   // 首页配置
   home: HomeConfig;

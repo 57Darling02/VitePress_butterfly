@@ -23,7 +23,7 @@
             </div>
         </transition>
         <transition name="el-fade-in">
-            <Toc class="a-card" v-if="controlVisible && !showSidebar && page.frontmatter.layout === 'doc'"
+            <Toc class="a-card" v-if="!showSidebar && page.frontmatter.layout === 'doc'" v-show="controlVisible"
                 style="height: 40vh;width: 300px;;display: flex;flex-direction: column;padding: 18px;" />
         </transition>
 

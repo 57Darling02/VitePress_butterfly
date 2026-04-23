@@ -1,29 +1,47 @@
 <template>
-    <div 
-        class="bg-space" 
-        :style="BGIMG_url ? { 
-            backgroundImage: `url(${BGIMG_url})`, 
-            backgroundSize: 'cover',       /* 自适应覆盖容器 */
-            backgroundPosition: 'center',  /* 居中显示 */
-            backgroundRepeat: 'no-repeat'  /* 禁止重复 */
-        } : {}"
-    >
+    <div class="bg-space" :style="backgroundStyle">
         <div v-if="bg_rainfall" v-for="layer in 5" :class="`layer${layer}`" />
     </div>
 </template>
-<script lang='ts' setup>
-import { useData } from 'vitepress'
-import { inject, ref ,computed } from 'vue'
-const { theme } = useData()
-const BGIMG_url = theme.value.background || ''
-// 移动端状态
-const isMobile = inject('isMobile', ref(false))
-const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
 
+<script lang="ts" setup>
+import { computed, inject, ref } from 'vue'
+import { useData } from 'vitepress'
+
+const { theme } = useData()
+const isMobile = inject('isMobile', ref(false))
+
+const backgroundValue = computed(() => String(theme.value.background || '').trim())
+const hexColorPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+
+const backgroundStyle = computed(() => {
+    if (!backgroundValue.value) {
+        return {
+            backgroundColor: '#FDF8F2'
+        }
+    }
+
+    if (hexColorPattern.test(backgroundValue.value)) {
+        return {
+            backgroundColor: backgroundValue.value
+        }
+    }
+
+    return {
+        backgroundImage: `url(${backgroundValue.value})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+    }
+})
+
+const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
 </script>
+
 <style lang="scss" scoped>
 @use "sass:math";
 @use "sass:string";
+
 .bg-space {
     z-index: -1;
     position: fixed;
@@ -31,12 +49,7 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: radial-gradient(
-        ellipse at center,
-        #0a0a2a 0%,
-        #000033 50%,
-        #000000 100%
-    );
+    background: #FDF8F2;
 }
 
 @function getShadows($count) {
@@ -47,14 +60,15 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
     @return string.unquote(string.slice($shadows, 1, -2));
 }
 
-
 $duration: 400s;
 $count: 250;
+
 @for $i from 2 through 5 {
     $duration: calc($duration / 2);
     $count: math.floor(calc($count / 2));
+
     .layer#{$i} {
-        $size: #{$i*1.2}px;
+        $size: #{$i * 1.2}px;
         position: fixed;
         width: $size;
         height: $size;
@@ -64,6 +78,7 @@ $count: 250;
         background-color: antiquewhite;
         box-shadow: getShadows($count);
         animation: moveUp $duration linear infinite;
+
         &::after {
             content: '';
             position: fixed;
@@ -82,6 +97,4 @@ $count: 250;
         transform: translateY(-100vh);
     }
 }
-
-
 </style>

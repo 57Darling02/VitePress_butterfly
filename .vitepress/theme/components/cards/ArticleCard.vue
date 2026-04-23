@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { useData } from 'vitepress'
 const { theme, lang } = useData()
 import VPDocFooterLastUpdated from '../controls/VPDocFooterLastUpdated.vue'
@@ -27,11 +27,13 @@ const props = defineProps({
 const formattedDate = computed(() => {
     if (!props.post.date) return ''
     try {
-        return new Date(props.post.date).toLocaleDateString('zh-CN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        })
+        return new Intl.DateTimeFormat(
+            theme.value.lastUpdated?.formatOptions?.forceLocale ? lang.value : undefined,
+            theme.value.lastUpdated?.formatOptions ?? {
+                dateStyle: 'short',
+                timeStyle: 'short'
+            }
+        ).format(new Date(props.post.date))
     } catch {
         return 'Invalid date'
     }

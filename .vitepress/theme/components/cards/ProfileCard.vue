@@ -1,7 +1,7 @@
 <template>
   <div class="a-card profile-card" :class="{ 'has-border': border }" id="profile-card">
     <div class="avatar-wrapper">
-      <img :src="avatar" :alt="name" class="avatar" @error="handleAvatarError" />
+      <img :src="avatarSrc" :alt="name" class="avatar" @error="handleAvatarError" />
     </div>
 
     <div class="profile-content">
@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { computed, useSlots } from 'vue'
+import { computed, ref, useSlots } from 'vue'
 import { useData } from 'vitepress'
 
 const { theme } = useData()
@@ -47,11 +47,38 @@ const {
   border = true,
 } = theme.value
 
-const defaultAvatar = '/image/image.png'
 const hasBeforeSocialSlot = computed(() => !!slots['before-social'])
 
-const handleAvatarError = (e) => {
-  e.target.src = defaultAvatar
+const normalizeAvatarSrc = (value) => typeof value === 'string' ? value.trim() : ''
+
+const createInlineAvatar = (displayName) => {
+  const label = (displayName || 'U').trim().slice(0, 2).toUpperCase() || 'U'
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="${label}">
+      <defs>
+        <linearGradient id="avatar-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#4f46e5" />
+          <stop offset="100%" stop-color="#0ea5e9" />
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" rx="50" fill="url(#avatar-gradient)" />
+      <text x="50" y="54" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="36" font-weight="700">${label}</text>
+    </svg>
+  `
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+const inlineFallbackAvatar = computed(() => createInlineAvatar(name))
+const avatarSrc = ref(normalizeAvatarSrc(avatar) || inlineFallbackAvatar.value)
+
+const handleAvatarError = (event) => {
+  avatarSrc.value = inlineFallbackAvatar.value
+
+  if (event?.target) {
+    event.target.onerror = null
+    event.target.src = avatarSrc.value
+  }
 }
 </script>
 

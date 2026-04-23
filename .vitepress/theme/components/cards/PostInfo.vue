@@ -27,7 +27,7 @@ import { useData } from 'vitepress'
 import { data as posts } from '../../data/posts.data.ts'
 import VPDocFooterLastUpdated from '../controls/VPDocFooterLastUpdated.vue'
 
-const { frontmatter, theme, page } = useData()
+const { frontmatter, theme, page, lang } = useData()
 
 const {
   title = "Untitled Article",
@@ -40,11 +40,13 @@ const lastUpdated = post?.lastUpdated
 const formattedDate = computed(() => {
   if (!date) return 'Unknown date'
   try {
-    return new Date(date).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
+    return new Intl.DateTimeFormat(
+      theme.value.lastUpdated?.formatOptions?.forceLocale ? lang.value : undefined,
+      theme.value.lastUpdated?.formatOptions ?? {
+        dateStyle: 'short',
+        timeStyle: 'short'
+      }
+    ).format(new Date(date))
   } catch {
     return 'Invalid date'
   }
