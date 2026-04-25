@@ -1,5 +1,4 @@
 // https://vitepress.dev/guide/custom-theme
-import { ref } from 'vue'
 import { inBrowser, type Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import 'element-plus/dist/index.css'
@@ -9,6 +8,7 @@ import Layout from './layouts/AppLayout.vue'
 import './css/style.css'
 import '../static/fontawesome/css/all.min.css'
 import useVisitData from './composables/useVisitData'
+import { createLayoutState, layoutStateKey } from './composables/useLayoutState'
 
 export default {
   
@@ -23,16 +23,6 @@ export default {
         useVisitData()
       }
     }
-    const isFocusMode = ref(false) // 无特效模式
-    const showNavbar = ref(true)
-    const showSidebar = ref(true)
-    const showFooter = ref(false)
-    app.provide('isFocusMode', isFocusMode)
-    app.provide('showNavbar', showNavbar)
-    app.provide('showSidebar', showSidebar)
-    app.provide('showFooter', showFooter)
-    // 移动端状态
-    const isMobile = ref(false)
-    app.provide('isMobile', isMobile)
+    app.provide(layoutStateKey, createLayoutState())
   }
 } satisfies Theme

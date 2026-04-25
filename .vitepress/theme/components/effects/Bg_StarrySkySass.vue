@@ -5,11 +5,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, ref } from 'vue'
+import { computed } from 'vue'
 import { useData } from 'vitepress'
+import { useLayoutState } from '../../composables/useLayoutState'
 
 const { theme } = useData()
-const isMobile = inject('isMobile', ref(false))
+const { isMobile } = useLayoutState()
 
 const backgroundValue = computed(() => String(theme.value.background || '').trim())
 const hexColorPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/

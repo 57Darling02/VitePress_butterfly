@@ -4,6 +4,11 @@
 
 目标很简单：写 Markdown、推送代码、自动上线。
 
+我的博客:https://57darling02.github.io
+
+博客模板展示:https://vitepress.57d02.cn
+
+
 ## 核心模型
 
 正式使用时，本项目采用双仓库模式：
@@ -72,7 +77,6 @@ Actions -> Setup Blog -> Run workflow
 
 填写：
 
-- `wiki_template`：默认 `57Darling02/wiki_template`
 - `wiki_repo_name`：你的知识库仓库名，例如 `my-blog-wiki`
 - `wiki_branch`：默认 `main`
 
@@ -232,7 +236,6 @@ pnpm prepare-content
 pnpm dev
 pnpm docs:build
 pnpm preview
-pnpm build
 ```
 
 ## 更新主题

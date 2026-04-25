@@ -24,14 +24,15 @@
 
 <script lang='ts' setup>
 import { useData } from 'vitepress'
-import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useLayoutState } from '../../composables/useLayoutState'
 
 const { theme, page } = useData()
 const footer = theme.value.footer || {}
 const copyright = footer.copyright || ''
 const message = footer.message || ''
 const createdTime = footer.createdTime || ''
-const showFooter = inject('showFooter', ref(false))
+const { showFooter } = useLayoutState()
 const isMounted = ref(false)
 const formattedTime = ref('')
 

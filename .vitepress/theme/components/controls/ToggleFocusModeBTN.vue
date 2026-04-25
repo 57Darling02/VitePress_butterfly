@@ -4,16 +4,14 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onUnmounted, ref, watch, type Ref } from 'vue'
-const isFocusMode = inject<Ref<boolean>>('isFocusMode', ref(false))
+import { onUnmounted, watch } from 'vue'
+import { useLayoutState } from '../../composables/useLayoutState'
+
+const { isFocusMode, toggleFocusMode } = useLayoutState()
 
 const syncNoMotionClass = (enabled: boolean) => {
     if (typeof document === 'undefined') return
     document.documentElement.classList.toggle('no-motion', enabled)
-}
-
-const toggleFocusMode = () => {
-    isFocusMode.value = !isFocusMode.value
 }
 
 watch(isFocusMode, (enabled) => {

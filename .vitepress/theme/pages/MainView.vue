@@ -14,6 +14,7 @@
                 <template #main-content>
                     <content v-show="isMounted" class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
                         style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
+                    <MarkdownImagePreview v-if="isMounted" />
                     <el-skeleton v-if="!isMounted" :rows="8" animated :class="{ 'a-card': !isFocusMode }" />
                     <GiscusComments v-if="isMounted" class="fade-item comments-panel" :class="{ 'a-card': !isFocusMode }"
                         style="--delay:0.1s" />
@@ -34,15 +35,17 @@
 </template>
 <script lang='ts' setup>
 import { onContentUpdated, useData } from 'vitepress'
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import DocView from '../layouts/DocView.vue'
 import Toc from '../components/navigation/Toc.vue'
 import ProfileCard from '../components/cards/ProfileCard.vue'
 import PostInfo from '../components/cards/PostInfo.vue'
 import GiscusComments from '../components/comments/GiscusComments.vue'
+import MarkdownImagePreview from '../components/effects/MarkdownImagePreview.vue'
+import { useLayoutState } from '../composables/useLayoutState'
 const data = useData()
 const frontmatter = computed(() => data.frontmatter.value)
-const isFocusMode = inject('isFocusMode')
+const { isFocusMode } = useLayoutState()
 const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true

@@ -15,7 +15,7 @@
     "dev": "pnpm prepare-content && vitepress dev --host 0.0.0.0",
     "preview": "vitepress preview",
     "docs:build": "pnpm prepare-content && vitepress build",
-    "build": "pnpm prepare-content && vitepress build --outDir docs"
+    "build": "pnpm docs:build"
   },
   "dependencies": {
     "@giscus/vue": "^3.1.1",
@@ -23,7 +23,6 @@
     "cross-spawn": "^7.0.6",
     "element-plus": "^2.13.7",
     "js-yaml": "^4.1.1",
-    "lodash-es": "^4.17.21",
     "p-map": "^7.0.3",
     "typeit": "^8.8.7"
   },

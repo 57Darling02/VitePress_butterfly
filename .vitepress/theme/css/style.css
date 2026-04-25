@@ -4,15 +4,25 @@
 @import './vp-code.css';
 @import './blockquote.css';
 
-/**
- * 自定以组件的相关变量
- * -------------------------------------------------------------------------- */
+
 :root {
   --sidebar-width: 300px;
   --nav-height: 48px;
   /* 重构elementpluscss */
   --el-bg-color: var(--vp-c-bg);
   --vp-c-bg-rgb: 255, 255, 255;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans",
+    "Helvetica Neue",
+    Arial,
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    "Noto Sans CJK SC",
+    sans-serif;
 }
 
 html:not(.dark) {
@@ -103,4 +113,8 @@ footer {
   position: relative;
   background-color: var(--vp-c-gray-soft);
   border-left: 6px solid var(--vp-c-green-2);
+}
+
+.vp-doc img:not([data-no-preview]) {
+  cursor: zoom-in;
 }

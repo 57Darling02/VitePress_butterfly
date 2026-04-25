@@ -4,7 +4,7 @@
         <slot name="doc-header"/>
     </div>
 
-    <div id="content-container" :style="{ maxWidth: isFocusMode&& (!frontmatter.layout || frontmatter.layout == 'doc') ? 'none' : '1200px' }">
+    <div id="content-container" :style="{ maxWidth: isFocusMode&& (!frontmatter.layout || frontmatter.layout == 'doc') ? 'none' : '1380px' }">
 
         <!-- 主内容 -->
         <div id="page-wrapper" style="overflow: hidden;padding-top: 20px;">
@@ -32,13 +32,11 @@
     </div>
 </template>
 <script lang='ts' setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useData } from 'vitepress'
+import { useLayoutState } from '../composables/useLayoutState'
 const { theme, page, frontmatter } = useData()
-// 获取全局状态和方法
-const isFocusMode = inject('isFocusMode')
-const showNavbar = inject('showNavbar')
-const showSidebar = inject('showSidebar')
+const { isFocusMode, showNavbar, showSidebar } = useLayoutState()
 const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true

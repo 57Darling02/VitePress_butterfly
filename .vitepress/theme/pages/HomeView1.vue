@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, inject, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useData } from 'vitepress'
 import TypeIt from 'typeit'
 import DocView from '../layouts/DocView.vue'
@@ -64,7 +64,6 @@ import ArticleCard from '../components/cards/ArticleCard.vue'
 import { data as posts } from '../data/posts.data.ts'
 
 const { theme } = useData()
-const isFocusMode = inject('isFocusMode')
 
 const selectedTags = ref([])
 const currentPage = ref(1)

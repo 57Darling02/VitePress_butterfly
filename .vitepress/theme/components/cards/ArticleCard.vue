@@ -58,11 +58,11 @@ const formattedDate = computed(() => {
                 </p>
                 <div class="article-info" data-allow-mismatch>
                     <el-space wrap class="tag-group">
-                        <p v-if="formattedDate" class="article-words"><i class="fa-solid fa-upload">&nbsp;发布于&nbsp;{{
-                                formattedDate }}</i>
+                        <p v-if="formattedDate" class="article-words"><i class="fa-solid fa-upload"></i>&nbsp;发布于&nbsp;{{
+                                formattedDate }}
                         </p>
                         <VPDocFooterLastUpdated :lastUpdated="props.post.lastUpdated" />
-                        <i class="fa-solid fa-pen">&nbsp;{{ props.post.textNum }}字</i>
+                        <p><i class="fa-solid fa-pen"></i>&nbsp;{{ props.post.textNum }}字</p>
                         <el-tag v-for="(tag, index) in props.post.tags" :key="index" size="default" type="info"
                             effect="plain"
                             style="display: flex;justify-content: center;background-color: var(--vp-c-bg-soft);" round>

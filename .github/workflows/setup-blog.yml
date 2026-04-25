@@ -3,10 +3,6 @@ name: Setup Blog
 on:
   workflow_dispatch:
     inputs:
-      wiki_template:
-        description: "Content template repository"
-        required: true
-        default: "57Darling02/wiki_template"
       wiki_repo_name:
         description: "New content repository name"
         required: true
@@ -52,7 +48,7 @@ jobs:
           GH_TOKEN: ${{ secrets.SETUP_PAT }}
           OWNER: ${{ github.repository_owner }}
           BLOG_REPO: ${{ github.repository }}
-          WIKI_TEMPLATE: ${{ inputs.wiki_template }}
+          WIKI_TEMPLATE: "57Darling02/wiki_template"
           WIKI_REPO_NAME: ${{ inputs.wiki_repo_name }}
           WIKI_BRANCH: ${{ inputs.wiki_branch }}
         run: |
@@ -60,11 +56,6 @@ jobs:
 
           if ! command -v gh >/dev/null 2>&1; then
             echo "::error::GitHub CLI is not available on this runner."
-            exit 1
-          fi
-
-          if [[ ! "$WIKI_TEMPLATE" =~ ^[^/]+/[^/]+$ ]]; then
-            echo "::error::wiki_template must look like owner/repo."
             exit 1
           fi
 

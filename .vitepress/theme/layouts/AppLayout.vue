@@ -18,7 +18,7 @@
     </el-scrollbar>
     <div id="control">
         <transition name="el-fade-in">
-            <div class="social-item" @click="backToTop" v-show="showNavbar && lastScrollY > 100">
+            <div class="social-item" @click="handleBackToTopClick" v-show="showNavbar && lastScrollY > 100">
                 <i class="fa-solid fa-chevron-up"></i>
             </div>
         </transition>
@@ -31,7 +31,7 @@
         <div id="control-column">
 
             <transition name="el-fade-in">
-                <div class="social-item" v-show="controlVisible || showSidebar">
+                <div class="social-item" v-if="canShowSidebar" v-show="controlVisible || showSidebar">
                     <ToggleSiderBar />
                 </div>
             </transition>
@@ -57,8 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onMounted, onUnmounted, ref } from 'vue'
-import { throttle } from 'lodash-es'
+import { onMounted, ref } from 'vue'
 import { useData, onContentUpdated } from 'vitepress'
 const { theme, page, frontmatter, isDark } = useData()
 import Nav from '../components/navigation/Nav.vue'
@@ -69,13 +68,16 @@ import Loading from '../components/effects/Loading.vue'
 import Toc from '../components/navigation/Toc.vue'
 
 import Bg_StarrySkySass from '../components/effects/Bg_StarrySkySass.vue'
-// 获取全局状态
-const isFocusMode = inject('isFocusMode')
-const showNavbar = inject('showNavbar', ref(true))
-const showSidebar = inject('showSidebar', ref(true))
-const showFooter = inject('showFooter', ref(false))
-// 移动端状态
-const isMobile = inject('isMobile', ref(false))
+import { useLayoutState } from '../composables/useLayoutState'
+
+const {
+    isFocusMode,
+    showNavbar,
+    showSidebar,
+    canShowSidebar,
+    setNavbarVisible,
+    setFooterVisible,
+} = useLayoutState()
 
 // 获取全局控件
 const isMounted = ref(false)
@@ -89,29 +91,26 @@ import VPSwitchAppearance from '../components/controls/VPSwitchAppearance.vue'
 import ToggleFocusModeBTN from '../components/controls/ToggleFocusModeBTN.vue'
 import ToggleSiderBar from '../components/controls/ToggleSiderBar.vue'
 
-// 窗口宽度状态和尺寸变化处理
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 0)
-const handleResize = () => {
-    if (typeof window === 'undefined') return
-    windowWidth.value = window.innerWidth
-    // 宽度大于748px显示侧边栏
-    if (windowWidth.value <= 748) {
-        isMobile.value = true
-        showSidebar.value = false
-    } else {
-        isMobile.value = false
-        showSidebar.value = true
+function throttle<T extends (...args: any[]) => void>(fn: T, delay: number) {
+    let lastRun = 0
+    return (...args: Parameters<T>) => {
+        const now = Date.now()
+        if (now - lastRun < delay) return
+        lastRun = now
+        fn(...args)
     }
 }
 
-//实现导航栏滚动的隐藏和显示
+
+
+// 实现导航栏滚动的隐藏和显示
 const lastScrollY = ref(0)
 const scrollingDown = ref(false)
 const checkPageHeight = () => {
     if (!isMounted.value) return
     const docHeight = contentContainer.value?.scrollHeight || 0
     const winHeight = scrollbarRef.value?.wrapRef?.clientHeight || 0
-    if (docHeight <= winHeight) showFooter.value = true
+    if (docHeight <= winHeight) setFooterVisible(true)
 }
 const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
     if (!isMounted.value) return // 挂载前不处理
@@ -120,26 +119,30 @@ const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
     scrollingDown.value = currentY > lastScrollY.value
 
     if (typeof window !== 'undefined' && currentY < 150 && (frontmatter.value.layout === 'doc' || frontmatter.value.layout === undefined) && window !== undefined) {
-        showNavbar.value = true
+        setNavbarVisible(true)
     } else if (scrollingDown.value) {
-        showNavbar.value = false
+        setNavbarVisible(false)
     } else {
-        showNavbar.value = true
+        setNavbarVisible(true)
     }
     const documentHeight = contentContainer.value?.scrollHeight || 0
 
     if (currentY + windowHeight >= documentHeight - 100) {
-        showNavbar.value = true
-        showFooter.value = true
+        setNavbarVisible(true)
+        setFooterVisible(true)
     } else {
-        showFooter.value = false
+        setFooterVisible(false)
     }
     lastScrollY.value = currentY
-}, 250)
+}, 150)
 
 // 控制栏
 const backToTop = (smooth = true) => {
     scrollbarRef.value?.wrapRef?.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' })
+}
+
+const handleBackToTopClick = () => {
+    backToTop()
 }
 onContentUpdated(() => {
     const hasHash = typeof window !== 'undefined' && Boolean(window.location.hash)
@@ -154,18 +157,11 @@ onMounted(() => {
     if (typeof window === 'undefined') return
     contentContainer.value = scrollbarRef.value?.wrapRef?.querySelector('.el-scrollbar__view')
     const initialScrollTop = scrollbarRef.value?.wrapRef?.scrollTop || 0
-    showNavbar.value = initialScrollTop < 100
-    showSidebar.value = windowWidth.value > 748
-    handleResize()
-    window.addEventListener('resize', handleResize)
+    setNavbarVisible(initialScrollTop < 100)
     setTimeout(() => {
         isMounted.value = true
         checkPageHeight()
     }, 800)
-})
-onUnmounted(() => {
-    if (typeof window === 'undefined') return
-    window.removeEventListener('resize', handleResize)
 })
 
 </script>

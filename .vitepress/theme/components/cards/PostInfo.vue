@@ -1,44 +1,48 @@
 <template>
-  <div id="article-header" class="a-card">
-    <!-- 标题区域 -->
-    <div id="header-title">
+  <div class="article-header a-card" :class="{ 'is-mobile': isMobile }">
+    <div class="header-title">
       <h1>{{ title }}</h1>
     </div>
-    <!-- 元信息区域 -->
+
     <div class="meta-info">
-      <!-- 作者信息 -->
-      <div class="author-info">
-        <i class="fa-solid fa-user">&nbsp;{{ author }}</i>
-        <a><i class="fa-solid fa-eye">&nbsp;<span id="busuanzi_value_page_pv">--</span>次</i></a>
-      </div>
-      <div class="divider"></div>
-      <div class="date-info">
-        <time :datetime="date"><i class="fa-solid fa-upload">&nbsp;发布于&nbsp;{{ formattedDate }}</i></time>
-      </div>
-      <div class="divider"></div>
-        <VPDocFooterLastUpdated v-if="lastUpdated" :lastUpdated="lastUpdated" />
+      <span class="meta-item">
+        <i class="fa-solid fa-user" />
+        <span>{{ author }}</span>
+      </span>
+      <span class="divider" />
+      <a class="meta-item">
+        <i class="fa-solid fa-eye" />
+        <span><span id="busuanzi_value_page_pv">--</span>次</span>
+      </a>
+      <span class="divider" />
+      <time class="meta-item" :datetime="date">
+        <i class="fa-solid fa-upload" />
+        <span>发布于&nbsp;{{ formattedDate }}</span>
+      </time>
+      <span v-if="lastUpdated" class="divider" />
+      <VPDocFooterLastUpdated v-if="lastUpdated" class="meta-item" :lastUpdated="lastUpdated" />
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useData } from 'vitepress'
+import { useLayoutState } from '../../composables/useLayoutState'
 import { data as posts } from '../../data/posts.data.ts'
 import VPDocFooterLastUpdated from '../controls/VPDocFooterLastUpdated.vue'
 
 const { frontmatter, theme, page, lang } = useData()
+const { isMobile } = useLayoutState()
 
-const {
-  title = "Untitled Article",
-  author = frontmatter.value?.author || theme.value?.author || "Unknown Author",
-  date = '',
-} = frontmatter.value
+const title = computed(() => frontmatter.value.title ?? 'Untitled Article')
+const author = computed(() => frontmatter.value.author ?? theme.value.author ?? 'Unknown Author')
+const date = computed(() => frontmatter.value.date ?? '')
+const post = computed(() => posts.find(post => post.path === page.value.path))
+const lastUpdated = computed(() => post.value?.lastUpdated)
 
-const post = posts.find(post => post.path === page.path)
-const lastUpdated = post?.lastUpdated
 const formattedDate = computed(() => {
-  if (!date) return 'Unknown date'
+  if (!date.value) return 'Unknown date'
   try {
     return new Intl.DateTimeFormat(
       theme.value.lastUpdated?.formatOptions?.forceLocale ? lang.value : undefined,
@@ -46,92 +50,86 @@ const formattedDate = computed(() => {
         dateStyle: 'short',
         timeStyle: 'short'
       }
-    ).format(new Date(date))
+    ).format(new Date(date.value))
   } catch {
     return 'Invalid date'
   }
 })
 </script>
 
-<style>
-#article-header {
+<style scoped>
+.article-header {
   padding: 2rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  display: flex;
-  
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: fit-content;
-  margin: 0 auto;
-  background-color: rgba(var(--vp-c-bg-rgb), 0.5);
+  width: min(100%, max-content);
   max-width: 80%;
+  margin: 0 auto;
+  border-radius: 8px;
+  background-color: rgba(var(--vp-c-bg-rgb), 0.5);
 }
 
-#header-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.header-title {
   margin-bottom: 1.5rem;
+  text-align: center;
 }
 
-#header-title h1 {
-  margin-bottom: 8px;
+.header-title h1 {
+  margin: 0;
   font-weight: 400;
   font-size: 2.5em;
   line-height: 1.5;
-
 }
 
 .meta-info {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
   color: var(--vp-c-text-2);
   font-size: 0.9rem;
 }
 
-.author-info,
-.date-info {
-  display: flex;
+.meta-item {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.meta-item i,
+.meta-item :deep(i) {
+  color: var(--vp-c-brand);
+  font-size: 0.95em;
+  line-height: 1;
 }
 
 .divider {
+  flex: 0 0 auto;
   width: 1px;
   height: 1em;
   background: var(--vp-c-divider);
 }
 
-.icon {
-  color: var(--vp-c-brand);
-  font-size: 0.9em;
+.article-header.is-mobile {
+  width: 100%;
+  max-width: 100%;
+  padding: 1.5rem;
 }
 
-.title-icon {
-  font-size: 1.2em;
+.article-header.is-mobile .header-title h1 {
+  font-size: 1.5rem;
 }
 
-/* 响应式设计 */
-@media (max-width: 640px) {
-  .article-header {
-    padding: 1.5rem;
-  }
+.article-header.is-mobile .meta-info {
+  flex-direction: column;
+  align-items: flex-start;
+}
 
-  #header-title h1 {
-    font-size: 1.5rem;
-  }
-
-  .meta-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .divider {
-    display: none;
-  }
+.article-header.is-mobile .divider {
+  display: none;
 }
 </style>

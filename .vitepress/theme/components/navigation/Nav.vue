@@ -1,9 +1,9 @@
 <template>
-    <div id="nav" :class="{ 'nav-hidden': !showNavbar }">
+    <div id="nav" ref="navRef" :class="{ 'nav-hidden': !showNavbar }">
         <div id="menu">
             <a class="menu-fitem" href="/" @click.prevent="handleHomeClick">
                 <span>
-                    <i class="fa-solid fa-house"></i>{{ showSidebar ? '首页' : '' }}
+                    <i class="fa-solid fa-house"></i>{{ navCompact ? '' : '首页' }}
                 </span>
             </a>
 
@@ -13,7 +13,7 @@
                 @click.prevent="handleMenuTriggerClick(item, $event)">
                 <span>
                     <i :class="item.icon" class="arrow-icon"></i>
-                    {{ showSidebar ? item.label : '' }}
+                    {{ navCompact ? '' : item.label }}
                 </span>
             </a>
 
@@ -22,7 +22,7 @@
                 @mouseenter="openMusicPanel" @mouseleave="scheduleCloseMusicPanel" @click.prevent="handleMusicTriggerClick">
                 <span>
                     <i class="fa-solid fa-compact-disc music-icon" :class="{ 'music-icon-rotating': isMusicPlaying }"></i>
-                    {{ showSidebar ? '音乐' : '' }}
+                    {{ navCompact ? '' : '音乐' }}
                 </span>
             </a>
         </div>
@@ -60,16 +60,17 @@
 <script lang="ts" setup>
 import type { DropdownInstance } from 'element-plus'
 import { useData, useRouter } from 'vitepress'
-import { computed, inject, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type ThemeConfig from '../../types/ThemeConfig'
 import APlayerWidget from '../player/APlayerWidget.vue'
+import { useLayoutState } from '../../composables/useLayoutState'
 
 const { theme } = useData<ThemeConfig>()
 const router = useRouter()
-const showNavbar = inject('showNavbar')
-const showSidebar = inject('showSidebar', ref(true))
+const { showNavbar, navCompact } = useLayoutState()
 const menuItems = computed(() => (theme.value.menuItems || []) as any[])
 
+const navRef = ref<HTMLElement | null>(null)
 const menuDropdownRef = ref<DropdownInstance>()
 const menuPanelVisible = ref(false)
 const activeMenuItem = ref<any | null>(null)
@@ -263,6 +264,13 @@ const closeMusicPanel = () => {
     musicDropdownRef.value?.handleClose()
 }
 
+const blurNavFocus = () => {
+    const activeElement = document.activeElement
+    if (activeElement instanceof HTMLElement && navRef.value?.contains(activeElement)) {
+        activeElement.blur()
+    }
+}
+
 const scheduleCloseMusicPanel = () => {
     cancelCloseMusicPanel()
     musicCloseTimer = setTimeout(closeMusicPanel, 140)
@@ -286,6 +294,13 @@ const handleMusicTriggerClick = () => {
 const onMusicPanelVisibleChange = (visible: boolean) => {
     musicPanelVisible.value = visible
 }
+
+watch(showNavbar, (visible) => {
+    if (visible) return
+    closeMenuPanel()
+    closeMusicPanel()
+    blurNavFocus()
+})
 
 onBeforeUnmount(() => {
     cancelCloseMenuPanel()
