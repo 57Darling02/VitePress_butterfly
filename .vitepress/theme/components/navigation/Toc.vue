@@ -20,15 +20,26 @@ const getScrollContainer = (): HTMLElement | Window | null => {
   return document.querySelector('.el-scrollbar__wrap') || window
 }
 
-// 目录数据
-interface Node {
-  children: Node[]
+interface TocNode {
+  children: TocNode[]
   label: string
   value: string
   level: number
 }
 
-const headers = shallowRef<Node[]>([])
+type HeaderItem = TocNode & {
+  element: HTMLHeadingElement
+}
+
+type HeaderResult = {
+  headers: TocNode[]
+  pathMap: Map<string, string[]>
+}
+
+const headers = shallowRef<TocNode[]>([])
+const anchorPathMap = shallowRef(new Map<string, string[]>())
+const activeAnchor = ref('')
+const ignoreHeaderChildRE = /\b(?:VPBadge|header-anchor|footnote-ref|ignore-header)\b/
 
 const normalizeAnchor = (anchor: string): string => {
   if (!anchor) return ''
@@ -36,23 +47,27 @@ const normalizeAnchor = (anchor: string): string => {
   return hashIndex >= 0 ? anchor.slice(hashIndex) : anchor
 }
 
-const findPathToNode = (nodes: Node[], target: string, path: string[] = []): string[] => {
-  for (const node of nodes) {
-    const currentPath = [...path, node.value]
-    if (node.value === target) return currentPath
-    if (node.children.length > 0) {
-      const childPath = findPathToNode(node.children, target, currentPath)
-      if (childPath.length > 0) return childPath
+const serializeHeader = (el: HTMLHeadingElement): string => {
+  let text = ''
+
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const child = node as HTMLElement
+      if (ignoreHeaderChildRE.test(child.className)) continue
+      text += child.textContent
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      text += node.textContent
     }
   }
-  return []
+
+  return text.trim()
 }
 
 const syncExpandedToCurrent = (anchor: string): void => {
   const key = normalizeAnchor(anchor)
   if (!key) return
 
-  const currentPath = findPathToNode(headers.value, key)
+  const currentPath = anchorPathMap.value.get(key) ?? []
   const expandedKeys = new Set(currentPath)
   const treeStore = (treeRef.value as any)?.store
   const nodesMap = treeStore?.nodesMap
@@ -65,9 +80,9 @@ const syncExpandedToCurrent = (anchor: string): void => {
 }
 
 // 获取页面标题
-const getHeaders = (range: any): Node[] => {
+const getHeaders = (range: any): HeaderResult => {
   if (range === false) {
-    return []
+    return { headers: [], pathMap: new Map() }
   }
   
   const headerElements = Array.from(
@@ -76,10 +91,11 @@ const getHeaders = (range: any): Node[] => {
   
   const headerData = headerElements
     .filter(el => el.id && el.hasChildNodes())
-    .map(el => ({
-      label: el.textContent?.trim() || '',
+    .map<HeaderItem>(el => ({
+      label: serializeHeader(el),
       value: `#${el.id}`,
       level: Number(el.tagName[1]),
+      element: el,
       children: []
     }))
 
@@ -87,7 +103,7 @@ const getHeaders = (range: any): Node[] => {
 }
 
 // 解析标题范围
-const resolveHeaders = (headers: Node[], range: any): Node[] => {
+const resolveHeaders = (headers: HeaderItem[], range: any): HeaderResult => {
   const levelsRange = (typeof range === 'object' && !Array.isArray(range)
     ? range.level
     : range) || 2
@@ -102,31 +118,68 @@ const resolveHeaders = (headers: Node[], range: any): Node[] => {
 }
 
 // 构建树形结构
-const buildTree = (data: Node[], min: number, max: number): Node[] => {
-  const result: Node[] = []
-  const stack: Node[] = []
+const buildTree = (data: HeaderItem[], min: number, max: number): HeaderResult => {
+  const result: TocNode[] = []
+  const pathMap = new Map<string, string[]>()
+  const stack: Array<{
+    ignored: boolean
+    level: number
+    node: TocNode
+    path: string[]
+  }> = []
   
   data.forEach(item => {
-    const node: Node = item
+    const node: TocNode = {
+      label: item.label,
+      value: item.value,
+      level: item.level,
+      children: []
+    }
     let parent = stack[stack.length - 1]
     
-    while (parent && parent.level >= node.level) {
+    while (parent && parent.level >= item.level) {
       stack.pop()
       parent = stack[stack.length - 1]
     }
+
+    const ignored = item.element.classList.contains('ignore-header') || Boolean(parent?.ignored)
     
-    if (node.level > max || node.level < min) return
+    if (ignored) {
+      stack.push({
+        ignored: true,
+        level: item.level,
+        node,
+        path: parent?.path ?? []
+      })
+      return
+    }
+    
+    if (item.level > max || item.level < min) return
     
     if (parent) {
-      parent.children.push(node)
+      parent.node.children.push(node)
     } else {
       result.push(node)
     }
+
+    const currentPath = [...(parent?.path ?? []), node.value]
+    pathMap.set(node.value, currentPath)
     
-    stack.push(node)
+    stack.push({
+      ignored: false,
+      level: item.level,
+      node,
+      path: currentPath
+    })
   })
   
-  return result
+  return { headers: result, pathMap }
+}
+
+const refreshHeaders = (): void => {
+  const result = getHeaders(frontmatter.value.outline ?? theme.value.outline ?? 'deep')
+  headers.value = result.headers
+  anchorPathMap.value = result.pathMap
 }
 
 // 锚点变化处理
@@ -134,6 +187,9 @@ const anchor_change = (e: string): void => {
   if (typeof window === 'undefined') return
   
   const currentAnchor = normalizeAnchor(e)
+  if (!currentAnchor || currentAnchor === activeAnchor.value) return
+  activeAnchor.value = currentAnchor
+
   treeRef.value?.setCurrentKey(currentAnchor)
   syncExpandedToCurrent(currentAnchor)
   
@@ -176,10 +232,11 @@ const move2current_anchor = (): void => {
 // 生命周期钩子
 onMounted(() => {
   scrollContainer.value = getScrollContainer()
-  headers.value = getHeaders(frontmatter.value.outline ?? theme.value.outline ?? 'deep')
+  refreshHeaders()
   nextTick(() => {
     const currentHash = typeof window === 'undefined' ? '' : normalizeAnchor(window.location.hash)
     if (!currentHash) return
+    activeAnchor.value = currentHash
     treeRef.value?.setCurrentKey(currentHash)
     syncExpandedToCurrent(currentHash)
   })
@@ -187,10 +244,11 @@ onMounted(() => {
 
 // 监听内容更新
 onContentUpdated(() => {
-  headers.value = getHeaders(frontmatter.value.outline ?? theme.value.outline ?? 'deep')
+  refreshHeaders()
   nextTick(() => {
     const currentHash = typeof window === 'undefined' ? '' : normalizeAnchor(window.location.hash)
     if (!currentHash) return
+    activeAnchor.value = currentHash
     treeRef.value?.setCurrentKey(currentHash)
     syncExpandedToCurrent(currentHash)
   })

@@ -20,6 +20,9 @@ const defaultSiteConfig = {
   lastUpdated: {
     use: true,
   },
+  search: {
+    provider: 'local',
+  },
   avatar: '/image/image.png',
   name: 'VitePress-Butterfly',
   position: 'Blog',

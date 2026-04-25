@@ -13,6 +13,7 @@ export default interface ThemeConfig {
   sortMethod?: "date" | "lastUpdated";
   // 最后更新时间
   lastUpdated: LastUpdatedConfig;
+  search?: SearchConfig;
   // 侧边简介卡
   avatar: string;
   name: string;
@@ -39,6 +40,11 @@ interface HomeConfig {
 
 interface LastUpdatedConfig {
   use: boolean;
+}
+
+interface SearchConfig {
+  provider: 'local' | 'algolia';
+  options?: Record<string, unknown>;
 }
 
 interface SocialLink {

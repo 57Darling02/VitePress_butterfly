@@ -51,7 +51,7 @@ const contentLoaderConfig = {
                     excerpt: excerpt,
                     tags: normalizeTags(page.frontmatter?.tags),
                     cover: page.frontmatter.cover || '',
-                    lastUpdated: lastUpdated as number || new Date(page.frontmatter.date).getTime() || new Date().getTime(),
+                    lastUpdated,
                     textNum,
                 }
                 // return { ...item, lastUpdated };
@@ -61,7 +61,7 @@ const contentLoaderConfig = {
         const sortMethod: "date" | "lastUpdated" = theme.sortMethod || 'lastUpdated';
         switch (sortMethod) {
             case 'lastUpdated':
-                data.sort((a, b) => b.lastUpdated - a.lastUpdated);
+                data.sort((a, b) => getSortTime(b) - getSortTime(a));
                 break;
             case 'date':
             default:
@@ -75,6 +75,10 @@ const loader = createContentLoader('posts/**/*.md', contentLoaderConfig)
 export const data = await loader.load();
 export default loader;
 // export default createContentLoader('posts/**/*.md', contentLoaderConfig)
+
+function getSortTime(post: any): number {
+    return post.lastUpdated || new Date(post.date).getTime() || 0;
+}
 
 // getLastUpdated function to fetch the last update time of a markdown file
 async function getLastUpdated(url: string) {
@@ -90,12 +94,15 @@ async function getLastUpdated(url: string) {
         const cwd = path.dirname(file);
         if (!fs.existsSync(cwd)) return resolve(0);
         const fileName = path.basename(file);
-        const child = spawn("git", ["log", "-1", '--pretty="%ai"', fileName], {
+        const child = spawn("git", ["log", "-1", "--pretty=%ai", "--", fileName], {
             cwd,
         });
         let output = "";
         child.stdout.on("data", (data) => (output += String(data)));
-        child.on("close", () => resolve(new Date(output).getTime()));
+        child.on("close", () => {
+            const time = new Date(output.trim()).getTime();
+            resolve(Number.isFinite(time) ? time : 0);
+        });
         child.on("error", reject);
     });
 }

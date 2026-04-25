@@ -5,9 +5,7 @@
             <i v-if="page?.title"><i class="fa-solid fa-location-dot"></i>{{formattedFilePath}} - {{ page?.title }}</i>
             <i v-else>&nbsp;{{ message }}</i>
         </el-text>
-        <el-text size="default" v-if="copyright">
-            {{ copyright }}
-        </el-text>
+        
         <el-text style="width: 100%;text-align: center;" size="small">
             <span id="vercount_container_site_pv" style='display:none'>
                 本站总访问量<span id="vercount_value_site_pv" />次
@@ -16,9 +14,11 @@
             <a v-if="createdTime">
                 <span class="gear-icon">⏣</span>&nbsp;博客已运行:{{ isMounted ? formattedTime : '' }}
             </a>
-            
         </el-text>
-            
+        
+        <el-text size="default" v-if="copyright">
+            {{ copyright }}
+        </el-text>
     </div>
 </template>
 

@@ -8,6 +8,8 @@
 :root {
   --sidebar-width: 300px;
   --nav-height: 48px;
+  --z-fixed-control: 900;
+  --z-overlay: 1000;
   /* 重构elementpluscss */
   --el-bg-color: var(--vp-c-bg);
   --vp-c-bg-rgb: 255, 255, 255;
@@ -42,6 +44,10 @@ footer {
   justify-content: center;
   align-items: center;
   margin-top: 30px;
+}
+
+body .VPLocalSearchBox.VPLocalSearchBox {
+  z-index: var(--z-overlay);
 }
 
 /**

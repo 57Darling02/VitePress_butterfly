@@ -17,6 +17,13 @@
                 </span>
             </a>
 
+            <a class="menu-fitem menu-fitem-search" @click.prevent="handleSearchClick">
+                <span>
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    {{ navCompact ? '' : '搜索' }}
+                </span>
+            </a>
+
             <a v-if="shouldShowMusicPlayer" ref="musicTriggerRef"
                 :class="['menu-fitem', 'menu-fitem-music', { 'menu-fitem-active': musicPanelVisible }]"
                 @mouseenter="openMusicPanel" @mouseleave="scheduleCloseMusicPanel" @click.prevent="handleMusicTriggerClick">
@@ -25,6 +32,10 @@
                     {{ navCompact ? '' : '音乐' }}
                 </span>
             </a>
+
+            <ClientOnly>
+                <VPNavBarSearch ref="searchRef" class="native-search-host" />
+            </ClientOnly>
         </div>
     </div>
 
@@ -60,6 +71,7 @@
 <script lang="ts" setup>
 import type { DropdownInstance } from 'element-plus'
 import { useData, useRouter } from 'vitepress'
+import { VPNavBarSearch } from 'vitepress/theme'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type ThemeConfig from '../../types/ThemeConfig'
 import APlayerWidget from '../player/APlayerWidget.vue'
@@ -79,6 +91,7 @@ const musicDropdownRef = ref<DropdownInstance>()
 const musicPanelVisible = ref(false)
 const isMusicPlaying = ref(false)
 const musicTriggerRef = ref<HTMLElement | null>(null)
+const searchRef = ref<InstanceType<typeof VPNavBarSearch> | null>(null)
 
 const menuTriggerRect = ref(
     DOMRect.fromRect({
@@ -291,6 +304,11 @@ const handleMusicTriggerClick = () => {
     openMusicPanel()
 }
 
+const handleSearchClick = () => {
+    const searchEl = searchRef.value?.$el as HTMLElement | undefined
+    searchEl?.querySelector<HTMLButtonElement>('button')?.click()
+}
+
 const onMusicPanelVisibleChange = (visible: boolean) => {
     musicPanelVisible.value = visible
 }
@@ -320,7 +338,7 @@ $nav-gap: 4px;
     top: $nav-gap;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 9999;
+    z-index: var(--z-fixed-control);
     opacity: 0.9;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
@@ -409,6 +427,37 @@ $nav-gap: 4px;
 
     .music-icon-rotating {
         animation: music-spin 2s linear infinite;
+    }
+
+    .menu-fitem-search {
+        cursor: pointer;
+    }
+
+    .search-icon {
+        transform-origin: center;
+        transition: transform 0.5s ease;
+    }
+
+    .menu-fitem-search:hover .search-icon {
+        transform: rotate(360deg);
+    }
+
+    .native-search-host {
+        position: absolute;
+        flex: 0 0 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 0;
+        height: 0;
+        overflow: visible;
+    }
+
+    .native-search-host :deep(.VPNavBarSearchButton) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
     }
 }
 

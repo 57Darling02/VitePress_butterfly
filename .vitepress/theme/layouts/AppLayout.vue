@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useData, onContentUpdated } from 'vitepress'
 const { theme, page, frontmatter, isDark } = useData()
 import Nav from '../components/navigation/Nav.vue'
@@ -144,10 +144,41 @@ const backToTop = (smooth = true) => {
 const handleBackToTopClick = () => {
     backToTop()
 }
+
+const scrollToHash = (smooth = false) => {
+    if (typeof window === 'undefined') return
+    const hash = window.location.hash
+    if (!hash) return
+
+    const id = decodeURIComponent(hash.slice(1))
+    const target = document.getElementById(id)
+    const wrap = scrollbarRef.value?.wrapRef
+    if (!target || !wrap) return
+
+    const targetRect = target.getBoundingClientRect()
+    const wrapRect = wrap.getBoundingClientRect()
+    const navOffset = showNavbar.value ? 64 : 16
+    const top = targetRect.top - wrapRect.top + wrap.scrollTop - navOffset
+
+    wrap.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' })
+}
+
+const scrollToHashAfterRender = (smooth = false) => {
+    nextTick(() => {
+        requestAnimationFrame(() => scrollToHash(smooth))
+    })
+}
+
+const handleHashChange = () => {
+    scrollToHashAfterRender(true)
+}
+
 onContentUpdated(() => {
     const hasHash = typeof window !== 'undefined' && Boolean(window.location.hash)
     if (!hasHash) {
         backToTop(false)
+    } else {
+        scrollToHashAfterRender(false)
     }
     checkPageHeight()
 })
@@ -158,10 +189,17 @@ onMounted(() => {
     contentContainer.value = scrollbarRef.value?.wrapRef?.querySelector('.el-scrollbar__view')
     const initialScrollTop = scrollbarRef.value?.wrapRef?.scrollTop || 0
     setNavbarVisible(initialScrollTop < 100)
+    window.addEventListener('hashchange', handleHashChange)
     setTimeout(() => {
         isMounted.value = true
+        scrollToHash(false)
         checkPageHeight()
     }, 800)
+})
+
+onBeforeUnmount(() => {
+    if (typeof window === 'undefined') return
+    window.removeEventListener('hashchange', handleHashChange)
 })
 
 </script>
@@ -170,7 +208,7 @@ onMounted(() => {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 9999;
+    z-index: var(--z-fixed-control);
     display: flex;
     flex-direction: column;
     gap: 10px;

@@ -38,8 +38,13 @@ const { isMobile } = useLayoutState()
 const title = computed(() => frontmatter.value.title ?? 'Untitled Article')
 const author = computed(() => frontmatter.value.author ?? theme.value.author ?? 'Unknown Author')
 const date = computed(() => frontmatter.value.date ?? '')
-const post = computed(() => posts.find(post => post.path === page.value.path))
-const lastUpdated = computed(() => post.value?.lastUpdated)
+const currentPath = computed(() => normalizePagePath(page.value.path))
+const post = computed(() => posts.find(post => normalizePagePath(post.link) === currentPath.value))
+const lastUpdated = computed(() => post.value?.lastUpdated ?? (page.value as any).lastUpdated)
+
+function normalizePagePath(path = '') {
+  return path.replace(/\.html$/, '')
+}
 
 const formattedDate = computed(() => {
   if (!date.value) return 'Unknown date'
