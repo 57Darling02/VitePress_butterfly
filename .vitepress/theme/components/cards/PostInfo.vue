@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useData } from 'vitepress'
 import { useLayoutState } from '../../composables/useLayoutState'
 import { data as posts } from '../../data/posts.data.ts'
@@ -34,6 +34,7 @@ import VPDocFooterLastUpdated from '../controls/VPDocFooterLastUpdated.vue'
 
 const { frontmatter, theme, page, lang } = useData()
 const { isMobile } = useLayoutState()
+const isMounted = ref(false)
 
 const title = computed(() => frontmatter.value.title ?? 'Untitled Article')
 const author = computed(() => frontmatter.value.author ?? theme.value.author ?? 'Unknown Author')
@@ -47,6 +48,7 @@ function normalizePagePath(path = '') {
 }
 
 const formattedDate = computed(() => {
+  if (!isMounted.value) return ''
   if (!date.value) return 'Unknown date'
   try {
     return new Intl.DateTimeFormat(
@@ -59,6 +61,10 @@ const formattedDate = computed(() => {
   } catch {
     return 'Invalid date'
   }
+})
+
+onMounted(() => {
+  isMounted.value = true
 })
 </script>
 

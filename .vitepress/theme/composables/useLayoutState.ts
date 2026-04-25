@@ -20,6 +20,7 @@ export type LayoutState = {
   navCompact: ComputedRef<boolean>
   setNavbarVisible: (visible: boolean) => void
   setFooterVisible: (visible: boolean) => void
+  startMobileListener: () => void
   toggleFocusMode: () => void
   toggleSidebar: () => void
 }
@@ -32,8 +33,12 @@ export function createLayoutState(): LayoutState {
   const showFooter = ref(false)
   const isMobile = ref(false)
   const sidebarOpen = ref(true)
+  let mobileListenerStarted = false
 
-  if (typeof window !== 'undefined') {
+  const startMobileListener = () => {
+    if (mobileListenerStarted || typeof window === 'undefined') return
+    mobileListenerStarted = true
+
     const media = window.matchMedia(MOBILE_QUERY)
     const syncMobile = () => {
       isMobile.value = media.matches
@@ -62,6 +67,7 @@ export function createLayoutState(): LayoutState {
     setFooterVisible: (visible) => {
       showFooter.value = visible
     },
+    startMobileListener,
     toggleFocusMode: () => {
       isFocusMode.value = !isFocusMode.value
     },

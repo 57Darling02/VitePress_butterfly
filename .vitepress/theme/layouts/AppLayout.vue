@@ -77,6 +77,7 @@ const {
     canShowSidebar,
     setNavbarVisible,
     setFooterVisible,
+    startMobileListener,
 } = useLayoutState()
 
 // 获取全局控件
@@ -186,6 +187,7 @@ onContentUpdated(() => {
 // 挂载处理
 onMounted(() => {
     if (typeof window === 'undefined') return
+    startMobileListener()
     contentContainer.value = scrollbarRef.value?.wrapRef?.querySelector('.el-scrollbar__view')
     const initialScrollTop = scrollbarRef.value?.wrapRef?.scrollTop || 0
     setNavbarVisible(initialScrollTop < 100)
