@@ -97,24 +97,6 @@ jobs:
           echo "::error::Content repository was not available after waiting."
           exit 1
 
-      - name: Initialize content configuration
-        env:
-          GH_TOKEN: ${{ secrets.SETUP_PAT }}
-          WIKI_REPO: ${{ steps.setup.outputs.wiki_repo }}
-        run: |
-          set -euo pipefail
-
-          rm -rf .setup-wiki
-          gh repo clone "$WIKI_REPO" .setup-wiki
-          cp site_config.example.yml .setup-wiki/site_config.yml
-
-          cd .setup-wiki
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site_config.yml
-          git commit -m "chore: initialize site config" || exit 0
-          git push
-
       - name: Configure repository secrets
         env:
           GH_TOKEN: ${{ secrets.SETUP_PAT }}
