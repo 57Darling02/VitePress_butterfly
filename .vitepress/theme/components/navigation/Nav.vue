@@ -435,11 +435,11 @@ $nav-gap: 4px;
 
     .search-icon {
         transform-origin: center;
-        transition: transform 0.5s ease;
+        transition: transform 0.2s ease;
     }
 
     .menu-fitem-search:hover .search-icon {
-        transform: rotate(360deg);
+        transform: scale(1.18);
     }
 
     .native-search-host {

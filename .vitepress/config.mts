@@ -4,7 +4,6 @@ import path from 'node:path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import mathjax3 from 'markdown-it-mathjax3'
 import { loadSiteConfig } from './theme/utils/configLoader'
 
 const rawConfig = loadSiteConfig();
@@ -129,9 +128,7 @@ export default defineConfig<ThemeConfig>({
     }
   },
   markdown: {
-    config: (md) => {
-      md.use(mathjax3);
-    },
+    math: true,
     image: {
       // 默认禁用；设置为 true 可为所有图片启用懒加载。
       lazyLoading: true
