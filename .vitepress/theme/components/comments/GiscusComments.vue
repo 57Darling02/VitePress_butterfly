@@ -44,49 +44,30 @@ const { theme, frontmatter, isDark } = useData<ThemeConfig>()
 const comments = computed(() => theme.value.comments)
 const page = computed(() => frontmatter.value as DocFrontmatter)
 
-const readAttr = (source: string, attr: string) => {
-    const escaped = attr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const regex = new RegExp(`\\b${escaped}=['"]([^'"]*)['"]`, 'i')
-    return source.match(regex)?.[1]
-}
-
 const giscus = computed<ParsedGiscusConfig>(() => {
-    const script = comments.value?.script || ''
-    const src = readAttr(script, 'src')
-    let host = 'https://giscus.app'
-
-    if (src) {
-        try {
-            const url = new URL(src)
-            host = `${url.protocol}//${url.host}`
-        } catch {
-            // Keep default host when pasted src is invalid.
-        }
-    }
-
-    const mapping = page.value.commentId ? 'specific' : (readAttr(script, 'data-mapping') || 'pathname')
-    const term = page.value.commentId ? String(page.value.commentId) : readAttr(script, 'data-term')
-
-    const configuredTheme = readAttr(script, 'data-theme') || 'preferred_color_scheme'
+    const config = comments.value
+    const mapping = page.value.commentId ? 'specific' : (config?.mapping || 'title')
+    const term = page.value.commentId ? String(page.value.commentId) : config?.term
+    const configuredTheme = config?.theme || 'preferred_color_scheme'
     const resolvedTheme = configuredTheme === 'preferred_color_scheme'
         ? (isDark.value ? 'dark' : 'light')
         : configuredTheme
 
     return {
-        host,
-        repo: readAttr(script, 'data-repo') || '',
-        repoId: readAttr(script, 'data-repo-id') || '',
-        category: readAttr(script, 'data-category') || '',
-        categoryId: readAttr(script, 'data-category-id') || '',
+        host: config?.host || 'https://giscus.app',
+        repo: config?.repo || '',
+        repoId: config?.repoId || '',
+        category: config?.category || '',
+        categoryId: config?.categoryId || '',
         mapping,
         term,
-        strict: readAttr(script, 'data-strict') || '0',
-        reactionsEnabled: readAttr(script, 'data-reactions-enabled') || '1',
-        emitMetadata: readAttr(script, 'data-emit-metadata') || '0',
-        inputPosition: readAttr(script, 'data-input-position') || 'bottom',
+        strict: config?.strict || '0',
+        reactionsEnabled: config?.reactionsEnabled || '1',
+        emitMetadata: config?.emitMetadata || '0',
+        inputPosition: config?.inputPosition || 'bottom',
         theme: resolvedTheme,
-        lang: readAttr(script, 'data-lang') || 'zh-CN',
-        loading: readAttr(script, 'data-loading') || 'lazy',
+        lang: config?.lang || 'zh-CN',
+        loading: config?.loading || 'lazy',
     }
 })
 
@@ -98,7 +79,6 @@ const shouldShow = computed(() => {
     if (page.value.layout && page.value.layout !== 'doc') return false
     if (page.value.comments === false) return false
     if (!comments.value?.enabled) return false
-    if (!comments.value?.script) return false
     return hasRequiredConfig.value
 })
 </script>

@@ -58,9 +58,8 @@ const contentLoaderConfig = {
             },
             { concurrency: 64 }
         );
-        // Sort the data based on the themeConfig.sortedMethor options
-        const sortedMethor: "date" | "lastUpdated" = theme.sortedMethor || 'lastUpdated';
-        switch (sortedMethor) {
+        const sortMethod: "date" | "lastUpdated" = theme.sortMethod || 'lastUpdated';
+        switch (sortMethod) {
             case 'lastUpdated':
                 data.sort((a, b) => b.lastUpdated - a.lastUpdated);
                 break;

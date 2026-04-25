@@ -1,0 +1,192 @@
+name: Setup Blog
+
+on:
+  workflow_dispatch:
+    inputs:
+      wiki_template:
+        description: "Content template repository"
+        required: true
+        default: "57Darling02/wiki_template"
+      wiki_repo_name:
+        description: "New content repository name"
+        required: true
+        default: "my-blog-wiki"
+      wiki_branch:
+        description: "Content repository branch"
+        required: true
+        default: "main"
+      configure_pages:
+        description: "Try to configure GitHub Pages to use Actions"
+        type: boolean
+        required: true
+        default: true
+      trigger_deploy:
+        description: "Trigger the first site deployment"
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    name: Create content repo and configure secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout theme repository
+        uses: actions/checkout@v4
+
+      - name: Validate setup token
+        env:
+          SETUP_PAT: ${{ secrets.SETUP_PAT }}
+        run: |
+          if [ -z "$SETUP_PAT" ]; then
+            echo "::error::Missing SETUP_PAT. Add it in Settings -> Secrets and variables -> Actions before running this workflow."
+            exit 1
+          fi
+
+      - name: Create content repository from template
+        id: setup
+        env:
+          GH_TOKEN: ${{ secrets.SETUP_PAT }}
+          OWNER: ${{ github.repository_owner }}
+          BLOG_REPO: ${{ github.repository }}
+          WIKI_TEMPLATE: ${{ inputs.wiki_template }}
+          WIKI_REPO_NAME: ${{ inputs.wiki_repo_name }}
+          WIKI_BRANCH: ${{ inputs.wiki_branch }}
+        run: |
+          set -euo pipefail
+
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "::error::GitHub CLI is not available on this runner."
+            exit 1
+          fi
+
+          if [[ ! "$WIKI_TEMPLATE" =~ ^[^/]+/[^/]+$ ]]; then
+            echo "::error::wiki_template must look like owner/repo."
+            exit 1
+          fi
+
+          if [[ ! "$WIKI_REPO_NAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "::error::wiki_repo_name can only contain letters, numbers, dot, underscore, and hyphen."
+            exit 1
+          fi
+
+          TEMPLATE_OWNER="${WIKI_TEMPLATE%%/*}"
+          TEMPLATE_REPO="${WIKI_TEMPLATE#*/}"
+          WIKI_FULL_NAME="$OWNER/$WIKI_REPO_NAME"
+          WIKI_URL="https://github.com/$WIKI_FULL_NAME.git"
+
+          echo "owner=$OWNER" >> "$GITHUB_OUTPUT"
+          echo "blog_repo=$BLOG_REPO" >> "$GITHUB_OUTPUT"
+          echo "wiki_repo=$WIKI_FULL_NAME" >> "$GITHUB_OUTPUT"
+          echo "wiki_url=$WIKI_URL" >> "$GITHUB_OUTPUT"
+
+          if gh repo view "$WIKI_FULL_NAME" >/dev/null 2>&1; then
+            echo "Content repository $WIKI_FULL_NAME already exists. Reusing it."
+          else
+            echo "Creating $WIKI_FULL_NAME from $WIKI_TEMPLATE..."
+            gh api \
+              --method POST \
+              "repos/$TEMPLATE_OWNER/$TEMPLATE_REPO/generate" \
+              -f owner="$OWNER" \
+              -f name="$WIKI_REPO_NAME" \
+              -F private=true \
+              -F include_all_branches=false
+          fi
+
+          for attempt in {1..30}; do
+            if gh repo view "$WIKI_FULL_NAME" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "::error::Content repository was not available after waiting."
+          exit 1
+
+      - name: Initialize content configuration
+        env:
+          GH_TOKEN: ${{ secrets.SETUP_PAT }}
+          WIKI_REPO: ${{ steps.setup.outputs.wiki_repo }}
+        run: |
+          set -euo pipefail
+
+          rm -rf .setup-wiki
+          gh repo clone "$WIKI_REPO" .setup-wiki
+          cp site_config.example.yml .setup-wiki/site_config.yml
+
+          cd .setup-wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site_config.yml
+          git commit -m "chore: initialize site config" || exit 0
+          git push
+
+      - name: Configure repository secrets
+        env:
+          GH_TOKEN: ${{ secrets.SETUP_PAT }}
+          SETUP_PAT: ${{ secrets.SETUP_PAT }}
+          BLOG_REPO: ${{ steps.setup.outputs.blog_repo }}
+          WIKI_REPO: ${{ steps.setup.outputs.wiki_repo }}
+          WIKI_URL: ${{ steps.setup.outputs.wiki_url }}
+          WIKI_BRANCH: ${{ inputs.wiki_branch }}
+        run: |
+          set -euo pipefail
+
+          printf "%s" "$WIKI_URL" | gh secret set WIKI_URL -R "$BLOG_REPO"
+          printf "%s" "$WIKI_BRANCH" | gh secret set WIKI_BRANCH -R "$BLOG_REPO"
+          printf "%s" "$SETUP_PAT" | gh secret set PAT -R "$BLOG_REPO"
+
+          printf "%s" "$BLOG_REPO" | gh secret set BLOG_REPO -R "$WIKI_REPO"
+          printf "%s" "$SETUP_PAT" | gh secret set PAT -R "$WIKI_REPO"
+
+      - name: Configure GitHub Pages
+        if: ${{ inputs.configure_pages }}
+        env:
+          GH_TOKEN: ${{ secrets.SETUP_PAT }}
+          BLOG_REPO: ${{ steps.setup.outputs.blog_repo }}
+        run: |
+          set +e
+          gh api "repos/$BLOG_REPO/pages" >/dev/null 2>&1
+          EXISTS=$?
+          set -e
+
+          if [ "$EXISTS" -eq 0 ]; then
+            gh api --method PUT "repos/$BLOG_REPO/pages" -f build_type=workflow || \
+              echo "::warning::Could not update GitHub Pages automatically. Set Settings -> Pages -> Source to GitHub Actions."
+          else
+            gh api --method POST "repos/$BLOG_REPO/pages" -f build_type=workflow || \
+              echo "::warning::Could not create GitHub Pages automatically. Set Settings -> Pages -> Source to GitHub Actions."
+          fi
+
+      - name: Trigger first deployment
+        if: ${{ inputs.trigger_deploy }}
+        env:
+          GH_TOKEN: ${{ secrets.SETUP_PAT }}
+          BLOG_REPO: ${{ steps.setup.outputs.blog_repo }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          gh workflow run deploy.yml -R "$BLOG_REPO" --ref "$REF_NAME"
+
+      - name: Summary
+        env:
+          BLOG_REPO: ${{ steps.setup.outputs.blog_repo }}
+          WIKI_REPO: ${{ steps.setup.outputs.wiki_repo }}
+          WIKI_URL: ${{ steps.setup.outputs.wiki_url }}
+        run: |
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ## Setup complete
+
+          Theme repository: https://github.com/$BLOG_REPO
+
+          Content repository: https://github.com/$WIKI_REPO
+
+          WIKI_URL: \`$WIKI_URL\`
+
+          Next:
+          1. Edit articles and \`site_config.yml\` in the content repository.
+          2. Check the \`Deploy Site\` workflow in the theme repository.
+          3. Check \`Settings -> Pages\` for the site URL.
+          EOF

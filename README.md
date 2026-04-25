@@ -6,37 +6,113 @@
 
 ## 核心模型
 
-本项目只认一个内容工作区：
+正式使用时，本项目采用双仓库模式：
 
 ```text
-posts/
+主题仓库：只负责主题、构建、部署
+知识库仓库：负责文章、图片、站点配置
 ```
 
-你可以直接在 `posts/` 写文章，也可以配置外部知识库仓库，让构建时自动把知识库同步到 `posts/`。
+`Setup Blog` 会自动创建私密知识库，并把知识库同步到主题仓库的 `posts/` 工作区。线上 CI 必须配置 `WIKI_URL`，本地 `posts/` 只用于主题开发兜底。
 
-规则如下：
+配置只认知识库里的 `site_config.yml`。`site_config.example.yml` 只是主题仓库里的参考模板。
 
-- 未配置 `WIKI_URL`：使用当前仓库的 `posts/`，适合快速开始。
-- 配置了 `WIKI_URL`：外部知识库是唯一内容源，构建前会覆盖当前 `posts/`。
-- `posts/site_config.yml` 是唯一运行时配置文件。
-- `site_config.example.yml` 只是配置模板，不参与运行时加载。
-- `posts/public/` 放站点资源，例如头像、背景图、封面图。
+## 快速开始：线上自动部署
 
-## 快速开始
+这是推荐用法，不需要在电脑上安装 Node.js、pnpm 或任何本地环境。
 
-安装依赖：
+### 1. Fork 主题仓库
 
-```bash
-pnpm install
+点击 GitHub 页面右上角 `Fork`，把本仓库复制到你自己的账号下。
+
+如果你想使用 GitHub Pages 的默认个人站点域名，建议仓库名设为：
+
+```text
+你的用户名.github.io
 ```
 
-复制配置模板：
+如果 GitHub 提示 Fork 后的 workflow 被禁用，点击允许启用。
 
-```bash
-cp site_config.example.yml posts/site_config.yml
+### 2. 创建初始化 Token
+
+创建一个 GitHub PAT，用来让初始化工作流帮你创建知识库、配置 secrets、触发部署。
+
+```text
+GitHub 头像 -> Settings -> Developer settings -> Personal access tokens -> Tokens (classic)
 ```
 
-写一篇文章到 `posts/hello.md`：
+推荐勾选：
+
+```text
+repo
+workflow
+```
+
+复制生成的 token。它只显示一次。
+
+回到你的主题仓库，添加 secret：
+
+```text
+Settings -> Secrets and variables -> Actions -> New repository secret
+```
+
+名称填：
+
+```text
+SETUP_PAT
+```
+
+值粘贴刚刚生成的 token。
+
+### 3. 运行自动初始化
+
+```text
+Actions -> Setup Blog -> Run workflow
+```
+
+填写：
+
+- `wiki_template`：默认 `57Darling02/wiki_template`
+- `wiki_repo_name`：你的知识库仓库名，例如 `my-blog-wiki`
+- `wiki_branch`：默认 `main`
+
+运行后，它会自动：
+
+- 使用 [57Darling02/wiki_template](https://github.com/57Darling02/wiki_template) 创建你的知识库仓库
+- 知识库仓库固定创建为私密仓库
+- 给主题仓库配置 `WIKI_URL`、`WIKI_BRANCH`、`PAT`
+- 给知识库仓库配置 `BLOG_REPO` 和 `PAT`
+- 尝试把 GitHub Pages 设置为 `GitHub Actions`
+- 触发第一次部署
+
+> 初始化成功后，`SETUP_PAT` 只在你重新运行 `Setup Blog` 时才需要；如果暂时不用，可以从主题仓库 secrets 里删除。
+
+如果 Pages 自动配置失败，手动进入：
+
+```text
+Settings -> Pages
+```
+
+把 `Source` 设置为：
+
+```text
+GitHub Actions
+```
+
+### 4. 写配置和文章
+
+打开初始化创建的知识库仓库。
+
+你只需要在知识库里维护：
+
+```text
+site_config.yml
+public/
+文章目录/
+附件目录/
+```
+
+文章需要带 `layout: doc`：
 
 ```md
 ---
@@ -47,6 +123,28 @@ layout: doc
 ---
 
 # Hello World
+```
+
+推送知识库后，它会通知主题仓库重新部署。
+
+### 5. 查看网站
+
+部署完成后，在仓库的 `Actions` 页面可以看到构建状态；在 `Settings -> Pages` 可以看到访问地址。
+
+## 备用：手动配置
+
+如果自动初始化失败，可以手动用 [57Darling02/wiki_template](https://github.com/57Darling02/wiki_template) 创建私密知识库，然后在主题仓库配置 `WIKI_URL`、`WIKI_BRANCH`、`PAT` 三个 Actions secrets。
+
+知识库自动触发主题仓库重建需要在知识库里配置 `BLOG_REPO` 和 `PAT`，并添加 `repository_dispatch` workflow。正常用户优先使用 `Setup Blog`，不需要手动做这些。
+
+## 本地开发（可跳过）
+
+只有当你想本地预览或开发主题时，才需要这一节。
+
+安装依赖：
+
+```bash
+pnpm install
 ```
 
 本地预览：
@@ -60,30 +158,6 @@ pnpm dev
 ```bash
 pnpm docs:build
 ```
-
-## 外部知识库
-
-在 GitHub Actions secrets 中配置：
-
-- `WIKI_URL`：知识库仓库 Git URL，例如 `https://github.com/yourname/your-wiki.git`
-- `WIKI_BRANCH`：可选，默认 `main`
-- `PAT`：可选，私有仓库需要
-
-配置 `WIKI_URL` 后，构建会自动同步远程知识库。如果同步失败，构建会失败，避免部署旧内容。
-
-知识库推荐结构：
-
-```text
-your-wiki/
-├── site_config.yml
-├── public/
-│   ├── image/
-│   └── wallpaper/
-├── posts-or-notes/
-└── attachments/
-```
-
-只有包含 `layout: doc` 的 Markdown 会在远程同步模式下保留并发布。
 
 ## 私密知识库本地开发
 
@@ -103,19 +177,43 @@ pnpm dev
 
 脚本会先同步知识库，再启动 VitePress。
 
-## 资源规则
+## 配置与资源
 
-站点自定义资源放在：
+站点配置写在知识库的：
 
 ```text
-posts/public/
+site_config.yml
+```
+
+文章排序使用：
+
+```yaml
+sortMethod: "date" # "date" | "lastUpdated"
+```
+
+评论区使用结构化 giscus 配置：
+
+```yaml
+comments:
+  enabled: true
+  repo: "owner/repo"
+  repoId: ""
+  category: "Announcements"
+  categoryId: ""
+  mapping: "title"
+```
+
+站点自定义资源放在知识库的：
+
+```text
+public/
 ```
 
 例如：
 
 ```text
-posts/public/image/avatar.png
-posts/public/wallpaper/1.webp
+public/image/avatar.png
+public/wallpaper/1.webp
 ```
 
 配置中这样引用：
@@ -125,7 +223,7 @@ avatar: "/image/avatar.png"
 background: "/wallpaper/1.webp"
 ```
 
-构建前会把根目录 `public/` 的主题资源和 `posts/public/` 的站点资源合并到 `.vitepress/content-public/`。这个目录是生成产物，不需要提交。
+构建前会把主题资源和知识库资源合并到 `.vitepress/content-public/`。这个目录是生成产物，不需要提交。
 
 ## 常用命令
 
@@ -139,7 +237,7 @@ pnpm build
 
 ## 更新主题
 
-如果你的源码仓库只保留主题代码，所有个性化内容都在 `posts/` 或外部知识库中，那么可以用 `update_theme.sh` 粗暴更新主题：
+如果你的个性化内容都在知识库中，那么可以用 `update_theme.sh` 粗暴更新主题仓库：
 
 ```bash
 bash update_theme.sh

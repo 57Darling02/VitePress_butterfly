@@ -1,16 +1,21 @@
-# Copy this file to posts/site_config.yml or to the root of your content repository.
-# Runtime configuration is loaded only from posts/site_config.yml.
-# Static assets should live in posts/public and can be referenced from the site root.
+# Copy this file to site_config.yml in your content repository.
+# Static assets live in public/ inside the content repository.
+# Example: public/image/avatar.png -> "/image/avatar.png"
 
+# Site information
 site_name: "My Awesome Site"
 site_description: "这是一个使用 VitePress 构建的博客站点。"
 site_url: "/"
 author: "57Darling02"
 
+# Visual experience
+# isDark: null follows system, true forces dark, false forces light.
+# background accepts a color value or a public asset path such as "/wallpaper/1.webp".
 isDark: null
 background: "#FDF8F2"
 bg_rainfall: false
 
+# Home page
 home:
   mainTitle: "My Custom Site"
   subTitles:
@@ -19,13 +24,16 @@ home:
     - "依然热爱生活"
   firstViewHeight: 60
 
+# Post list
+# sortMethod: "date" or "lastUpdated".
 pageSize: 8
-sortedMethor: "date"
+sortMethod: "date"
 
+# Last updated display
 lastUpdated:
   use: true
-  text: ""
 
+# Profile card
 avatar: "/image/image.png"
 name: "57Darling02"
 position: "NPC"
@@ -35,6 +43,8 @@ socialLinks:
     icon: "fa-brands fa-github"
     url: "https://github.com/57Darling02/"
 
+# Navbar menu
+# link uses site paths such as "/FriendLink/" or external URLs such as "https://example.com".
 menuItems:
   - label: "更多"
     icon: "fa-solid fa-compass"
@@ -48,6 +58,8 @@ menuItems:
         icon: "fa-solid fa-tags"
         link: "/Tags/"
 
+# Navigation music player
+# volume range: 0 ~ 1.
 musicPlayer:
   enabled: false
   url: "https://music.163.com/song/media/outer/url?id=3372997533.mp3"
@@ -57,33 +69,36 @@ musicPlayer:
   autoplay: true
   volume: 0.6
 
+# Friend links page
 friendlink:
   - Name: "57Darling02的博客"
     Url: "https://57darling02.github.io"
     Avatar: "http://q1.qlogo.cn/g?b=qq&nk=3144223912&s=100"
     Desc: "这是一个示例博客描述"
 
+# Footer
 footer:
   message: "Hello World!"
   copyright: "Powered by VitePress-Butterfly"
   createdTime: "2025-01-01"
 
+# Comments powered by giscus.
+# Fill these values from https://giscus.app.
+# mapping: "title" lets the same article share comments across different deployed domains.
+# A page can disable comments with frontmatter: comments: false
+# A page can force one discussion with frontmatter: commentId: "your-stable-id"
 comments:
   enabled: false
-  script: |
-    <script src="https://giscus.app/client.js"
-            data-repo="57Darling02/VitePress_butterfly"
-            data-repo-id=""
-            data-category=""
-            data-category-id=""
-            data-mapping="title"
-            data-strict="0"
-            data-reactions-enabled="1"
-            data-emit-metadata="0"
-            data-input-position="top"
-            data-theme="preferred_color_scheme"
-            data-lang="zh-CN"
-            data-loading="lazy"
-            crossorigin="anonymous"
-            async>
-    </script>
+  host: "https://giscus.app"
+  repo: "owner/repo"
+  repoId: ""
+  category: "Announcements"
+  categoryId: ""
+  mapping: "title"
+  strict: "0"
+  reactionsEnabled: "1"
+  emitMetadata: "0"
+  inputPosition: "top"
+  theme: "preferred_color_scheme"
+  lang: "zh-CN"
+  loading: "lazy"

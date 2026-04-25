@@ -34,7 +34,10 @@ function main() {
       const result = sanitizeRemoteMarkdownPosts(postsDir);
       printSanitizeResult(result);
     } else {
-      console.log(`${LOG_PREFIX} WIKI_URL is not configured. Using local posts/.`);
+      if (process.env.CI === 'true') {
+        throw new Error('WIKI_URL is required in CI. Run Setup Blog or configure WIKI_URL/WIKI_BRANCH/PAT repository secrets.');
+      }
+      console.log(`${LOG_PREFIX} WIKI_URL is not configured. Using local posts/ for local development only.`);
     }
 
     ensureGitkeep();
@@ -108,7 +111,14 @@ function replacePostsFromRemote(wikiUrl, wikiBranch, pat) {
   }
 
   removeDirectory(postsDir);
-  fs.renameSync(tempCloneDir, postsDir);
+  try {
+    fs.renameSync(tempCloneDir, postsDir);
+  } catch (error) {
+    console.warn(`${LOG_PREFIX} Rename failed. Falling back to directory copy.`);
+    ensureDirectory(postsDir);
+    copyDirectory(tempCloneDir, postsDir);
+    removeDirectory(tempCloneDir);
+  }
   removeDirectory(path.join(postsDir, '.git'));
   console.log(`${LOG_PREFIX} Remote content synced into posts/.`);
 }

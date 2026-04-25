@@ -10,7 +10,7 @@ export default interface ThemeConfig {
   background: string;
   bg_rainfall: boolean;
   pageSize: number;
-  sortedMethor: "date" | "lastUpdated";
+  sortMethod?: "date" | "lastUpdated";
   // 最后更新时间
   lastUpdated: LastUpdatedConfig;
   // 侧边简介卡
@@ -39,7 +39,6 @@ interface HomeConfig {
 
 interface LastUpdatedConfig {
   use: boolean;
-  text: string;
 }
 
 interface SocialLink {
@@ -95,5 +94,18 @@ interface FriendLink {
 
 interface CommentsConfig {
   enabled: boolean;
-  script?: string;
+  host?: string;
+  repo?: string;
+  repoId?: string;
+  category?: string;
+  categoryId?: string;
+  mapping?: string;
+  term?: string;
+  strict?: string;
+  reactionsEnabled?: string;
+  emitMetadata?: string;
+  inputPosition?: string;
+  theme?: string;
+  lang?: string;
+  loading?: string;
 }
