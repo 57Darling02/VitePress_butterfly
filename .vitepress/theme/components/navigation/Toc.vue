@@ -200,7 +200,7 @@ onContentUpdated(() => {
 <template>
   <div style="min-height: 0; height: 100%; display: flex; flex-direction: column;">
     <span class="toc-title" style="font-weight: 600; height: 25px;">
-      <!-- <i class="fa-solid fa-location-dot"></i> -->&nbsp;大纲
+      &nbsp;大纲
       &nbsp;&nbsp;
       <el-button style="background-color: transparent;" round
         type="default"

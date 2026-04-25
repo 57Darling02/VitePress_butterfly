@@ -2,7 +2,44 @@ import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
 
-let hasSyncedPostsPublic = false;
+const defaultSiteConfig = {
+  site_name: 'VitePress-Butterfly',
+  site_description: 'A VitePress blog theme.',
+  site_url: '/',
+  author: '',
+  isDark: null,
+  background: '#FDF8F2',
+  bg_rainfall: false,
+  home: {
+    mainTitle: 'VitePress-Butterfly',
+    subTitles: ['Write Markdown, push code, publish automatically.'],
+    firstViewHeight: 60,
+  },
+  pageSize: 8,
+  sortedMethor: 'date',
+  lastUpdated: {
+    use: true,
+    text: '',
+  },
+  avatar: '/image/image.png',
+  name: 'VitePress-Butterfly',
+  position: 'Blog',
+  bio: '',
+  socialLinks: [],
+  footer: {
+    message: '',
+    copyright: 'Powered by VitePress-Butterfly',
+    createdTime: '',
+  },
+  menuItems: [],
+  musicPlayer: {
+    enabled: false,
+  },
+  comments: {
+    enabled: false,
+  },
+  friendlink: [],
+};
 
 function sanitizeInlineScriptValue(value: unknown): unknown {
   if (typeof value === 'string') {
@@ -21,68 +58,40 @@ function sanitizeInlineScriptValue(value: unknown): unknown {
   return value;
 }
 
-// Load site config with this priority:
-// 1) posts/site_config.yml
-// 2) site_config.yml
 export function loadSiteConfig() {
   const rootDir = process.cwd();
-  const userConfigPath = path.resolve(rootDir, 'posts/site_config.yml');
-  const defaultConfigPath = path.resolve(rootDir, 'site_config.yml');
+  const configPath = path.resolve(rootDir, 'posts/site_config.yml');
 
-  let config = {};
+  let config = defaultSiteConfig;
 
-  try {
-    if (fs.existsSync(userConfigPath)) {
-      syncPostsPublicAssets(rootDir);
-      console.log('[Config Loader] Found user config in posts/site_config.yml');
-      const content = fs.readFileSync(userConfigPath, 'utf-8');
-      config = yaml.load(content) || {};
-    } else if (fs.existsSync(defaultConfigPath)) {
-      console.log('[Config Loader] Using default config from site_config.yml');
-      const content = fs.readFileSync(defaultConfigPath, 'utf-8');
-      config = yaml.load(content) || {};
-    } else {
-      console.warn('[Config Loader] No site_config.yml found, using empty config.');
+  if (fs.existsSync(configPath)) {
+    console.log('[Config Loader] Using posts/site_config.yml');
+    const content = fs.readFileSync(configPath, 'utf-8');
+    const userConfig = yaml.load(content) || {};
+    if (!isPlainObject(userConfig)) {
+      throw new Error('[Config Loader] posts/site_config.yml must contain a YAML object.');
     }
-  } catch (e) {
-    console.error('[Config Loader] Failed to parse configuration file:', e);
+    config = deepMerge(defaultSiteConfig, userConfig);
+  } else {
+    console.warn('[Config Loader] posts/site_config.yml not found. Using built-in defaults.');
   }
 
   return sanitizeInlineScriptValue(config);
 }
 
-function syncPostsPublicAssets(rootDir: string) {
-  if (hasSyncedPostsPublic) return;
-  hasSyncedPostsPublic = true;
+function deepMerge<T>(base: T, override: unknown): T {
+  if (!isPlainObject(base) || !isPlainObject(override)) {
+    return override === undefined ? base : override as T;
+  }
 
-  const sourceDir = path.resolve(rootDir, 'posts/public');
-  const targetDir = path.resolve(rootDir, 'public');
+  const output: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    output[key] = deepMerge(output[key], value);
+  }
 
-  if (!fs.existsSync(sourceDir)) return;
-
-  fs.mkdirSync(targetDir, { recursive: true });
-  copyDirectory(sourceDir, targetDir);
-  console.log('[Config Loader] Synced posts/public to public');
+  return output as T;
 }
 
-function copyDirectory(sourceDir: string, targetDir: string) {
-  const entries = fs.readdirSync(sourceDir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    if (entry.isSymbolicLink()) continue;
-
-    const sourcePath = path.join(sourceDir, entry.name);
-    const targetPath = path.join(targetDir, entry.name);
-
-    if (entry.isDirectory()) {
-      fs.mkdirSync(targetPath, { recursive: true });
-      copyDirectory(sourcePath, targetPath);
-      continue;
-    }
-
-    if (entry.isFile()) {
-      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-      fs.copyFileSync(sourcePath, targetPath);
-    }
-  }
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }

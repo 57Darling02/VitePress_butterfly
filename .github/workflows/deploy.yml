@@ -43,15 +43,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Fetch Posts (optional)
+      - name: Build with VitePress
         env:
           WIKI_URL: ${{ secrets.WIKI_URL }}
           WIKI_BRANCH: ${{ secrets.WIKI_BRANCH }}
           PAT: ${{ secrets.PAT }}
-        run: pnpm fetch-posts
-        continue-on-error: true
-
-      - name: Build with VitePress
         run: pnpm docs:build
 
       - name: Upload Pages artifact

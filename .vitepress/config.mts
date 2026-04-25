@@ -1,6 +1,7 @@
 // import { defineConfig } from 'vitepress'
 import ThemeConfig from './theme/types/ThemeConfig'
 import { defineConfigWithTheme } from 'vitepress'
+import path from 'node:path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
@@ -108,6 +109,7 @@ export default defineConfigWithTheme<ThemeConfig>({
   ignoreDeadLinks: true,
   lastUpdated: true,
   vite: {
+    publicDir: path.resolve(process.cwd(), '.vitepress/content-public'),
     ssr: {
       noExternal: ['element-plus']
     },

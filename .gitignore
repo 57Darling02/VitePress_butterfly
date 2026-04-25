@@ -3,6 +3,11 @@ node_modules
 .vitepress/cache
 .vitepress/theme/components/theme-default
 .vitepress/config.mts.timestamp-*
+.vitepress/content-public
+.vitepress/content-source
 docs
 .vscode
 .vitepress/.temp
+.env.local
+posts/*
+!posts/.gitkeep
