@@ -1,7 +1,7 @@
 <template>
     <Loading v-if="!isMounted" />
     <Bg_StarrySkySass v-if="!isFocusMode && !isDark" />
-    <el-scrollbar height="100vh" ref="scrollbarRef" @scroll="handleScroll" wrap-style="max-width:100vw;" noresize>
+    <el-scrollbar class="app-scrollbar" height="100vh" ref="scrollbarRef" @scroll="handleScroll" noresize>
         <el-header height="var(--nav-height)">
             <ClientOnly>
                 <Nav />
@@ -206,6 +206,20 @@ onBeforeUnmount(() => {
 
 </script>
 <style lang="scss">
+.app-scrollbar {
+    width: 100%;
+    max-width: 100vw;
+
+    .el-scrollbar__wrap {
+        overflow-x: hidden;
+    }
+
+    .el-scrollbar__view {
+        min-width: 0;
+        max-width: 100%;
+    }
+}
+
 #control {
     position: fixed;
     bottom: 20px;

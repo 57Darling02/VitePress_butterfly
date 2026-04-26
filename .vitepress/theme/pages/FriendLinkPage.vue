@@ -79,11 +79,11 @@ const friendlinks = computed(() => {
 }
 
 .links ul {
-    margin-top: 50px;
+    margin: 50px 0 0;
     width: 100%;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
     gap: 20px;
-    flex-wrap: wrap;
     cursor: auto;
     padding: 0;
     list-style: none;
@@ -91,7 +91,7 @@ const friendlinks = computed(() => {
 
 /* 链接卡片基础样式 */
 .links ul li {
-    width: 23.1%;
+    min-width: 0;
     box-shadow: 0 1px 30px -4px var(--link-card-shadow);
     background: var(--link-card-bg);
     padding: 12px;
@@ -150,26 +150,9 @@ span.sitename {
     transition: all 0.4s ease-in-out;
 }
 
-/* 响应式设计 */
-@media (max-width: 1024px) and (min-width: 861px) {
-    .links ul li {
-        width: 31.7%;
-    }
-}
-
 @media (max-width: 860px) {
-    .links ul li {
-        width: 47%;
-    }
-
     .linkss-title {
         font-size: 24px;
-    }
-}
-
-@media (max-width: 480px) {
-    .links ul li {
-        width: 100%;
     }
 }
 
