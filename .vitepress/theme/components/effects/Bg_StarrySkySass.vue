@@ -17,7 +17,7 @@ import { useLayoutState } from '../../composables/useLayoutState'
 const { theme } = useData()
 const { isMobile } = useLayoutState()
 
-const starLayers = [1, 2, 3, 4]
+const starLayers = [2, 3, 4, 5]
 const backgroundValue = computed(() => String(theme.value.background || '').trim())
 const hexColorPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
 const defaultBackgroundStyle = {
@@ -57,7 +57,6 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
 <style lang="scss" scoped>
 @use "sass:math";
 @use "sass:string";
-@use "sass:list";
 
 .bg-space {
     z-index: -1;
@@ -103,36 +102,29 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
     @return string.unquote(string.slice($shadows, 1, -2));
 }
 
-$star-colors: #fffdf4, #e8ffff, #f2ecff, #fff7d8;
-$star-sizes: 1px, 1.4px, 1.9px, 2.6px;
-$star-counts: 120, 78, 46, 24;
-$star-durations: 160s, 220s, 300s, 380s;
+$duration: 400s;
+$count: 250;
 
-.star-layer {
-    position: fixed;
-    left: 0;
-    top: 0;
-    border-radius: 50%;
-    opacity: 0.62;
-    animation-name: starDrift;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    will-change: transform;
-}
+@for $i from 2 through 5 {
+    $duration: calc($duration / 2);
+    $count: math.floor(calc($count / 2));
 
-@for $i from 1 through 4 {
     .layer#{$i} {
-        $size: list.nth($star-sizes, $i);
+        $size: #{$i * 1.2}px;
+        position: fixed;
         width: $size;
         height: $size;
-        background-color: list.nth($star-colors, $i);
-        box-shadow: getShadows(list.nth($star-counts, $i));
-        animation-duration: list.nth($star-durations, $i);
+        border-radius: 50%;
+        left: 0;
+        top: 0;
+        background-color: antiquewhite;
+        box-shadow: getShadows($count);
+        animation: moveUp $duration linear infinite;
 
         &::after {
             content: '';
             position: fixed;
-            left: -8vw;
+            left: 0;
             top: 100vh;
             border-radius: inherit;
             width: inherit;
@@ -142,9 +134,9 @@ $star-durations: 160s, 220s, 300s, 380s;
     }
 }
 
-@keyframes starDrift {
+@keyframes moveUp {
     to {
-        transform: translate(8vw, -100vh);
+        transform: translateY(-100vh);
     }
 }
 </style>
