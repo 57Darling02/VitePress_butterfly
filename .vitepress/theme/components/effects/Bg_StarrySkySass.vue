@@ -14,12 +14,19 @@ const { isMobile } = useLayoutState()
 
 const backgroundValue = computed(() => String(theme.value.background || '').trim())
 const hexColorPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+const defaultBackgroundStyle = {
+    backgroundColor: '#d8ecf4',
+    backgroundImage: [
+        'radial-gradient(circle at 9% 88%, rgba(238, 229, 151, 0.72) 0%, rgba(238, 229, 151, 0) 27%)',
+        'radial-gradient(circle at 34% 92%, rgba(156, 220, 218, 0.54) 0%, rgba(156, 220, 218, 0) 31%)',
+        'radial-gradient(circle at 81% 83%, rgba(250, 253, 246, 0.9) 0%, rgba(250, 253, 246, 0) 30%)',
+        'linear-gradient(180deg, #cfe5ef 0%, #d7edf4 48%, #e4f1ed 72%, #dce9cf 100%)'
+    ].join(', ')
+}
 
 const backgroundStyle = computed(() => {
     if (!backgroundValue.value) {
-        return {
-            backgroundColor: '#FDF8F2'
-        }
+        return defaultBackgroundStyle
     }
 
     if (hexColorPattern.test(backgroundValue.value)) {
@@ -50,7 +57,11 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: #FDF8F2;
+    background:
+        radial-gradient(circle at 9% 88%, rgba(238, 229, 151, 0.72) 0%, rgba(238, 229, 151, 0) 27%),
+        radial-gradient(circle at 34% 92%, rgba(156, 220, 218, 0.54) 0%, rgba(156, 220, 218, 0) 31%),
+        radial-gradient(circle at 81% 83%, rgba(250, 253, 246, 0.9) 0%, rgba(250, 253, 246, 0) 30%),
+        linear-gradient(180deg, #cfe5ef 0%, #d7edf4 48%, #e4f1ed 72%, #dce9cf 100%);
 }
 
 @function getShadows($count) {
