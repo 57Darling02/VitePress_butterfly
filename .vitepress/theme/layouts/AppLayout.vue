@@ -99,11 +99,32 @@ import ToggleSiderBar from '../components/controls/ToggleSiderBar.vue'
 
 function throttle<T extends (...args: any[]) => void>(fn: T, delay: number) {
     let lastRun = 0
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let lastArgs: Parameters<T> | null = null
+
+    const run = () => {
+        lastRun = Date.now()
+        timer = null
+        if (!lastArgs) return
+        fn(...lastArgs)
+        lastArgs = null
+    }
+
     return (...args: Parameters<T>) => {
+        lastArgs = args
         const now = Date.now()
-        if (now - lastRun < delay) return
-        lastRun = now
-        fn(...args)
+        const remaining = delay - (now - lastRun)
+        if (remaining <= 0) {
+            if (timer) {
+                clearTimeout(timer)
+                timer = null
+            }
+            run()
+            return
+        }
+        if (!timer) {
+            timer = setTimeout(run, remaining)
+        }
     }
 }
 
