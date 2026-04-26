@@ -1,7 +1,6 @@
 import ThemeConfig from './theme/types/ThemeConfig'
 import { defineConfig } from 'vitepress'
 import path from 'node:path'
-import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { loadSiteConfig } from './theme/utils/configLoader'
@@ -112,9 +111,6 @@ export default defineConfig<ThemeConfig>({
       noExternal: ['element-plus']
     },
     plugins: [
-      AutoImport({
-        resolvers: [ElementPlusResolver()],
-      }),
       Components({
         resolvers: [ElementPlusResolver()],
       }),

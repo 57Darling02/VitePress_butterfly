@@ -13,14 +13,24 @@
                 </template>
                 <template #main-content>
                     <content v-show="isMounted" class="vp-doc fade-item" :class="{ 'a-card': !isFocusMode }"
-                        style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0s" />
+                        style="overflow-x: hidden;padding: 38px 30px 20px; --delay:0.1s" />
                     <MarkdownImagePreview v-if="isMounted" />
-                    <el-skeleton v-if="!isMounted" :rows="8" animated :class="{ 'a-card': !isFocusMode }" />
+                    <el-skeleton v-if="!isMounted" class="doc-skeleton" animated :class="{ 'a-card': !isFocusMode }">
+                        <template #template>
+                            <el-skeleton-item variant="h1" class="doc-skeleton-title" />
+                            <el-skeleton-item variant="p" class="doc-skeleton-summary" />
+                            <el-skeleton-item variant="p" class="doc-skeleton-summary short" />
+                            <el-skeleton-item variant="image" class="doc-skeleton-cover" />
+                            <div class="doc-skeleton-lines">
+                                <el-skeleton-item v-for="item in 8" :key="item" variant="text" />
+                            </div>
+                        </template>
+                    </el-skeleton>
                     <GiscusComments v-if="isMounted" class="fade-item comments-panel" :class="{ 'a-card': !isFocusMode }"
                         style="--delay:0.1s" />
                 </template>
                 <template #sidebar-non-stay>
-                    <div class="fade-item" style="--delay:0.2s"><ProfileCard /></div>
+                    <div class="fade-item" style="--delay:0.3s"><ProfileCard /></div>
                 </template>
                 <template #sidebar-stay>
                     <div class="fade-item" style="--delay:0.5s">
@@ -62,5 +72,53 @@ onContentUpdated(() => {
     width: 100%;
     box-sizing: border-box;
     padding: 24px 30px;
+}
+
+.doc-skeleton {
+    width: 100%;
+    padding: 38px 30px 24px;
+    overflow: hidden;
+}
+
+.doc-skeleton-title {
+    width: min(520px, 80%);
+    height: 34px;
+}
+
+.doc-skeleton-summary {
+    width: 86%;
+    height: 20px;
+    margin-top: 18px;
+
+    &.short {
+        width: 56%;
+        margin-top: 12px;
+    }
+}
+
+.doc-skeleton-cover {
+    width: 100%;
+    height: clamp(180px, 30vh, 320px);
+    margin-top: 24px;
+    border-radius: 12px;
+}
+
+.doc-skeleton-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 24px;
+
+    .el-skeleton__item {
+        height: 18px;
+
+        &:nth-child(2n) {
+            width: 92%;
+        }
+
+        &:nth-child(3n) {
+            width: 74%;
+        }
+    }
 }
 </style>

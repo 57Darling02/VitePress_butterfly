@@ -48,7 +48,13 @@ const formattedDate = computed(() => {
     <div class="a-card">
         <a class="article-card" :href="props.post.link.replace('.html', '')">
             <el-image v-if="props.post.cover && !props.mini" class="article-cover" :src="props.post.cover"
-                :alt="props.post.title" fit="cover" lazy />
+                :alt="props.post.title" fit="cover" lazy>
+                <template #placeholder>
+                    <div class="article-cover-skeleton">
+                        <el-skeleton-item variant="image" />
+                    </div>
+                </template>
+            </el-image>
             <article>
                 <h1 class="article-title">
                     {{ props.post.title ?? 'Untitled Article' }}
@@ -66,7 +72,7 @@ const formattedDate = computed(() => {
                         <el-tag v-for="(tag, index) in props.post.tags" :key="index" size="default" type="info"
                             effect="plain"
                             style="display: flex;justify-content: center;background-color: var(--vp-c-bg-soft);" round>
-                            <i class="fa-solid fa-tag"></i>{{ tag }}
+                            <i class="fa-solid fa-hashtag"></i>{{ tag }}
                         </el-tag>
                     </el-space>
                 </div>
@@ -181,5 +187,11 @@ const formattedDate = computed(() => {
         @include cover-narrow;
     }
 
+}
+
+.article-cover-skeleton,
+.article-cover-skeleton .el-skeleton__item {
+    width: 100%;
+    height: 100%;
 }
 </style>

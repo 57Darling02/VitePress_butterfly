@@ -1,5 +1,4 @@
 <template>
-    <Loading v-if="!isMounted" />
     <Bg_StarrySkySass v-if="!isFocusMode && !isDark" />
     <el-scrollbar class="app-scrollbar" height="100vh" ref="scrollbarRef" @scroll="handleScroll" noresize>
         <el-header height="var(--nav-height)">
@@ -64,13 +63,13 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useData, onContentUpdated } from 'vitepress'
 const { theme, page, frontmatter, isDark } = useData()
 import Nav from '../components/navigation/Nav.vue'
 import Footer from '../components/navigation/Footer.vue'
 import MainView from '../pages/MainView.vue'
 import NotFound from '../pages/NotFound.vue'
-import Loading from '../components/effects/Loading.vue'
 import Toc from '../components/navigation/Toc.vue'
 
 import Bg_StarrySkySass from '../components/effects/Bg_StarrySkySass.vue'

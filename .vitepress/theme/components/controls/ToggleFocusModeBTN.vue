@@ -1,5 +1,5 @@
 <template>
-    <i class="fa-solid fa-eye" @click="toggleFocusMode" :class="{'fa-eye-slash': !isFocusMode}"></i>
+    <i class="fa-solid fa-book" @click="toggleFocusMode" :class="{'fa-book-open': !isFocusMode}"></i>
 
 </template>
 

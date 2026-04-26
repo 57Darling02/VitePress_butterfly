@@ -39,6 +39,7 @@ type HeaderResult = {
 const headers = shallowRef<TocNode[]>([])
 const anchorPathMap = shallowRef(new Map<string, string[]>())
 const activeAnchor = ref('')
+const isReady = ref(false)
 const ignoreHeaderChildRE = /\b(?:VPBadge|header-anchor|footnote-ref|ignore-header)\b/
 
 const normalizeAnchor = (anchor: string): string => {
@@ -180,6 +181,7 @@ const refreshHeaders = (): void => {
   const result = getHeaders(frontmatter.value.outline ?? theme.value.outline ?? 'deep')
   headers.value = result.headers
   anchorPathMap.value = result.pathMap
+  isReady.value = true
 }
 
 // 锚点变化处理
@@ -303,6 +305,7 @@ onContentUpdated(() => {
         </el-tree>
       </el-scrollbar>
     </el-anchor>
+    <el-skeleton v-else-if="!isReady" class="toc-skeleton" :rows="6" animated />
   </div>
 </template>
 
@@ -312,6 +315,11 @@ onContentUpdated(() => {
   display: flex;
   overflow: hidden;
 }
+
+.toc-skeleton {
+  padding: 8px;
+}
+
 /* 为el-tree节点添加圆角样式 */
 .el-tree {
   .el-tree-node {

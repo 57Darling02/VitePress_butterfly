@@ -41,6 +41,21 @@
               background
             />
           </div>
+
+          <template #fallback>
+            <div class="post-skeleton-list">
+              <el-skeleton v-for="item in 3" :key="item" class="a-card post-skeleton-card" animated>
+                <template #template>
+                  <el-skeleton-item variant="h3" class="post-skeleton-title" />
+                  <el-skeleton-item variant="text" class="post-skeleton-line" />
+                  <el-skeleton-item variant="text" class="post-skeleton-line short" />
+                  <div class="post-skeleton-meta">
+                    <el-skeleton-item v-for="meta in 3" :key="meta" variant="text" />
+                  </div>
+                </template>
+              </el-skeleton>
+            </div>
+          </template>
         </ClientOnly>
       </template>
 
@@ -283,6 +298,45 @@ onUnmounted(() => {
 
 .post-reveal.is-visible {
   animation: fadeInUp 0.3s ease-in-out forwards;
+}
+
+.post-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 5px 12px;
+}
+
+.post-skeleton-card {
+  padding: 18px;
+}
+
+.post-skeleton-title {
+  width: min(420px, 74%);
+  height: 24px;
+}
+
+.post-skeleton-line {
+  width: 88%;
+  height: 18px;
+  margin-top: 14px;
+}
+
+.post-skeleton-line.short {
+  width: 58%;
+  margin-top: 10px;
+}
+
+.post-skeleton-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.post-skeleton-meta .el-skeleton__item {
+  width: 86px;
+  height: 18px;
 }
 
 .scroll-hint {
