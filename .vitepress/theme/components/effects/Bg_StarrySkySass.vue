@@ -1,6 +1,11 @@
 <template>
-    <div class="bg-space" :style="backgroundStyle">
-        <div v-if="bg_rainfall" v-for="layer in 5" :class="`layer${layer}`" />
+    <div class="bg-space" :class="{ 'is-default': isDefaultBackground }" :style="backgroundStyle">
+        <div
+            v-if="bg_rainfall"
+            v-for="layer in starLayers"
+            :key="layer"
+            :class="['star-layer', `layer${layer}`]"
+        />
     </div>
 </template>
 
@@ -12,20 +17,23 @@ import { useLayoutState } from '../../composables/useLayoutState'
 const { theme } = useData()
 const { isMobile } = useLayoutState()
 
+const starLayers = [1, 2, 3, 4]
 const backgroundValue = computed(() => String(theme.value.background || '').trim())
 const hexColorPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
 const defaultBackgroundStyle = {
-    backgroundColor: '#d8ecf4',
+    backgroundColor: '#dceef4',
     backgroundImage: [
-        'radial-gradient(circle at 9% 88%, rgba(238, 229, 151, 0.72) 0%, rgba(238, 229, 151, 0) 27%)',
-        'radial-gradient(circle at 34% 92%, rgba(156, 220, 218, 0.54) 0%, rgba(156, 220, 218, 0) 31%)',
-        'radial-gradient(circle at 81% 83%, rgba(250, 253, 246, 0.9) 0%, rgba(250, 253, 246, 0) 30%)',
-        'linear-gradient(180deg, #cfe5ef 0%, #d7edf4 48%, #e4f1ed 72%, #dce9cf 100%)'
+        'radial-gradient(circle at 22% 78%, rgba(244, 232, 184, 0.58) 0%, rgba(244, 232, 184, 0) 28%)',
+        'radial-gradient(circle at 74% 18%, rgba(214, 218, 255, 0.46) 0%, rgba(214, 218, 255, 0) 26%)',
+        'radial-gradient(circle at 58% 62%, rgba(153, 224, 218, 0.34) 0%, rgba(153, 224, 218, 0) 34%)',
+        'linear-gradient(160deg, #d8edf5 0%, #eaf6f7 45%, #edf5ee 72%, #d5edf1 100%)'
     ].join(', ')
 }
 
+const isDefaultBackground = computed(() => !backgroundValue.value)
+
 const backgroundStyle = computed(() => {
-    if (!backgroundValue.value) {
+    if (isDefaultBackground.value) {
         return defaultBackgroundStyle
     }
 
@@ -49,6 +57,7 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
 <style lang="scss" scoped>
 @use "sass:math";
 @use "sass:string";
+@use "sass:list";
 
 .bg-space {
     z-index: -1;
@@ -57,11 +66,33 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
     left: 0;
     width: 100vw;
     height: 100vh;
-    background:
-        radial-gradient(circle at 9% 88%, rgba(238, 229, 151, 0.72) 0%, rgba(238, 229, 151, 0) 27%),
-        radial-gradient(circle at 34% 92%, rgba(156, 220, 218, 0.54) 0%, rgba(156, 220, 218, 0) 31%),
-        radial-gradient(circle at 81% 83%, rgba(250, 253, 246, 0.9) 0%, rgba(250, 253, 246, 0) 30%),
-        linear-gradient(180deg, #cfe5ef 0%, #d7edf4 48%, #e4f1ed 72%, #dce9cf 100%);
+    overflow: hidden;
+    pointer-events: none;
+
+    &.is-default {
+        &::before,
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+        }
+
+        &::before {
+            opacity: 0.26;
+            background-image:
+                linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, 0.52) 46%, transparent 72%),
+                radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.42), transparent 34%);
+            filter: blur(18px);
+        }
+
+        &::after {
+            opacity: 0.15;
+            background-image:
+                repeating-radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.72) 1px, transparent 1px, transparent 7px),
+                repeating-radial-gradient(circle at 72% 64%, rgba(130, 196, 203, 0.28) 0, rgba(130, 196, 203, 0.28) 1px, transparent 1px, transparent 9px);
+            mix-blend-mode: screen;
+        }
+    }
 }
 
 @function getShadows($count) {
@@ -72,29 +103,36 @@ const bg_rainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
     @return string.unquote(string.slice($shadows, 1, -2));
 }
 
-$duration: 400s;
-$count: 250;
+$star-colors: #fffdf4, #e8ffff, #f2ecff, #fff7d8;
+$star-sizes: 1px, 1.4px, 1.9px, 2.6px;
+$star-counts: 120, 78, 46, 24;
+$star-durations: 160s, 220s, 300s, 380s;
 
-@for $i from 2 through 5 {
-    $duration: calc($duration / 2);
-    $count: math.floor(calc($count / 2));
+.star-layer {
+    position: fixed;
+    left: 0;
+    top: 0;
+    border-radius: 50%;
+    opacity: 0.62;
+    animation-name: starDrift;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform;
+}
 
+@for $i from 1 through 4 {
     .layer#{$i} {
-        $size: #{$i * 1.2}px;
-        position: fixed;
+        $size: list.nth($star-sizes, $i);
         width: $size;
         height: $size;
-        border-radius: 50%;
-        left: 0;
-        top: 0;
-        background-color: antiquewhite;
-        box-shadow: getShadows($count);
-        animation: moveUp $duration linear infinite;
+        background-color: list.nth($star-colors, $i);
+        box-shadow: getShadows(list.nth($star-counts, $i));
+        animation-duration: list.nth($star-durations, $i);
 
         &::after {
             content: '';
             position: fixed;
-            left: 0;
+            left: -8vw;
             top: 100vh;
             border-radius: inherit;
             width: inherit;
@@ -104,9 +142,9 @@ $count: 250;
     }
 }
 
-@keyframes moveUp {
+@keyframes starDrift {
     to {
-        transform: translateY(-100vh);
+        transform: translate(8vw, -100vh);
     }
 }
 </style>

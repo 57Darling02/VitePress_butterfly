@@ -354,6 +354,10 @@ $nav-gap: 4px;
     &.nav-hidden {
         transform: translateY(-100%) translateX(-50%);
     }
+
+    &:hover {
+        transform: translateX(-50%);
+    }
 }
 
 #menu {
