@@ -43,6 +43,12 @@
             </transition>
 
             <transition name="el-fade-in">
+                <div class="social-item" v-show="controlVisible" @click="handleCopyLinkClick">
+                    <i class="fa-solid fa-link"></i>
+                </div>
+            </transition>
+
+            <transition name="el-fade-in">
                 <div class="social-item" v-show="controlVisible">
                     <VPSwitchAppearance />
                 </div>
@@ -144,6 +150,16 @@ const backToTop = (smooth = true) => {
 
 const handleBackToTopClick = () => {
     backToTop()
+}
+
+const handleCopyLinkClick = async () => {
+    if (typeof window === 'undefined') return
+
+    await navigator.clipboard.writeText(window.location.href)
+    ElMessage({
+        message: '当前页面链接已复制',
+        type: 'success',
+    })
 }
 
 const scrollToHash = (smooth = false) => {
