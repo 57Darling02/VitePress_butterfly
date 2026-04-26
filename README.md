@@ -105,10 +105,10 @@ GitHub Actions
 
 ### 4. 写配置和文章
 
-打开初始化创建的知识库仓库。
+详情见：https://vitepress.57d02.cn/posts/README
+
 
 你只需要在知识库里维护：
-
 ```text
 site_config.yml
 public/
@@ -134,6 +134,8 @@ layout: doc
 ### 5. 查看网站
 
 部署完成后，在仓库的 `Actions` 页面可以看到构建状态；在 `Settings -> Pages` 可以看到访问地址。
+
+
 
 ## 备用：手动配置
 
@@ -181,53 +183,7 @@ pnpm dev
 
 脚本会先同步知识库，再启动 VitePress。
 
-## 配置与资源
 
-站点配置写在知识库的：
-
-```text
-site_config.yml
-```
-
-文章排序使用：
-
-```yaml
-sortMethod: "date" # "date" | "lastUpdated"
-```
-
-评论区使用结构化 giscus 配置：
-
-```yaml
-comments:
-  enabled: true
-  repo: "owner/repo"
-  repoId: ""
-  category: "Announcements"
-  categoryId: ""
-  mapping: "title"
-```
-
-站点自定义资源放在知识库的：
-
-```text
-public/
-```
-
-例如：
-
-```text
-public/image/avatar.png
-public/wallpaper/1.webp
-```
-
-配置中这样引用：
-
-```yaml
-avatar: "/image/avatar.png"
-background: "/wallpaper/1.webp"
-```
-
-构建前会把主题资源和知识库资源合并到 `.vitepress/content-public/`。这个目录是生成产物，不需要提交。
 
 ## 常用命令
 
