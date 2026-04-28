@@ -4,6 +4,7 @@ import path from 'node:path'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { loadSiteConfig } from './theme/utils/configLoader'
+import { injectFirstPaintLoading } from './theme/utils/firstPaintLoading'
 
 const rawConfig = loadSiteConfig();
 const myconfig = rawConfig as ThemeConfig;
@@ -111,6 +112,11 @@ export default defineConfig<ThemeConfig>({
       noExternal: ['element-plus']
     },
     plugins: [
+      {
+        name: 'first-paint-loading-dev',
+        apply: 'serve',
+        transformIndexHtml: injectFirstPaintLoading,
+      },
       Components({
         resolvers: [ElementPlusResolver()],
       }),
@@ -129,6 +135,9 @@ export default defineConfig<ThemeConfig>({
       // 默认禁用；设置为 true 可为所有图片启用懒加载。
       lazyLoading: true
     }
+  },
+  transformHtml(code) {
+    return injectFirstPaintLoading(code)
   },
 
 })

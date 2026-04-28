@@ -210,6 +210,14 @@ const handleHashChange = () => {
     scrollToHashAfterRender(true)
 }
 
+const removeFirstPaintLoading = () => {
+    const loading = document.getElementById('first-paint-loading')
+    if (!loading) return
+
+    loading.classList.add('is-leaving')
+    window.setTimeout(() => loading.remove(), 180)
+}
+
 onContentUpdated(() => {
     const hasHash = typeof window !== 'undefined' && Boolean(window.location.hash)
     if (!hasHash) {
@@ -230,6 +238,7 @@ onMounted(() => {
     window.addEventListener('hashchange', handleHashChange)
     setTimeout(() => {
         isMounted.value = true
+        removeFirstPaintLoading()
         scrollToHash(false)
         checkPageHeight()
     }, 800)
