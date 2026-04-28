@@ -95,10 +95,11 @@ const subTitles = ref(theme.value.home.subTitles || ['VitePress Theme'])
 
 let typeitInstance = null
 let topProfileObserver = null
-let stopFocusModeWatch = null
 let scrollHintRoot = null
 let scrollHintFrame = null
-let postRevealObserver = null
+let postRevealObservers = []
+
+const POST_REVEAL_VISIBLE_CLASS = 'is-visible'
 
 const filteredPosts = computed(() => {
   if (selectedTags.value.length === 0) {
@@ -185,37 +186,54 @@ const cleanupScrollHint = () => {
   }
 }
 
-const getPostRevealObserver = () => {
-  if (postRevealObserver) return postRevealObserver
+const setPostRevealVisible = (el, visible) => {
+  el.classList.toggle(POST_REVEAL_VISIBLE_CLASS, visible)
+}
 
-  postRevealObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        entry.target.classList.toggle('is-visible', entry.isIntersecting)
-      })
-    },
-    {
-      root: getScrollRoot(),
+const createPostRevealObserver = (visible, options) =>
+  new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting === visible) {
+        setPostRevealVisible(entry.target, visible)
+      }
+    })
+  }, options)
+
+const getPostRevealObservers = () => {
+  if (postRevealObservers.length) return postRevealObservers
+
+  const root = getScrollRoot()
+  postRevealObservers = [
+    createPostRevealObserver(true, {
+      root,
       rootMargin: '0px 0px -8% 0px',
       threshold: 0.12,
-    }
-  )
+    }),
+    createPostRevealObserver(false, {
+      root,
+      rootMargin: '96px 0px 96px 0px',
+      threshold: 0,
+    }),
+  ]
 
-  return postRevealObserver
+  return postRevealObservers
+}
+
+const observePostReveal = (el) => {
+  getPostRevealObservers().forEach((observer) => observer.observe(el))
 }
 
 const vReveal = {
   mounted(el) {
     if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
-      el.classList.add('is-visible')
+      setPostRevealVisible(el, true)
       return
     }
 
-    getPostRevealObserver().observe(el)
+    observePostReveal(el)
   },
   unmounted(el) {
-    postRevealObserver?.unobserve(el)
-    el.classList.remove('is-visible')
+    postRevealObservers.forEach((observer) => observer.unobserve(el))
   },
 }
 
@@ -247,8 +265,8 @@ onUnmounted(() => {
   typeitInstance?.destroy()
   topProfileObserver?.disconnect()
   topProfileObserver = null
-  postRevealObserver?.disconnect()
-  postRevealObserver = null
+  postRevealObservers.forEach((observer) => observer.disconnect())
+  postRevealObservers = []
   cleanupScrollHint()
   
 })
@@ -293,11 +311,23 @@ onUnmounted(() => {
 .post-reveal {
   opacity: 0;
   transform: translateY(20px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
   will-change: opacity, transform;
 }
 
 .post-reveal.is-visible {
-  animation: fadeInUp 0.3s ease-in-out forwards;
+  opacity: 1;
+  transform: translateY(0);
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-reveal {
+    transition: none;
+    transform: none;
+  }
 }
 
 .post-skeleton-list {
