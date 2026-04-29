@@ -15,7 +15,7 @@
 
 
     </el-scrollbar>
-    <div id="control">
+    <div id="control" ref="controlRef">
         <transition name="el-fade-in">
             <div class="social-item" @click="handleBackToTopClick" v-show="showNavbar && lastScrollY > 100">
                 <i class="fa-solid fa-chevron-up"></i>
@@ -53,7 +53,7 @@
                 </div>
             </transition>
             <div class="social-item">
-                <VPNavBarHamburger :active="controlVisible" @click="controlVisible = !controlVisible" />
+                <VPNavBarHamburger :active="controlVisible" @click="toggleControlVisible" />
             </div>
 
         </div>
@@ -96,6 +96,7 @@ isDark.value = theme.value.isDark || isDark.value
 
 import VPNavBarHamburger from '../components/controls/VPNavBarHamburger.vue'
 const controlVisible = ref(false)
+const controlRef = ref<HTMLElement | null>(null)
 import VPSwitchAppearance from '../components/controls/VPSwitchAppearance.vue'
 import ToggleFocusModeBTN from '../components/controls/ToggleFocusModeBTN.vue'
 import ToggleSiderBar from '../components/controls/ToggleSiderBar.vue'
@@ -167,6 +168,17 @@ const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
 }, 150)
 
 // 控制栏
+const toggleControlVisible = () => {
+    controlVisible.value = !controlVisible.value
+}
+
+const closeControlWhenOutside = (event: Event) => {
+    if (!controlVisible.value) return
+    const target = event.target
+    if (!(target instanceof Node) || controlRef.value?.contains(target)) return
+    controlVisible.value = false
+}
+
 const backToTop = (smooth = true) => {
     scrollbarRef.value?.wrapRef?.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' })
 }
@@ -242,6 +254,7 @@ onMounted(() => {
     const initialScrollTop = scrollbarRef.value?.wrapRef?.scrollTop || 0
     setNavbarVisible(initialScrollTop < 100)
     window.addEventListener('hashchange', handleHashChange)
+    document.addEventListener('pointerdown', closeControlWhenOutside, true)
     setTimeout(() => {
         isMounted.value = true
         removeFirstPaintLoading()
@@ -253,6 +266,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     if (typeof window === 'undefined') return
     window.removeEventListener('hashchange', handleHashChange)
+    document.removeEventListener('pointerdown', closeControlWhenOutside, true)
 })
 
 </script>

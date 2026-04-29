@@ -5,7 +5,9 @@
 以此致敬我的博客启蒙样式[hexo-theme-butterfly](https://github.com/jerryc127/hexo-theme-butterfly)
 
 目标很简单：一键部署上线，轻松更新内容。
-具体而言：workflow一键部署上线，写 Markdown、推送文章、自动上线。
+
+workflow一键部署上线，写 Markdown/VUE页面、推送、自动上线。
+
 
 我的博客:https://57darling02.github.io
 
@@ -102,19 +104,21 @@ Settings -> Pages
 GitHub Actions
 ```
 
-### 4. 写配置和文章
+### 4. 写配置、文章和页面
+所有可定制的内容(站点配置、首页效果、文章、自定义页面等等)都只需要在知识库中改动！
+详情见README：https://github.com/57Darling02/wiki_template/ 
+或https://vitepress.57d02.cn/p/d2e9fe6f
 
-详情见：https://vitepress.57d02.cn/p/d2e9fe6f
-
-你只需要在知识库里维护：
+简单介绍：
+只需要在知识库里维护一下内容
 ```text
 site_config.yml
 public/
 文章目录/
-附件目录/
 ```
-文章需要带 `layout: doc`：
+其中public用于非文章专属的资源。
 
+#### 4.1 写文章
 ```md
 ---
 title: Hello World
@@ -125,19 +129,33 @@ layout: doc
 
 # Hello World
 ```
+文章需要带 `layout: doc`：
+`layout: doc` 会进入首页、归档、标签等文章流。
 
-`layout: doc` 会进入首页、归档、标签等文章流。其它带 `layout` 的 Markdown 会被保留为独立页面，但不会进入文章列表，适合自定义页面或后续扩展内容类型：
+#### 4.2 写页面
+如果希望展示自己的页面，本文也提供VUE完成自己的页面
+例如[友链页面](https://vitepress.57d02.cn/FriendLink/)的效果
+在知识库中的配置见[模板仓库的FriendLink文件夹](https://github.com/57Darling02/wiki_template/tree/main/FriendLink)
 
+比如我希望xxx/FriendLink创建页面，则只需要在目标链接对应目录下完成页面：
+
+- 写好vue页面于FriendLink/FriendLinkPage.vue
+- 在FriendLink/index.md中引入，配置`layout: page`
 ```md
 ---
-title: About
+title: FriendLink
 layout: page
 ---
 
-# About
+<script setup>
+import FriendLinkPage from './FriendLinkPage.vue'
+</script>
+<ClientOnly>
+  <FriendLinkPage />
+</ClientOnly>
 ```
 
-它会直接使用文件名作为访问路径，例如 `posts/about.md` 对应 `/about`，然后在 `site_config.yml` 的 `menuItems` 中手动配置入口即可。
+然后在 `site_config.yml` 的 `menuItems` 中手动配置,告知访客入口即可。
 
 短内容可以先使用自定义 layout，例如：
 

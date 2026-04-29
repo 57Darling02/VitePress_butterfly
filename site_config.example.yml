@@ -55,10 +55,6 @@ menuItems:
         label: "友链"
         icon: "fa-solid fa-user-group"
         link: "/FriendLink/"
-      - key: "tags"
-        label: "标签"
-        icon: "fa-solid fa-tags"
-        link: "/Tags/"
 
 # Navigation music player
 # volume range: 0 ~ 1.
