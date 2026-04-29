@@ -40,8 +40,9 @@ const contentLoaderConfig = {
     render: true,
     excerpt: true,
     async transform(rawData: any[]) {
+        const docPages = rawData.filter((page: any) => page.frontmatter?.layout === 'doc');
         const data = await pMap(
-            rawData,
+            docPages,
             async (page: any) => {
                 const lastUpdated = await getLastUpdated(page.url);
                 const sourceFile = getSourceMarkdownPath(page.url);

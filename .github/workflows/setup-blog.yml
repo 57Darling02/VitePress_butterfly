@@ -16,11 +16,6 @@ on:
         type: boolean
         required: true
         default: true
-      trigger_deploy:
-        description: "Trigger the first site deployment"
-        type: boolean
-        required: true
-        default: true
 
 permissions:
   contents: read
@@ -133,15 +128,6 @@ jobs:
             gh api --method POST "repos/$BLOG_REPO/pages" -f build_type=workflow || \
               echo "::warning::Could not create GitHub Pages automatically. Set Settings -> Pages -> Source to GitHub Actions."
           fi
-
-      - name: Trigger first deployment
-        if: ${{ inputs.trigger_deploy }}
-        env:
-          GH_TOKEN: ${{ secrets.SETUP_PAT }}
-          BLOG_REPO: ${{ steps.setup.outputs.blog_repo }}
-          REF_NAME: ${{ github.ref_name }}
-        run: |
-          gh workflow run deploy.yml -R "$BLOG_REPO" --ref "$REF_NAME"
 
       - name: Summary
         env:

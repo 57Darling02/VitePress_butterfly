@@ -2,7 +2,7 @@
     <template v-if="frontmatter.layout === 'home'">
         <content />
     </template>
-    <template v-else-if="frontmatter.layout === 'page'">
+    <template v-else-if="frontmatter.layout && frontmatter.layout !== 'doc'">
         <content />
     </template>
     <template v-else>

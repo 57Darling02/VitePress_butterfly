@@ -1,7 +1,9 @@
 import ThemeConfig from './theme/types/ThemeConfig'
 import { defineConfig } from 'vitepress'
 import { createHash } from 'node:crypto'
+import fs from 'node:fs'
 import path from 'node:path'
+import yaml from 'js-yaml'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { loadSiteConfig } from './theme/utils/configLoader'
@@ -10,23 +12,50 @@ import { createSeoConfig } from './theme/utils/seo'
 
 const rawConfig = loadSiteConfig();
 const myconfig = rawConfig as ThemeConfig;
-const postRewriteTargets = new Map<string, string>();
+const rewriteTargets = new Map<string, string>();
 
 function rewritePostPath(id: string) {
   if (!id.startsWith('posts/') || !id.endsWith('.md')) return id
 
-  const target = `p/${shortHash(id)}.md`
-  const owner = postRewriteTargets.get(target)
-  if (owner && owner !== id) {
-    throw new Error(`[Post Link] "${target}" is used by both "${owner}" and "${id}".`)
+  const layout = getMarkdownLayout(id)
+  if (layout && layout !== 'doc') {
+    return registerRewriteTarget(id, getStandalonePageTarget(id))
   }
-  postRewriteTargets.set(target, id)
+
+  const target = `p/${shortHash(id)}.md`
+  return registerRewriteTarget(id, target)
+}
+
+function registerRewriteTarget(id: string, target: string) {
+  const owner = rewriteTargets.get(target)
+  if (owner && owner !== id) {
+    throw new Error(`[Route Rewrite] "${target}" is used by both "${owner}" and "${id}".`)
+  }
+  rewriteTargets.set(target, id)
 
   return target
 }
 
 function shortHash(value: string) {
   return createHash('sha256').update(value).digest('hex').slice(0, 8)
+}
+
+function getStandalonePageTarget(id: string) {
+  return id.replace(/^posts\//, '')
+}
+
+function getMarkdownLayout(id: string) {
+  const filePath = path.resolve(process.cwd(), id)
+  if (!fs.existsSync(filePath)) return ''
+
+  const source = fs.readFileSync(filePath, 'utf-8')
+  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
+  if (!match) return ''
+
+  const frontmatter = yaml.load(match[1])
+  return frontmatter && typeof frontmatter === 'object' && !Array.isArray(frontmatter)
+    ? String((frontmatter as Record<string, unknown>).layout || '').trim()
+    : ''
 }
 
 

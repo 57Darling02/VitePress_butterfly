@@ -211,7 +211,7 @@ function walk(directory, markdownFiles) {
 function shouldKeepMarkdown(filePath) {
   const source = fs.readFileSync(filePath, 'utf-8');
   const frontmatter = parseFrontmatter(source);
-  return frontmatter?.layout === 'doc';
+  return Object.prototype.hasOwnProperty.call(frontmatter || {}, 'layout');
 }
 
 function parseFrontmatter(markdownSource) {

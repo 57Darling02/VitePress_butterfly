@@ -2,25 +2,27 @@
 
 基于 VitePress + Element Plus 的卡片风博客主题。
 
-目标很简单：写 Markdown、推送文章、自动上线。
+以此致敬我的博客启蒙样式[hexo-theme-butterfly](https://github.com/jerryc127/hexo-theme-butterfly)
+
+目标很简单：一键部署上线，轻松更新内容。
+具体而言：workflow一键部署上线，写 Markdown、推送文章、自动上线。
 
 我的博客:https://57darling02.github.io
 
 博客模板展示:https://vitepress.57d02.cn
 
-
 ## 核心模型
 
-正式使用时，本项目采用双仓库模式：
+正式使用提醒：本项目采用双仓库模式：
 
 ```text
 主题仓库：只负责主题、构建、部署
 知识库仓库：负责文章、图片、站点配置
 ```
 
-`Setup Blog` 会自动创建私密知识库，并把知识库同步到主题仓库的 `posts/` 工作区。线上 CI 必须配置 `WIKI_URL`，本地 `posts/` 只用于主题开发兜底。
+`Setup Blog` 会自动创建私密知识库，并把知识库同步到主题仓库的 `posts/` 工作区。线上 CI 必须配置 `WIKI_URL`，本地 `posts/` 只用于主题开发。
 
-配置只认知识库里的 `site_config.yml`。`site_config.example.yml` 只是主题仓库里的参考模板。
+配置只认知识库里的 `site_config.yml`。主题仓库里的`site_config.example.yml` 只是参考模板。
 
 ## 快速开始：线上自动部署
 
@@ -30,13 +32,11 @@
 
 点击 GitHub 页面右上角 `Fork`，把本仓库复制到你自己的账号下。
 
-如果你想使用 GitHub Pages 的默认个人站点域名，建议仓库名设为：
-
+推荐建议仓库名设为：
 ```text
 你的用户名.github.io
 ```
-
-如果 GitHub 提示 Fork 后的 workflow 被禁用，点击允许启用。
+以此作为站点域名。
 
 ### 2. 创建初始化 Token
 
@@ -70,11 +70,10 @@ SETUP_PAT
 值粘贴刚刚生成的 token。
 
 ### 3. 运行自动初始化
-
+如果 GitHub 提示 Fork 后的 workflow 被禁用，点击允许启用。
 ```text
 Actions -> Setup Blog -> Run workflow
 ```
-
 填写：
 
 - `wiki_repo_name`：你的知识库仓库名，例如 `my-blog-wiki`
@@ -87,7 +86,7 @@ Actions -> Setup Blog -> Run workflow
 - 给主题仓库配置 `WIKI_URL`、`WIKI_BRANCH`、`PAT`
 - 给知识库仓库配置 `BLOG_REPO` 和 `PAT`
 - 尝试把 GitHub Pages 设置为 `GitHub Actions`
-- 触发第一次部署
+- 创建知识库后，由知识库工作流通知主题仓库触发第一次部署
 
 > 初始化成功后，`SETUP_PAT` 只在你重新运行 `Setup Blog` 时才需要；如果暂时不用，可以从主题仓库 secrets 里删除。
 
@@ -105,8 +104,7 @@ GitHub Actions
 
 ### 4. 写配置和文章
 
-详情见：https://vitepress.57d02.cn/posts/README
-
+详情见：https://vitepress.57d02.cn/p/d2e9fe6f
 
 你只需要在知识库里维护：
 ```text
@@ -115,7 +113,6 @@ public/
 文章目录/
 附件目录/
 ```
-
 文章需要带 `layout: doc`：
 
 ```md
@@ -129,6 +126,32 @@ layout: doc
 # Hello World
 ```
 
+`layout: doc` 会进入首页、归档、标签等文章流。其它带 `layout` 的 Markdown 会被保留为独立页面，但不会进入文章列表，适合自定义页面或后续扩展内容类型：
+
+```md
+---
+title: About
+layout: page
+---
+
+# About
+```
+
+它会直接使用文件名作为访问路径，例如 `posts/about.md` 对应 `/about`，然后在 `site_config.yml` 的 `menuItems` 中手动配置入口即可。
+
+短内容可以先使用自定义 layout，例如：
+
+```md
+---
+layout: shuoshuo
+date: 2026-01-01
+---
+
+今天也在认真生活。
+```
+
+这类内容当前只会被构建保留，不会影响现有文章展示；之后可以再做专门的“说说”页面。
+
 推送知识库后，它会通知主题仓库重新部署。
 
 ### 5. 查看网站
@@ -137,7 +160,18 @@ layout: doc
 
 
 
-## 备用：手动配置
+### 更新主题
+
+如果你的个性化内容都在知识库中，那么可以用本仓库的 `update_theme.sh` 粗暴更新主题：
+
+```bash
+bash update_theme.sh
+```
+
+它会从上游主题仓库重置源码仓库。执行前请确认你的自定义内容不在源码文件里。
+
+
+## 备用：手动配置（可跳过）
 
 如果自动初始化失败，可以手动用 [57Darling02/wiki_template](https://github.com/57Darling02/wiki_template) 创建私密知识库，然后在主题仓库配置 `WIKI_URL`、`WIKI_BRANCH`、`PAT` 三个 Actions secrets。
 
@@ -194,15 +228,7 @@ pnpm docs:build
 pnpm preview
 ```
 
-## 更新主题
 
-如果你的个性化内容都在知识库中，那么可以用 `update_theme.sh` 粗暴更新主题仓库：
-
-```bash
-bash update_theme.sh
-```
-
-它会从上游主题仓库重置源码仓库。执行前请确认你的自定义内容不在源码文件里。
 
 ## 项目结构
 
