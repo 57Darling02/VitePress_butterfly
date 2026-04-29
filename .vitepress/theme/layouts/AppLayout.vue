@@ -22,7 +22,7 @@
             </div>
         </transition>
         <transition name="el-fade-in">
-            <Toc class="a-card" v-if="!showSidebar && page.frontmatter.layout === 'doc'" v-show="controlVisible"
+            <Toc class="a-card" v-if="showFloatingToc" v-show="controlVisible"
                 style="height: 40vh;width: 300px;;display: flex;flex-direction: column;padding: 18px;" />
         </transition>
 
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useData, onContentUpdated } from 'vitepress'
 const { theme, page, frontmatter, isDark } = useData()
@@ -84,6 +84,9 @@ const {
     setFooterVisible,
     startMobileListener,
 } = useLayoutState()
+
+const isDocLayout = computed(() => frontmatter.value.layout === 'doc' || frontmatter.value.layout === undefined)
+const showFloatingToc = computed(() => isDocLayout.value && !showSidebar.value)
 
 // 获取全局控件
 const isMounted = ref(false)
@@ -145,7 +148,7 @@ const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
     const windowHeight = scrollbarRef.value?.wrapRef?.clientHeight || 0
     scrollingDown.value = currentY > lastScrollY.value
 
-    if (typeof window !== 'undefined' && currentY < 150 && (frontmatter.value.layout === 'doc' || frontmatter.value.layout === undefined) && window !== undefined) {
+    if (typeof window !== 'undefined' && currentY < 150 && isDocLayout.value) {
         setNavbarVisible(true)
     } else if (scrollingDown.value) {
         setNavbarVisible(false)

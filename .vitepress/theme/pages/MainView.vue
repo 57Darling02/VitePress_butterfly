@@ -32,6 +32,9 @@
                 <template #sidebar-non-stay>
                     <div class="fade-item" style="--delay:0.3s"><ProfileCard /></div>
                 </template>
+                <template #mobile-sidebar>
+                    <div class="fade-item" style="--delay:0.3s"><ProfileCard /></div>
+                </template>
                 <template #sidebar-stay>
                     <div class="fade-item" style="--delay:0.5s">
                         <Toc

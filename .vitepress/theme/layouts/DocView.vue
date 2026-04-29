@@ -9,6 +9,17 @@
         <!-- 主内容 -->
         <div id="page-wrapper">
             <slot name="main-content" />
+            <div class="mobile-sidebar" v-if="isMobile">
+                <slot name="mobile-sidebar">
+                    <template v-if="!isFocusMode">
+                        <slot name="sidebar-non-stay"/>
+                        <slot name="sidebar-stay"/>
+                    </template>
+                    <template v-else>
+                        <slot name="sidebar-stay"/>
+                    </template>
+                </slot>
+            </div>
         </div>
 
         <!-- 侧边栏 -->
@@ -34,8 +45,9 @@
 <script lang='ts' setup>
 import { useData } from 'vitepress'
 import { useLayoutState } from '../composables/useLayoutState'
+
 const { frontmatter } = useData()
-const { isFocusMode, showNavbar, showSidebar } = useLayoutState()
+const { isFocusMode, showNavbar, showSidebar, isMobile } = useLayoutState()
 </script>
 <style lang="scss" scoped>
 $hide-offset: var(--nav-height);
@@ -54,6 +66,14 @@ $hide-offset: var(--nav-height);
     flex: 1 1 0;
     min-width: 0;
     padding: 20px 5px 0;
+}
+
+.mobile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 12px;
 }
 
 .sidebar {

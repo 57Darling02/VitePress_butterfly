@@ -63,7 +63,6 @@
         <ProfileCard v-show="showSidebarProfile" />
         <TagFilterCard :posts="posts" v-model:selectedTags="selectedTags" />
         <FolderFilterCard :posts="posts" v-model:selectedFolder="selectedFolder" />
-        <MenuCard />
       </template>
     </DocView>
   </div>
@@ -75,7 +74,6 @@ import { useData } from 'vitepress'
 import TypeIt from 'typeit'
 import DocView from '../layouts/DocView.vue'
 import ProfileCard from '../components/cards/ProfileCard.vue'
-import MenuCard from '../components/cards/MenuCard.vue'
 import TagFilterCard from '../components/cards/TagFilterCard.vue'
 import FolderFilterCard from '../components/cards/FolderFilterCard.vue'
 import ArticleCard from '../components/cards/ArticleCard.vue'
