@@ -1,24 +1,9 @@
 <script lang="ts" setup>
-import { ElTree } from 'element-plus'
+import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { onContentUpdated, useData } from 'vitepress'
-import { nextTick, onMounted, ref, shallowRef } from 'vue'
+import TocItems from './TocItems.vue'
+
 const { frontmatter, theme } = useData()
-const treeRef = ref<InstanceType<typeof ElTree>>()
-
-const treeProps = {
-  children: 'children',
-  label: 'label',
-  value: 'value'
-}
-
-const scrollContainer = ref<HTMLElement | Window | null>()
-const scrollTocContainer = ref()
-
-// 获取滚动容器
-const getScrollContainer = (): HTMLElement | Window | null => {
-  if (typeof window === 'undefined') return null
-  return document.querySelector('.el-scrollbar__wrap') || window
-}
 
 interface TocNode {
   children: TocNode[]
@@ -31,21 +16,43 @@ type HeaderItem = TocNode & {
   element: HTMLHeadingElement
 }
 
+type ActiveHeader = {
+  element: HTMLHeadingElement
+  value: string
+}
+
 type HeaderResult = {
   headers: TocNode[]
-  pathMap: Map<string, string[]>
+  activeHeaders: ActiveHeader[]
 }
 
 const headers = shallowRef<TocNode[]>([])
-const anchorPathMap = shallowRef(new Map<string, string[]>())
+const activeHeaders = shallowRef<ActiveHeader[]>([])
 const activeAnchor = ref('')
 const isReady = ref(false)
+const scrollContainer = ref<HTMLElement | Window | null>(null)
+const scrollTocContainer = ref()
+
 const ignoreHeaderChildRE = /\b(?:VPBadge|header-anchor|footnote-ref|ignore-header)\b/
+const tocScrollOffset = 64
+let activeUpdateTimer: number | undefined
+
+const getScrollContainer = (): HTMLElement | Window | null => {
+  if (typeof window === 'undefined') return null
+  return document.querySelector<HTMLElement>('.app-scrollbar > .el-scrollbar__wrap')
+    || document.querySelector<HTMLElement>('.el-scrollbar__wrap')
+    || window
+}
 
 const normalizeAnchor = (anchor: string): string => {
   if (!anchor) return ''
   const hashIndex = anchor.indexOf('#')
   return hashIndex >= 0 ? anchor.slice(hashIndex) : anchor
+}
+
+const getAnchorId = (anchor: string): string => {
+  const normalized = normalizeAnchor(anchor)
+  return normalized ? decodeURIComponent(normalized.slice(1)) : ''
 }
 
 const serializeHeader = (el: HTMLHeadingElement): string => {
@@ -64,33 +71,14 @@ const serializeHeader = (el: HTMLHeadingElement): string => {
   return text.trim()
 }
 
-const syncExpandedToCurrent = (anchor: string): void => {
-  const key = normalizeAnchor(anchor)
-  if (!key) return
-
-  const currentPath = anchorPathMap.value.get(key) ?? []
-  const expandedKeys = new Set(currentPath)
-  const treeStore = (treeRef.value as any)?.store
-  const nodesMap = treeStore?.nodesMap
-  if (!nodesMap) return
-
-  Object.values(nodesMap).forEach((node: any) => {
-    if (!node?.data?.children?.length) return
-    node.expanded = expandedKeys.has(node.key)
-  })
-}
-
-// 获取页面标题
 const getHeaders = (range: any): HeaderResult => {
   if (range === false) {
-    return { headers: [], pathMap: new Map() }
+    return { headers: [], activeHeaders: [] }
   }
-  
-  const headerElements = Array.from(
+
+  const headerData = Array.from(
     document.querySelectorAll<HTMLHeadingElement>('.vp-doc :where(h1,h2,h3,h4,h5,h6)')
   )
-  
-  const headerData = headerElements
     .filter(el => el.id && el.hasChildNodes())
     .map<HeaderItem>(el => ({
       label: serializeHeader(el),
@@ -103,32 +91,29 @@ const getHeaders = (range: any): HeaderResult => {
   return resolveHeaders(headerData, range)
 }
 
-// 解析标题范围
-const resolveHeaders = (headers: HeaderItem[], range: any): HeaderResult => {
+const resolveHeaders = (headerItems: HeaderItem[], range: any): HeaderResult => {
   const levelsRange = (typeof range === 'object' && !Array.isArray(range)
     ? range.level
     : range) || 2
-  
+
   const [high, low] = typeof levelsRange === 'number'
     ? [levelsRange, levelsRange]
     : levelsRange === 'deep'
       ? [2, 6]
       : levelsRange
-  
-  return buildTree(headers, high, low)
+
+  return buildTree(headerItems, high, low)
 }
 
-// 构建树形结构
 const buildTree = (data: HeaderItem[], min: number, max: number): HeaderResult => {
   const result: TocNode[] = []
-  const pathMap = new Map<string, string[]>()
+  const activeItems: ActiveHeader[] = []
   const stack: Array<{
     ignored: boolean
     level: number
     node: TocNode
-    path: string[]
   }> = []
-  
+
   data.forEach(item => {
     const node: TocNode = {
       label: item.label,
@@ -137,233 +122,301 @@ const buildTree = (data: HeaderItem[], min: number, max: number): HeaderResult =
       children: []
     }
     let parent = stack[stack.length - 1]
-    
+
     while (parent && parent.level >= item.level) {
       stack.pop()
       parent = stack[stack.length - 1]
     }
 
     const ignored = item.element.classList.contains('ignore-header') || Boolean(parent?.ignored)
-    
+
     if (ignored) {
-      stack.push({
-        ignored: true,
-        level: item.level,
-        node,
-        path: parent?.path ?? []
-      })
+      stack.push({ ignored: true, level: item.level, node })
       return
     }
-    
+
     if (item.level > max || item.level < min) return
-    
+
     if (parent) {
       parent.node.children.push(node)
     } else {
       result.push(node)
     }
 
-    const currentPath = [...(parent?.path ?? []), node.value]
-    pathMap.set(node.value, currentPath)
-    
-    stack.push({
-      ignored: false,
-      level: item.level,
-      node,
-      path: currentPath
-    })
+    activeItems.push({ element: item.element, value: item.value })
+    stack.push({ ignored: false, level: item.level, node })
   })
-  
-  return { headers: result, pathMap }
+
+  return { headers: result, activeHeaders: activeItems }
 }
 
 const refreshHeaders = (): void => {
   const result = getHeaders(frontmatter.value.outline ?? theme.value.outline ?? 'deep')
   headers.value = result.headers
-  anchorPathMap.value = result.pathMap
+  activeHeaders.value = result.activeHeaders
   isReady.value = true
 }
 
-// 锚点变化处理
-const anchor_change = (e: string): void => {
-  if (typeof window === 'undefined') return
-  
-  const currentAnchor = normalizeAnchor(e)
-  if (!currentAnchor || currentAnchor === activeAnchor.value) return
-  activeAnchor.value = currentAnchor
+const getTocScrollWrap = (): HTMLElement | null => {
+  return scrollTocContainer.value?.wrapRef
+    || scrollTocContainer.value?.$el?.querySelector?.('.el-scrollbar__wrap')
+    || null
+}
 
-  treeRef.value?.setCurrentKey(currentAnchor)
-  syncExpandedToCurrent(currentAnchor)
-  
-  nextTick(() => {
-    window.history.replaceState(null, '', currentAnchor)
-    move2current_anchor()
+const getContainerScrollTop = (container: HTMLElement | Window): number => {
+  return container === window ? window.scrollY : container.scrollTop
+}
+
+const getContainerHeight = (container: HTMLElement | Window): number => {
+  return container === window ? window.innerHeight : container.clientHeight
+}
+
+const getContainerScrollHeight = (container: HTMLElement | Window): number => {
+  return container === window ? document.documentElement.scrollHeight : container.scrollHeight
+}
+
+const getHeaderTop = (element: HTMLElement, container: HTMLElement | Window): number => {
+  if (container === window) {
+    return element.getBoundingClientRect().top + window.scrollY
+  }
+
+  const elementRect = element.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+  return elementRect.top - containerRect.top + container.scrollTop
+}
+
+const setActiveAnchor = (anchor: string, scrollToc = true): void => {
+  const normalized = normalizeAnchor(anchor)
+  if (activeAnchor.value === normalized) return
+
+  activeAnchor.value = normalized
+  if (scrollToc) {
+    nextTick(() => move2current_anchor(false))
+  }
+}
+
+const updateActiveAnchor = (): void => {
+  if (typeof window === 'undefined') return
+
+  const container = scrollContainer.value || window
+  const items = activeHeaders.value
+  if (!items.length) {
+    setActiveAnchor('', false)
+    return
+  }
+
+  const scrollTop = getContainerScrollTop(container)
+  const scrollHeight = getContainerScrollHeight(container)
+  const viewportHeight = getContainerHeight(container)
+  const isBottom = Math.abs(scrollTop + viewportHeight - scrollHeight) < 2
+
+  if (scrollTop < 1) {
+    setActiveAnchor('', false)
+    return
+  }
+
+  if (isBottom) {
+    setActiveAnchor(items[items.length - 1].value)
+    return
+  }
+
+  const threshold = scrollTop + tocScrollOffset + 4
+  let current = ''
+
+  for (const item of items) {
+    if (getHeaderTop(item.element, container) > threshold) break
+    current = item.value
+  }
+
+  setActiveAnchor(current)
+}
+
+const scheduleActiveUpdate = (): void => {
+  if (typeof window === 'undefined' || activeUpdateTimer !== undefined) return
+
+  activeUpdateTimer = window.setTimeout(() => {
+    activeUpdateTimer = undefined
+    updateActiveAnchor()
+  }, 100)
+}
+
+const scrollToAnchor = (anchor: string, smooth = true): void => {
+  if (typeof window === 'undefined') return
+
+  const target = document.getElementById(getAnchorId(anchor))
+  const container = scrollContainer.value || window
+  if (!target) return
+
+  const top = getHeaderTop(target, container) - tocScrollOffset
+  container.scrollTo({
+    top,
+    behavior: smooth ? 'smooth' : 'auto'
   })
 }
 
-// 滚动到当前锚点
-const move2current_anchor = (): void => {
-  if (!treeRef.value?.getCurrentKey() || !scrollTocContainer.value) return
-  
-  const nodeEl = treeRef.value.$el.querySelector(`.el-anchor__link.is-active`)
-  if (!nodeEl) return
-  
-  const tocScrollWrap = scrollTocContainer.value.$el.querySelector('.el-scrollbar__wrap')
-  if (!tocScrollWrap) return
-  
+const clearLocationHash = (): void => {
+  if (typeof window === 'undefined' || !window.location.hash) return
+
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${window.location.search}`
+  )
+}
+
+const handleNavigate = (anchor: string): void => {
+  const normalized = normalizeAnchor(anchor)
+  if (!normalized) return
+
+  clearLocationHash()
+  setActiveAnchor(normalized)
+  scrollToAnchor(normalized)
+}
+
+const move2current_anchor = (smooth = true): void => {
+  const current = activeAnchor.value || normalizeAnchor(window.location.hash)
+  if (!current) return
+
+  const tocScrollWrap = getTocScrollWrap()
+  const nodeEl = Array.from(tocScrollWrap?.querySelectorAll<HTMLElement>('.toc-link') ?? [])
+    .find(link => link.getAttribute('href') === current)
+  if (!tocScrollWrap || !nodeEl) return
+
   const containerRect = tocScrollWrap.getBoundingClientRect()
   const nodeRect = nodeEl.getBoundingClientRect()
-  
-  const nodeTopRelative = nodeRect.top - containerRect.top + tocScrollWrap.scrollTop
-  const nodeBottomRelative = nodeRect.bottom - containerRect.top + tocScrollWrap.scrollTop
-  
+  const nodeTop = nodeRect.top - containerRect.top + tocScrollWrap.scrollTop
+  const nodeBottom = nodeRect.bottom - containerRect.top + tocScrollWrap.scrollTop
   const isVisible = (
-    nodeTopRelative >= tocScrollWrap.scrollTop &&
-    nodeBottomRelative <= tocScrollWrap.scrollTop + containerRect.height
+    nodeTop >= tocScrollWrap.scrollTop &&
+    nodeBottom <= tocScrollWrap.scrollTop + containerRect.height
   )
-  
+
   if (!isVisible) {
-    const targetPosition = nodeTopRelative - (containerRect.height / 2)
     tocScrollWrap.scrollTo({
-      top: targetPosition,
-      behavior: 'smooth'
+      top: Math.max(0, nodeTop - containerRect.height / 2),
+      behavior: smooth ? 'smooth' : 'auto'
     })
   }
 }
 
-// 生命周期钩子
+const syncAfterRender = (): void => {
+  nextTick(() => {
+    const currentHash = typeof window === 'undefined' ? '' : normalizeAnchor(window.location.hash)
+    if (currentHash && document.getElementById(getAnchorId(currentHash))) {
+      setActiveAnchor(currentHash, false)
+      nextTick(() => move2current_anchor(false))
+      return
+    }
+
+    updateActiveAnchor()
+  })
+}
+
+const addScrollListener = (): void => {
+  if (typeof window === 'undefined') return
+
+  const container = scrollContainer.value || window
+  container.addEventListener('scroll', scheduleActiveUpdate, { passive: true })
+}
+
+const removeScrollListener = (): void => {
+  if (typeof window === 'undefined') return
+
+  if (activeUpdateTimer !== undefined) {
+    window.clearTimeout(activeUpdateTimer)
+    activeUpdateTimer = undefined
+  }
+
+  const container = scrollContainer.value || window
+  container.removeEventListener('scroll', scheduleActiveUpdate)
+}
+
 onMounted(() => {
   scrollContainer.value = getScrollContainer()
   refreshHeaders()
-  nextTick(() => {
-    const currentHash = typeof window === 'undefined' ? '' : normalizeAnchor(window.location.hash)
-    if (!currentHash) return
-    activeAnchor.value = currentHash
-    treeRef.value?.setCurrentKey(currentHash)
-    syncExpandedToCurrent(currentHash)
-  })
+  addScrollListener()
+  syncAfterRender()
 })
 
-// 监听内容更新
 onContentUpdated(() => {
   refreshHeaders()
-  nextTick(() => {
-    const currentHash = typeof window === 'undefined' ? '' : normalizeAnchor(window.location.hash)
-    if (!currentHash) return
-    activeAnchor.value = currentHash
-    treeRef.value?.setCurrentKey(currentHash)
-    syncExpandedToCurrent(currentHash)
-  })
+  syncAfterRender()
+})
+
+onBeforeUnmount(() => {
+  removeScrollListener()
 })
 </script>
 
 <template>
-  <div style="min-height: 0; height: 100%; display: flex; flex-direction: column;">
-    <span class="toc-title" style="font-weight: 600; height: 25px;">
-      &nbsp;大纲
-      &nbsp;&nbsp;
-      <el-button style="background-color: transparent;" round
-        type="default"
+  <nav class="toc" aria-labelledby="toc-title">
+    <div class="toc-header">
+      <span id="toc-title" class="toc-title">大纲</span>
+      <el-button
+        class="toc-locate"
+        text
+        circle
         size="small"
-        @click="move2current_anchor"
+        :disabled="!activeAnchor"
+        title="定位当前标题"
+        @click="move2current_anchor()"
       >
-      🎯
+        <i class="fa-solid fa-crosshairs" aria-hidden="true" />
       </el-button>
-    </span>
+    </div>
 
-    <el-anchor
+    <el-scrollbar
       v-if="headers.length"
-      :container="scrollContainer"
-      :offset="45"
-      direction="vertical"
-      style="background-color: transparent; min-height: 0; flex: 1; display: flex; flex-direction: column;"
-      :marker="false"
-      :select-scroll-top="true"
-      @change="anchor_change"
+      ref="scrollTocContainer"
+      class="toc-scroll"
+      max-height="calc(var(--toc-max-height, 40vh) - var(--toc-header-space, 33px))"
     >
-      <el-scrollbar style="flex: 1; min-height: 0;" ref="scrollTocContainer">
-        <el-tree
-          ref="treeRef"
-          style="max-width: 300px; background-color: transparent;"
-          :data="headers"
-          :props="treeProps"
-          :expand-on-click-node="false"
-          :highlight-current="true"
-          :indent="12"
-          :check-on-click-leaf="false"
-          node-key="value"
-          :auto-expand-parent="false"
-          :render-after-expand="false"
-        >
-          <template #default="{ data }">
-            <el-anchor-link
-              v-if="data.value && data.label"
-              :href="data.value"
-              :title="data.label"
-            />
-          </template>
-        </el-tree>
-      </el-scrollbar>
-    </el-anchor>
+      <TocItems
+        :items="headers"
+        :active-anchor="activeAnchor"
+        root
+        @navigate="handleNavigate"
+      />
+    </el-scrollbar>
     <el-skeleton v-else-if="!isReady" class="toc-skeleton" :rows="6" animated />
-  </div>
+  </nav>
 </template>
 
-<style lang="scss">
-.el-anchor__list {
-  flex: 1;
+<style lang="scss" scoped>
+.toc {
+  min-height: 0;
+  max-height: var(--toc-max-height, 40vh);
+  --toc-header-space: 33px;
   display: flex;
-  overflow: hidden;
+  flex-direction: column;
+}
+
+.toc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 25px;
+  flex: 0 0 25px;
+  margin-bottom: 8px;
+}
+
+.toc-title {
+  font-weight: 600;
+}
+
+.toc-locate {
+  flex: 0 0 auto;
+  background-color: transparent;
+}
+
+.toc-scroll {
+  height: auto;
+  min-height: 0;
+  flex: 0 1 auto;
 }
 
 .toc-skeleton {
   padding: 8px;
-}
-
-/* 为el-tree节点添加圆角样式 */
-.el-tree {
-  .el-tree-node {
-    border-radius: 8px;
-    margin: 2px 0;
-    
-    .el-tree-node__content {
-      border-radius: 8px;
-      padding: 4px 0;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        background-color: rgba(64, 158, 255, 0.08);
-        border-radius: 8px;
-      }
-    }
-    
-    &.is-current {
-      > .el-tree-node__content {
-        background-color: rgba(64, 158, 255, 0.12);
-        border-radius: 8px;
-      }
-    }
-  }
-  
-  /* 为锚点链接添加圆角 */
-  .el-anchor-link {
-    .el-anchor-link__title {
-      border-radius: 8px;
-      padding: 0 8px;
-      transition: all 0.2s ease;
-    }
-    
-    &.is-active {
-      .el-anchor-link__title {
-        background-color: rgba(64, 158, 255, 0.12);
-        border-radius: 8px;
-      }
-    }
-    
-    &:hover .el-anchor-link__title {
-      background-color: rgba(64, 158, 255, 0.08);
-      border-radius: 8px;
-    }
-  }
 }
 </style>

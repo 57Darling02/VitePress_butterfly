@@ -34,8 +34,14 @@
                 </template>
                 <template #sidebar-stay>
                     <div class="fade-item" style="--delay:0.5s">
-                        <Toc class="a-card"
-                            :style="{ height: isFocusMode ? '90vh' : '40vh', display: 'flex', flexDirection: 'column', padding: '18px' }" />
+                        <Toc
+                            class="a-card page-toc"
+                            :style="{
+                                '--toc-max-height': isFocusMode
+                                    ? 'calc(100vh - var(--nav-height) - 40px)'
+                                    : 'min(40vh, calc(100vh - var(--nav-height) - 40px))'
+                            }"
+                        />
                     </div>
                 </template>
             </DocView>
@@ -120,5 +126,9 @@ onContentUpdated(() => {
             width: 74%;
         }
     }
+}
+
+.page-toc {
+    padding: 18px;
 }
 </style>

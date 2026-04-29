@@ -175,7 +175,10 @@ const handleBackToTopClick = () => {
 const handleCopyLinkClick = async () => {
     if (typeof window === 'undefined') return
 
-    await navigator.clipboard.writeText(window.location.href)
+    const url = new URL(window.location.href)
+    url.hash = ''
+
+    await navigator.clipboard.writeText(url.toString())
     ElMessage({
         message: '当前页面链接已复制',
         type: 'success',
