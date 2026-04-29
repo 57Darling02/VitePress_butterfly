@@ -132,6 +132,7 @@ onContentUpdated(() => {
 }
 
 .page-toc {
+    --toc-padding-y: 36px;
     padding: 18px;
 }
 </style>

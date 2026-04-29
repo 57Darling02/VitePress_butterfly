@@ -369,7 +369,7 @@ onBeforeUnmount(() => {
       v-if="headers.length"
       ref="scrollTocContainer"
       class="toc-scroll"
-      max-height="calc(var(--toc-max-height, 40vh) - var(--toc-header-space, 33px))"
+      max-height="calc(var(--toc-max-height, 40vh) - var(--toc-header-space, 33px) - var(--toc-padding-y, 0px))"
     >
       <TocItems
         :items="headers"
@@ -387,8 +387,10 @@ onBeforeUnmount(() => {
   min-height: 0;
   max-height: var(--toc-max-height, 40vh);
   --toc-header-space: 33px;
+  --toc-padding-y: 0px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .toc-header {
