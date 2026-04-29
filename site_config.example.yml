@@ -68,7 +68,7 @@ musicPlayer:
   name: "lofi bbox"
   artist: "Shi Nian Yi Shi"
   cover: "https://p2.music.126.net/5GL5jxLP9LCi6HpqXwKJfQ==/109951173099535524.jpg"
-  autoplay: true
+  autoplay: false
   volume: 0.6
 
 # Friend links page
