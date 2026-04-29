@@ -8,6 +8,16 @@ import path from "path";
 import { spawn } from "cross-spawn";
 import { getPostCategory } from "../utils/postCategory";
 
+const EXCERPT_LENGTH = 100;
+const EXCERPT_SUFFIX = "......";
+const excerptCleanupRules: Array<[RegExp, string]> = [
+    [/^---[\s\S]*?---/, ""],
+    [/```[\s\S]*?```/g, ""],
+    [/#+\s+/g, ""],
+    [/\[([^\]]+)\]\([^)]+\)/g, "$1"],
+    [/(\*\*|__)(.*?)\1/g, "$2"],
+];
+
 function normalizeTags(rawTags: unknown): string[] {
     if (Array.isArray(rawTags)) {
         return rawTags
@@ -36,17 +46,10 @@ const contentLoaderConfig = {
                 const lastUpdated = await getLastUpdated(page.url);
                 const sourceFile = getSourceMarkdownPath(page.url);
                 const category = getPostCategory(sourceFile);
-                let excerpt = page.excerpt
-                let textNum = 0
-                if (true) {
-                    const plainText = page.src
-                        .replace(/^---[\s\S]*?---/, '')
-                        .replace(/(```[\s\S]*?```|#+\s+|\[.*?\]\(.*?\))/g, '')
-                        .substring(0, 100)
-                    excerpt = plainText + (plainText.length >= 30 ? '......' : '')
-                    excerpt = excerpt.trim()
-                    textNum = page.src.length
-                }
+                const plainText = toExcerptText(page.src).substring(0, EXCERPT_LENGTH);
+                const excerpt = `${plainText}${plainText.length >= 30 ? EXCERPT_SUFFIX : ""}`.trim();
+                const textNum = page.src.length;
+
                 return {
                     title: page.frontmatter.title,
                     date: page.frontmatter.date,
@@ -79,6 +82,13 @@ const loader = createContentLoader('posts/**/*.md', contentLoaderConfig)
 export const data = await loader.load();
 export default loader;
 // export default createContentLoader('posts/**/*.md', contentLoaderConfig)
+
+function toExcerptText(src: string) {
+    return excerptCleanupRules.reduce(
+        (text, [pattern, replacement]) => text.replace(pattern, replacement),
+        src,
+    );
+}
 
 function getSortTime(post: any): number {
     return post.lastUpdated || new Date(post.date).getTime() || 0;
