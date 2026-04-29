@@ -6,6 +6,7 @@ const defaultSiteConfig = {
   site_name: 'VitePress-Butterfly',
   site_description: 'A VitePress blog theme.',
   site_url: '/',
+  lang: 'zh-CN',
   author: '',
   isDark: null,
   background: '#FDF8F2',

@@ -6,6 +6,7 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { loadSiteConfig } from './theme/utils/configLoader'
 import { injectFirstPaintLoading } from './theme/utils/firstPaintLoading'
+import { createSeoConfig } from './theme/utils/seo'
 
 const rawConfig = loadSiteConfig();
 const myconfig = rawConfig as ThemeConfig;
@@ -119,8 +120,7 @@ const customElements = [
   'annotation-xml',
 ];
 export default defineConfig<ThemeConfig>({
-  title: myconfig.site_name || "VitePress-Butterfly",
-  description: myconfig.site_description || "VitePress-Butterfly is a VitePress theme inspired by the Butterfly theme.",
+  ...createSeoConfig(myconfig),
   themeConfig: myconfig,
   cleanUrls: true,
   ignoreDeadLinks: true,

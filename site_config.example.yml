@@ -5,7 +5,9 @@
 # Site information
 site_name: "My Awesome Site"
 site_description: "这是一个使用 VitePress 构建的博客站点。"
-site_url: "/"
+# SEO uses this as the canonical domain and sitemap host.
+site_url: "https://example.com/"
+lang: "zh-CN"
 author: "57Darling02"
 
 # Visual experience

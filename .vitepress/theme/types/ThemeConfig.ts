@@ -3,6 +3,7 @@ export default interface ThemeConfig {
   site_name: string;
   site_description: string;
   site_url: string;
+  lang?: string;
   author: string;
   isDark: boolean | null;
   // 首页配置
