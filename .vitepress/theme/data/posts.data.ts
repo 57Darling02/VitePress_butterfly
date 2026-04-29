@@ -47,7 +47,7 @@ const contentLoaderConfig = {
                 return {
                     title: page.frontmatter.title,
                     date: page.frontmatter.date,
-                    link: page.url,
+                    link: getPublicLink(page.url),
                     excerpt: excerpt,
                     tags: normalizeTags(page.frontmatter?.tags),
                     cover: page.frontmatter.cover || '',
@@ -80,13 +80,27 @@ function getSortTime(post: any): number {
     return post.lastUpdated || new Date(post.date).getTime() || 0;
 }
 
+function getPublicLink(url: string) {
+    const siteConfig = (globalThis as any).VITEPRESS_CONFIG;
+    const file = urlToMarkdownPath(url).replace(/^\/+/, '');
+    const publicFile = siteConfig.rewrites.map[file] || file;
+    return '/' + publicFile
+        .replace(/(^|\/)index\.md$/, '$1')
+        .replace(/\.md$/, '');
+}
+
+function urlToMarkdownPath(url: string) {
+    return url
+        .replace(/(^|\/)$/, "$1index")
+        .replace(/(\.html)?$/, ".md");
+}
+
 // getLastUpdated function to fetch the last update time of a markdown file
 async function getLastUpdated(url: string) {
     // Access global VITEPRESS_CONFIG
     const siteConfig = (globalThis as any).VITEPRESS_CONFIG;
 
-    let file = url.replace(/(^|\/)$/, "$1index");
-    file = file.replace(/(\.html)?$/, ".md");
+    let file = urlToMarkdownPath(url);
     file = siteConfig.rewrites.inv[file] || file;
     file = path.join(siteConfig.srcDir, file);
 

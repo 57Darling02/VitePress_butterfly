@@ -89,8 +89,6 @@ function replacePostsFromRemote(wikiUrl, wikiBranch, pat) {
 
   const cloneArgs = [
     'clone',
-    '--depth',
-    '1',
     '--branch',
     wikiBranch,
     buildAuthenticatedUrl(wikiUrl, pat),
@@ -119,7 +117,6 @@ function replacePostsFromRemote(wikiUrl, wikiBranch, pat) {
     copyDirectory(tempCloneDir, postsDir);
     removeDirectory(tempCloneDir);
   }
-  removeDirectory(path.join(postsDir, '.git'));
   console.log(`${LOG_PREFIX} Remote content synced into posts/.`);
 }
 

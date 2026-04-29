@@ -1,5 +1,6 @@
 import ThemeConfig from './theme/types/ThemeConfig'
 import { defineConfig } from 'vitepress'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
@@ -8,6 +9,24 @@ import { injectFirstPaintLoading } from './theme/utils/firstPaintLoading'
 
 const rawConfig = loadSiteConfig();
 const myconfig = rawConfig as ThemeConfig;
+const postRewriteTargets = new Map<string, string>();
+
+function rewritePostPath(id: string) {
+  if (!id.startsWith('posts/') || !id.endsWith('.md')) return id
+
+  const target = `p/${shortHash(id)}.md`
+  const owner = postRewriteTargets.get(target)
+  if (owner && owner !== id) {
+    throw new Error(`[Post Link] "${target}" is used by both "${owner}" and "${id}".`)
+  }
+  postRewriteTargets.set(target, id)
+
+  return target
+}
+
+function shortHash(value: string) {
+  return createHash('sha256').update(value).digest('hex').slice(0, 8)
+}
 
 
 const customElements = [
@@ -106,6 +125,7 @@ export default defineConfig<ThemeConfig>({
   cleanUrls: true,
   ignoreDeadLinks: true,
   lastUpdated: true,
+  rewrites: rewritePostPath,
   vite: {
     publicDir: path.resolve(process.cwd(), '.vitepress/content-public'),
     ssr: {
