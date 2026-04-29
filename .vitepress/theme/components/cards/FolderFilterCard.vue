@@ -219,15 +219,25 @@ watch(() => props.selectedFolder, expandAncestors, { immediate: true })
     color 0.2s ease;
 
   &:hover {
-    color: var(--vp-c-text-1);
-    background: rgba(64, 158, 255, 0.08);
+    color: var(--vp-c-brand);
+    background: var(--vp-c-bg);
+    border-color: var(--vp-c-brand);
   }
 
   &.is-active {
-    color: var(--vp-c-text-1);
-    background: rgba(64, 158, 255, 0.12);
-    border-color: rgba(64, 158, 255, 0.3);
+    color: white;
+    background: var(--vp-c-brand);
+    border-color: var(--vp-c-brand);
     font-weight: 600;
+
+    .folder-count {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .folder-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
   }
 }
 

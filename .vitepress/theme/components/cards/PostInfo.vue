@@ -70,14 +70,17 @@ onMounted(() => {
 
 <style scoped>
 .article-header {
+  --post-info-side-gap: 20px;
+
   padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
   width: min(100%, max-content);
-  max-width: 80%;
+  max-width: min(80%, calc(100% - var(--post-info-side-gap) * 2));
   margin: 0 auto;
-  border-radius: 8px;
+  border-radius: 18px;
   background-color: rgba(var(--vp-c-bg-rgb), 0.5);
 }
 
@@ -126,8 +129,8 @@ onMounted(() => {
 }
 
 .article-header.is-mobile {
-  width: 100%;
-  max-width: 100%;
+  width: calc(100% - var(--post-info-side-gap) * 2);
+  max-width: none;
   padding: 1.5rem;
 }
 
