@@ -6,6 +6,7 @@ const theme = loadSiteConfig() as any;
 import fs from "fs";
 import path from "path";
 import { spawn } from "cross-spawn";
+import { getPostCategory } from "../utils/postCategory";
 
 function normalizeTags(rawTags: unknown): string[] {
     if (Array.isArray(rawTags)) {
@@ -33,6 +34,8 @@ const contentLoaderConfig = {
             rawData,
             async (page: any) => {
                 const lastUpdated = await getLastUpdated(page.url);
+                const sourceFile = getSourceMarkdownPath(page.url);
+                const category = getPostCategory(sourceFile);
                 let excerpt = page.excerpt
                 let textNum = 0
                 if (true) {
@@ -50,6 +53,7 @@ const contentLoaderConfig = {
                     link: getPublicLink(page.url),
                     excerpt: excerpt,
                     tags: normalizeTags(page.frontmatter?.tags),
+                    category,
                     cover: page.frontmatter.cover || '',
                     lastUpdated,
                     textNum,
@@ -82,11 +86,17 @@ function getSortTime(post: any): number {
 
 function getPublicLink(url: string) {
     const siteConfig = (globalThis as any).VITEPRESS_CONFIG;
-    const file = urlToMarkdownPath(url).replace(/^\/+/, '');
+    const file = getSourceMarkdownPath(url).replace(/^\/+/, '');
     const publicFile = siteConfig.rewrites.map[file] || file;
     return '/' + publicFile
         .replace(/(^|\/)index\.md$/, '$1')
         .replace(/\.md$/, '');
+}
+
+function getSourceMarkdownPath(url: string) {
+    const siteConfig = (globalThis as any).VITEPRESS_CONFIG;
+    const file = urlToMarkdownPath(url);
+    return siteConfig.rewrites.inv[file] || file;
 }
 
 function urlToMarkdownPath(url: string) {

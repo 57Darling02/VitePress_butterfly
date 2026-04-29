@@ -26,6 +26,7 @@
 import { useData } from 'vitepress'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useLayoutState } from '../../composables/useLayoutState'
+import { getPostFolder } from '../../utils/postCategory'
 
 const { theme, page } = useData()
 const footer = theme.value.footer || {}
@@ -49,14 +50,7 @@ const formatTime = (diff: number) => {
     return `${seconds}秒`
 }
 const formattedFilePath = computed(() => {
-  if (!page.value?.filePath) return ''
-  
-  const filePath = page.value.filePath
-  // 去除开头的 "posts/"
-  let result = filePath.replace(/^posts\//, '')
-  // 去除结尾的 "/**.md" 部分
-  result = result.replace(/\/[^/]*\.md$/, '')
-  return result
+    return getPostFolder(page.value?.filePath)
 })
 let intervalId: number | null = null
 

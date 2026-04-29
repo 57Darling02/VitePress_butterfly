@@ -62,6 +62,7 @@
       <template #sidebar-stay>
         <ProfileCard v-show="showSidebarProfile" />
         <TagFilterCard :posts="posts" v-model:selectedTags="selectedTags" />
+        <FolderFilterCard :posts="posts" v-model:selectedFolder="selectedFolder" />
         <MenuCard />
       </template>
     </DocView>
@@ -76,12 +77,14 @@ import DocView from '../layouts/DocView.vue'
 import ProfileCard from '../components/cards/ProfileCard.vue'
 import MenuCard from '../components/cards/MenuCard.vue'
 import TagFilterCard from '../components/cards/TagFilterCard.vue'
+import FolderFilterCard from '../components/cards/FolderFilterCard.vue'
 import ArticleCard from '../components/cards/ArticleCard.vue'
 import { data as posts } from '../data/posts.data.ts'
 
 const { theme } = useData()
 
 const selectedTags = ref([])
+const selectedFolder = ref('')
 const currentPage = ref(1)
 const pageSize = ref(theme.value.pageSize || 8)
 
@@ -102,12 +105,16 @@ let postRevealObservers = []
 const POST_REVEAL_VISIBLE_CLASS = 'is-visible'
 
 const filteredPosts = computed(() => {
-  if (selectedTags.value.length === 0) {
-    return posts
-  }
   return posts.filter((post) => {
-    if (!post.tags) return false
-    return selectedTags.value.some((tag) => post.tags.includes(tag))
+    const matchesTags =
+      selectedTags.value.length === 0 ||
+      selectedTags.value.some((tag) => post.tags?.includes(tag))
+    const matchesFolder =
+      !selectedFolder.value ||
+      post.category === selectedFolder.value ||
+      post.category?.startsWith(`${selectedFolder.value}/`)
+
+    return matchesTags && matchesFolder
   })
 })
 
@@ -117,7 +124,7 @@ const currentPosts = computed(() => {
   return filteredPosts.value.slice(start, end)
 })
 
-watch(selectedTags, () => {
+watch([selectedTags, selectedFolder], () => {
   currentPage.value = 1
 })
 
