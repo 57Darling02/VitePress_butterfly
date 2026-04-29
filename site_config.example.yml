@@ -12,19 +12,19 @@ author: "57Darling02"
 
 # Visual experience
 # isDark: null follows system, true forces dark, false forces light.
-# background accepts a color value or a public asset path such as "/wallpaper/1.webp".
+# background accepts a color value(HEX) or a public asset path such as "/wallpaper/1.webp".
 isDark: null
-background: "#FDF8F2"
+background: ""
 bg_rainfall: false
 
 # Home page
 home:
   mainTitle: "My Custom Site"
   subTitles:
-    - "世界上只有一种英雄主义"
-    - "那就是在认清生活的真相后"
-    - "依然热爱生活"
-  firstViewHeight: 60
+    - "写 Markdown"
+    - "推送文章"
+    - "自动上线"
+  firstViewHeight: 100
 
 # Post list
 # sortMethod: "date" or "lastUpdated".

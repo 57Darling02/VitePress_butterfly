@@ -2,7 +2,7 @@
 
 基于 VitePress + Element Plus 的卡片风博客主题。
 
-目标很简单：写 Markdown、推送代码、自动上线。
+目标很简单：写 Markdown、推送文章、自动上线。
 
 我的博客:https://57darling02.github.io
 
