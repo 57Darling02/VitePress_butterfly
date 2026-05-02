@@ -176,17 +176,34 @@ date: 2026-01-01
 
 部署完成后，在仓库的 `Actions` 页面可以看到构建状态；在 `Settings -> Pages` 可以看到访问地址。
 
+## 可选：接入 Vercel 自动部署
 
-
-### 更新主题
-
-如果你的个性化内容都在知识库中，那么可以用本仓库的 `update_theme.sh` 粗暴更新主题：
-
-```bash
-bash update_theme.sh
+如果要部署的网页不止一个，或者希望使用自己的域名，那么推荐vercel部署。
+只需要补充填入这三个 secret：
+```text
+VERCEL_TOKEN
+VERCEL_ORG_ID
+VERCEL_PROJECT_ID
 ```
 
-它会从上游主题仓库重置源码仓库。执行前请确认你的自定义内容不在源码文件里。
+[Two Ways to Find Vercel ORG_ID and PROJECT_ID (codenote.net)](https://codenote.net/en/posts/how-to-find-vercel-org-project-ids/)
+简单来说：
+1. 在vercel中配置token
+2. 关联github仓库
+3. 获取`Project ID` 和`Team ID`
+	并将它们分别配置为`VERCEL_TOKEN` `VERCEL_TOKEN`和`VERCEL_ORG_ID`
+## 主题更新
+
+在源码仓库中点击更新上游即可
+
+
+或者使用命令行，打开源码仓库终端执行
+
+```bash
+git remote add upstream https://github.com/57Darling02/VitePress_butterfly.git
+
+git fetch upstream && git checkout main && git reset --hard upstream/main && git push origin main --force
+```
 
 
 ## 备用：手动配置（可跳过）
