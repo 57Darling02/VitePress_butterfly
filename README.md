@@ -8,6 +8,7 @@
 
 workflow一键部署上线，写 Markdown/VUE页面、推送、自动上线。
 
+[介绍与入门教程](https://www.bilibili.com/video/BV12y9yBzE4c/)
 
 我的博客:https://57darling02.github.io
 
