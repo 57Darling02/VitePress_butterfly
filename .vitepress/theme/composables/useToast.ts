@@ -9,7 +9,7 @@ export type Toast = {
 }
 
 // How long a toast stays before auto-dismissing.
-const TOAST_DURATION = 2600
+const TOAST_DURATION = 1000
 
 // Single source of truth for the currently shown toast, shared across the app.
 // The nav island subscribes to this and morphs to display it.
