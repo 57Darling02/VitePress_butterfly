@@ -8,15 +8,15 @@
       <div id="content-container">
         <div id="page-wrapper">
           <slot name="main-content" />
-          <div v-if="isMobile" class="mobile-sidebar">
-            <slot name="mobile-sidebar">
+          <div v-if="!showSidebar" class="sidebar-stacked">
+            <slot name="sidebar-stacked">
               <slot name="sidebar-non-stay" />
               <slot name="sidebar-stay" />
             </slot>
           </div>
         </div>
 
-        <aside v-if="!isMobile" v-show="showSidebar" id="site-sidebar" class="sidebar">
+        <aside v-if="showSidebar" id="site-sidebar" class="sidebar">
           <slot name="sidebar-non-stay" />
           <div class="sidebar-stay">
             <slot name="sidebar-stay" />
@@ -29,10 +29,14 @@
 <script lang='ts' setup>
 import { useLayoutState } from '../composables/useLayoutState'
 
-const { showSidebar, isMobile } = useLayoutState()
+const { showSidebar } = useLayoutState()
 </script>
 <style lang="scss" scoped>
 .document-view {
+    --sidebar-gap: 15px;
+    // Max height for the scrollable list inside filter cards (tags / folders),
+    // so a long list scrolls internally instead of stretching the sticky column.
+    --filter-list-max-height: clamp(140px, 30vh, 360px);
     width: 100%;
     margin-top: calc(-1 * var(--nav-height));
 }
@@ -63,12 +67,12 @@ const { showSidebar, isMobile } = useLayoutState()
     padding: 20px 5px 0;
 }
 
-.mobile-sidebar {
+.sidebar-stacked {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--sidebar-gap);
     width: 100%;
-    margin-top: 12px;
+    margin-top: var(--sidebar-gap);
 }
 
 .sidebar {
@@ -84,17 +88,19 @@ const { showSidebar, isMobile } = useLayoutState()
     visibility: visible;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--sidebar-gap);
     animation: fadeInUp 1s ease-in-out 0.2s forwards;
 }
 
 .sidebar-stay {
+    // No scroll container here: filter cards cap their own list height, so the
+    // column stays within the viewport on its own and card shadows aren't clipped.
     position: sticky;
     top: var(--nav-height);
     min-width: 0;
-    max-height: calc(100vh - (var(--nav-height)));
     z-index: 50;
     display: flex;
     flex-direction: column;
+    gap: var(--sidebar-gap);
 }
 </style>

@@ -29,18 +29,16 @@
     <template #sidebar-non-stay>
       <ProfileCard class="fade-item profile-sidebar" />
     </template>
-    <template #mobile-sidebar>
+    <template #sidebar-stacked>
       <ProfileCard class="fade-item profile-sidebar" />
       <SiteStatsCard class="fade-item stats-sidebar" />
     </template>
     <template #sidebar-stay>
-      <template v-if="showSidebar">
-        <Toc class="fade-item a-card page-toc toc-sidebar">
-          <template #empty>
-            <SiteStatsCard class="fade-item stats-sidebar" />
-          </template>
-        </Toc>
-      </template>
+      <Toc class="fade-item a-card page-toc toc-sidebar">
+        <template #empty>
+          <SiteStatsCard class="fade-item stats-sidebar" />
+        </template>
+      </Toc>
     </template>
   </DocView>
 </template>
@@ -53,13 +51,11 @@ import PostInfo from '../components/cards/PostInfo.vue'
 import ProfileCard from '../components/cards/ProfileCard.vue'
 import SiteStatsCard from '../components/cards/SiteStatsCard.vue'
 import Toc from '../components/navigation/Toc.vue'
-import { useLayoutState } from '../composables/useLayoutState'
 import type ThemeConfig from '../types/ThemeConfig'
 import DocView from './DocView.vue'
 
 const GiscusComments = defineAsyncComponent(() => import('../components/comments/GiscusComments.vue'))
 const { theme, frontmatter } = useData<ThemeConfig>()
-const { showSidebar } = useLayoutState()
 const isMounted = ref(false)
 const shouldLoadGiscus = computed(() => {
   const comments = theme.value.comments

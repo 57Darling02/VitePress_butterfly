@@ -82,7 +82,6 @@ const clearTags = () => {
 <style lang="scss" scoped>
 .tag-filter-card {
   padding: 15px;
-  margin-top: 15px;
 }
 
 .card-header {
@@ -107,6 +106,30 @@ const clearTags = () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  max-height: var(--filter-list-max-height, 30vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  // Room so the tag chips' outline/hover ring isn't clipped by overflow.
+  padding: 2px;
+  margin: -2px;
+}
+
+.tags-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tags-container::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vp-c-text-3) 40%, transparent);
+}
+
+@media (max-width: 748px) {
+  // On mobile the page scrolls freely; don't trap scrolling inside the card.
+  .tags-container {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 .tag-item {

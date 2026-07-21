@@ -5,6 +5,7 @@ import { data as posts } from '../../data/posts.data'
 import type { PostDate } from '../../types/PostSummary'
 import type ThemeConfig from '../../types/ThemeConfig'
 import ThemeIcon from '../ThemeIcon.vue'
+import { useVisitData } from '../../composables/useVisitData'
 
 const DAY_MS = 86_400_000
 const { lang, theme } = useData<ThemeConfig>()
@@ -20,8 +21,6 @@ const daysSince = (timestamp: number) => timestamp > 0
   ? Math.max(0, Math.floor((Date.now() - timestamp) / DAY_MS))
   : null
 
-const categories = new Set(posts.map(post => post.category).filter(Boolean))
-const tags = new Set(posts.flatMap(post => post.tags))
 const totalWords = posts.reduce((sum, post) => sum + post.textNum, 0)
 const latestActivity = Math.max(
   0,
@@ -32,13 +31,14 @@ const formatNumber = (value: number | null) => value === null
   ? '—'
   : numberFormatter.value.format(value)
 
+const { visitData } = useVisitData()
+
 const stats = computed(() => {
   const createdAt = toTimestamp(theme.value.footer?.createdTime)
+  const visits = visitData.value?.site_pv ?? null
 
   return [
-    { label: '文章', icon: 'file-text', value: formatNumber(posts.length) },
-    { label: '分类', icon: 'folder', value: formatNumber(categories.size) },
-    { label: '标签', icon: 'tags', value: formatNumber(tags.size) },
+    { label: '访问量', icon: 'eye', value: formatNumber(visits) },
     { label: '总字数', icon: 'pen-line', value: formatNumber(totalWords) },
     { label: '运行时长', icon: 'calendar-clock', value: formatNumber(daysSince(createdAt)), suffix: '天' },
     { label: '最后活动', icon: 'activity', value: formatNumber(daysSince(latestActivity)), suffix: '天前' },

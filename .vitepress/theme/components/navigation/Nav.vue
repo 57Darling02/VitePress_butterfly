@@ -15,10 +15,27 @@
         <div
             id="nav"
             ref="navRef"
-            :class="{ 'nav-compact': isCompact, 'nav-hidden': navPhase === 'hidden' }"
+            :class="{ 'nav-compact': isCompact, 'nav-hidden': navPhase === 'hidden', 'nav-toasting': Boolean(activeToast) }"
             :aria-hidden="!isNavInteractive ? 'true' : undefined"
         >
-            <div id="menu" :inert="!isNavInteractive || undefined">
+            <transition name="nav-toast-fade">
+                <div
+                    v-if="activeToast"
+                    :key="activeToast.id"
+                    class="nav-toast"
+                    :class="`nav-toast--${activeToast.type}`"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <ThemeIcon
+                        :name="activeToast.type === 'success' ? 'circle-check' : 'circle-alert'"
+                        :size="NAV_ICON_SIZE"
+                        class="nav-toast-icon"
+                    />
+                    <span class="nav-toast-text">{{ activeToast.message }}</span>
+                </div>
+            </transition>
+            <div id="menu" :inert="menuInert || undefined">
                 <a class="menu-fitem" href="/" aria-label="首页" @click="handleLinkClick('/', $event)">
                     <span class="menu-fitem-content">
                         <ThemeIcon name="house" :size="NAV_ICON_SIZE" />
@@ -133,11 +150,13 @@ import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, r
 import type { MenuChildItem, MenuItem } from '../../types/ThemeConfig'
 import type ThemeConfig from '../../types/ThemeConfig'
 import { useLayoutState } from '../../composables/useLayoutState'
+import { useToast } from '../../composables/useToast'
 import ThemeIcon from '../ThemeIcon.vue'
 
 const { theme } = useData<ThemeConfig>()
 const router = useRouter()
 const { showNavbar, setNavbarVisible } = useLayoutState()
+const { activeToast } = useToast()
 const menuItems = computed(() => theme.value.menuItems)
 const APlayerWidget = defineAsyncComponent(() => import('../player/APlayerWidget.vue'))
 
@@ -166,6 +185,9 @@ const isNavInteractive = computed(() => (
     || menuPanelVisible.value
     || musicPanelVisible.value
 ))
+
+// The menu is faded out behind the toast, so keep it out of tab/pointer reach then.
+const menuInert = computed(() => !isNavInteractive.value || Boolean(activeToast.value))
 
 const menuTriggerRect = ref(
     DOMRect.fromRect({
@@ -509,6 +531,12 @@ watch([menuItems, shouldShowMusicPlayer], () => {
     void measureLabelWidths()
 })
 
+// A new toast reveals the island (via nav's existing public entry) so a scrolled-away
+// island pops out to show it. navPhase's own logic is untouched.
+watch(() => activeToast.value?.id, (id) => {
+    if (id !== undefined && !showNavbar.value) setNavbarVisible(true)
+})
+
 onMounted(() => {
     void measureLabelWidths()
 
@@ -553,6 +581,16 @@ $nav-transform-duration: 240ms;
     }
 }
 
+#menu,
+.nav-toast {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+    border-radius: $border-radius;
+    background-color: rgba(var(--vp-c-bg-rgb), 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
 #nav {
     --nav-search-compact-size: 35px;
 
@@ -562,15 +600,7 @@ $nav-transform-duration: 240ms;
     transform: translateY(0);
     z-index: 1;
     opacity: 0.9;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
-    border-radius: $border-radius;
-    background-color: rgba(var(--vp-c-bg-rgb), 0.5);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(12px);
-    padding: 0 20px;
     display: flex;
-    overflow: hidden;
     transition: transform $nav-transform-duration cubic-bezier(0.16, 1, 0.3, 1);
 
     &.nav-hidden {
@@ -602,6 +632,63 @@ $nav-transform-duration: 240ms;
     }
 }
 
+/* Keep the menu as an animation anchor while the content-sized toast surface takes over. */
+#nav.nav-toasting #menu {
+    opacity: 0;
+}
+
+.nav-toast {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: max-content;
+    max-inline-size: calc(100vw - 16px);
+    block-size: 100%;
+    padding: 0 20px;
+    transform: translateX(-50%);
+    gap: 8px;
+    min-inline-size: 0;
+    color: var(--vp-c-text-1);
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.nav-toast-icon {
+    flex: 0 0 auto;
+}
+
+.nav-toast--success .nav-toast-icon {
+    color: var(--vp-c-brand);
+}
+
+.nav-toast--error .nav-toast-icon {
+    color: var(--vp-c-red-1);
+}
+
+.nav-toast-text {
+    flex: 0 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-toast-fade-enter-active,
+.nav-toast-fade-leave-active {
+    transition: opacity 200ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-toast-fade-enter-from,
+.nav-toast-fade-leave-to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px) scale(0.98);
+}
+
 #menu {
     --nav-item-active-bg: color-mix(in srgb, var(--vp-c-brand) 12%, transparent);
 
@@ -610,6 +697,10 @@ $nav-transform-duration: 240ms;
     gap: 6px;
     height: 100%;
     margin: 0 auto;
+    min-inline-size: 0;
+    padding: 0 20px;
+    overflow: hidden;
+    transition: opacity 160ms ease-out;
 
     .menu-fitem {
         position: relative;
@@ -849,6 +940,7 @@ $nav-transform-duration: 240ms;
     #nav,
     #nav.nav-hidden,
     #nav.nav-hidden:hover,
+    #menu,
     #menu .menu-fitem,
     #menu .menu-fitem::before,
     #menu .menu-fitem-content,
@@ -857,7 +949,9 @@ $nav-transform-duration: 240ms;
     #menu .menu-fitem-search :deep(.VPNavBarSearchButton),
     #menu .menu-fitem-search :deep(.VPNavBarSearchButton .text),
     #nav.nav-compact #menu .menu-fitem-content,
-    #nav.nav-compact #menu .menu-label {
+    #nav.nav-compact #menu .menu-label,
+    .nav-toast-fade-enter-active,
+    .nav-toast-fade-leave-active {
         transition: none;
     }
 }

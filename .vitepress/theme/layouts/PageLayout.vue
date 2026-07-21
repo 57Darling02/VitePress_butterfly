@@ -38,7 +38,6 @@ import DocView from './DocView.vue'
 }
 
 .stats-sidebar {
-  margin-top: 10px;
   --delay: 0.5s;
 }
 

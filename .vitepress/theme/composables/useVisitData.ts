@@ -1,17 +1,24 @@
+import { readonly, ref, type DeepReadonly, type Ref } from 'vue'
+
 const visitDataApiUrl = 'https://events.vercount.one/api/v2/log'
 const visitDataCacheKey = 'visitorCountData'
 const visitDataTimeout = 5_000
 const visitorCookieMaxAge = 60 * 60 * 24 * 365
 const counterIds = ['site_pv', 'page_pv', 'site_uv'] as const
-const counterPrefixes = ['busuanzi', 'vercount'] as const
 
 type CounterId = typeof counterIds[number]
-type CounterData = Record<CounterId, number>
+export type CounterData = Record<CounterId, number>
+
+// Single source of truth for visit counts, shared across every component that
+// reads it. Seeded from cache so a number shows before the network responds.
+const visitData = ref<CounterData | null>(readCachedCounterData())
 
 let activeRequest: AbortController | undefined
 let lastTrackedUrl = ''
 
-function useVisitData() {
+// Called on every route change (from the theme's router hook). Fetches the
+// latest counts and writes them into the shared ref; components react on their own.
+export function trackVisit() {
   if (typeof window === 'undefined') return
 
   const url = getCurrentPageUrl()
@@ -23,6 +30,11 @@ function useVisitData() {
   const controller = new AbortController()
   activeRequest = controller
   void loadVisitData(url, controller)
+}
+
+// Composable for components: exposes the reactive counts read-only.
+export function useVisitData(): { visitData: DeepReadonly<Ref<CounterData | null>> } {
+  return { visitData: readonly(visitData) }
 }
 
 async function loadVisitData(url: string, controller: AbortController) {
@@ -44,11 +56,12 @@ async function loadVisitData(url: string, controller: AbortController) {
     if (activeRequest !== controller) return
 
     if (isNewVisitor) setVisitorCookie()
-    setCachedCounterData(data)
-    updateCounterElements(data)
+    writeCachedCounterData(data)
+    visitData.value = data
   } catch (error) {
+    // On failure keep whatever the cache-seeded ref already holds.
     if (activeRequest === controller && !isAbortError(error)) {
-      updateCounterElements(getCachedCounterData())
+      visitData.value ??= readCachedCounterData()
     }
   } finally {
     window.clearTimeout(timeoutId)
@@ -91,7 +104,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
-function setCachedCounterData(data: CounterData) {
+function writeCachedCounterData(data: CounterData) {
   try {
     localStorage.setItem(visitDataCacheKey, JSON.stringify(data))
   } catch {
@@ -99,7 +112,8 @@ function setCachedCounterData(data: CounterData) {
   }
 }
 
-function getCachedCounterData() {
+function readCachedCounterData(): CounterData | null {
+  if (typeof window === 'undefined') return null
   try {
     const cached = localStorage.getItem(visitDataCacheKey)
     return cached ? normalizeCounterData(JSON.parse(cached)) : null
@@ -108,21 +122,6 @@ function getCachedCounterData() {
   }
 }
 
-function updateCounterElements(data: CounterData | null) {
-  if (!data) return
-
-  counterIds.forEach((id) => {
-    const value = String(data[id])
-    counterPrefixes.forEach((prefix) => {
-      document.getElementById(`${prefix}_value_${id}`)?.replaceChildren(value)
-      const container = document.getElementById(`${prefix}_container_${id}`)
-      if (container) container.style.display = 'inline'
-    })
-  })
-}
-
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError'
 }
-
-export default useVisitData

@@ -179,7 +179,6 @@ watch(() => props.selectedFolder, expandAncestors, { immediate: true })
 <style lang="scss" scoped>
 .folder-filter-card {
   padding: 15px;
-  margin-top: 15px;
 }
 
 .card-header {
@@ -215,6 +214,30 @@ watch(() => props.selectedFolder, expandAncestors, { immediate: true })
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-height: var(--filter-list-max-height, 30vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  // Room so the active row's focus ring isn't clipped by overflow.
+  padding: 2px;
+  margin: -2px;
+}
+
+.folder-tree::-webkit-scrollbar {
+  width: 6px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vp-c-text-3) 40%, transparent);
+}
+
+@media (max-width: 748px) {
+  // On mobile the page scrolls freely; don't trap scrolling inside the card.
+  .folder-tree {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 .folder-row {

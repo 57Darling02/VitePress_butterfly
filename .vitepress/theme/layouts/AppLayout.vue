@@ -20,7 +20,7 @@
     </el-scrollbar>
     <div id="control" ref="controlRef">
         <transition name="el-fade-in">
-            <button v-show="lastScrollY > 100" class="control-button" type="button" title="回到顶部" aria-label="回到顶部" @click="handleBackToTopClick">
+            <button v-show="lastScrollY > BACK_TO_TOP_THRESHOLD" class="control-button" type="button" title="回到顶部" aria-label="回到顶部" @click="handleBackToTopClick">
                 <ThemeIcon name="chevron-up" />
             </button>
         </transition>
@@ -40,7 +40,7 @@
                     </div>
                     <div class="control-item">
                         <button class="control-button" type="button" title="复制当前页面链接" aria-label="复制当前页面链接" @click="handleCopyLinkClick">
-                            <ThemeIcon name="link" />
+                            <ThemeIcon name="share-2" />
                         </button>
                     </div>
                     <div class="control-item">
@@ -58,7 +58,6 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
 import { useData, onContentUpdated } from 'vitepress'
 import type ThemeConfig from '../types/ThemeConfig'
 const { theme, page, frontmatter } = useData<ThemeConfig>()
@@ -72,6 +71,7 @@ import VPNavBarHamburger from '../components/controls/VPNavBarHamburger.vue'
 import VPSwitchAppearance from '../components/controls/VPSwitchAppearance.vue'
 import ToggleSiderBar from '../components/controls/ToggleSiderBar.vue'
 import { useLayoutState } from '../composables/useLayoutState'
+import { notify } from '../composables/useToast'
 import {
     anchorNavigatorKey,
     getAnchorScrollOffset,
@@ -79,6 +79,7 @@ import {
     normalizeHash,
 } from '../utils/anchor'
 import { isArticleLayout, isFramedLayout } from '../utils/pageLayout'
+import { throttle } from '../utils/throttle'
 
 const {
     showNavbar,
@@ -112,40 +113,18 @@ watch(() => page.value.relativePath, () => {
     flush: 'sync',
 })
 
-function throttle<TArgs extends unknown[]>(fn: (...args: TArgs) => void, delay: number) {
-    let lastRun = 0
-    let timer: ReturnType<typeof setTimeout> | null = null
-    let lastArgs: TArgs | null = null
-
-    const run = () => {
-        lastRun = Date.now()
-        timer = null
-        if (!lastArgs) return
-        fn(...lastArgs)
-        lastArgs = null
-    }
-
-    return (...args: TArgs) => {
-        lastArgs = args
-        const now = Date.now()
-        const remaining = delay - (now - lastRun)
-        if (remaining <= 0) {
-            if (timer) {
-                clearTimeout(timer)
-                timer = null
-            }
-            run()
-            return
-        }
-        if (!timer) {
-            timer = setTimeout(run, remaining)
-        }
-    }
-}
-
-
-
 // 实现导航栏滚动的隐藏和显示
+// 顶部这段距离内，框架页始终显示导航栏（也用于判断初始是否展开）。
+const NAVBAR_TOP_ZONE = 150
+// 距页面顶部多少像素以内，初始加载时显示导航栏。
+const NAVBAR_INITIAL_REVEAL = 100
+// 距页面底部多少像素以内，强制显示导航栏与页脚。
+const BOTTOM_REVEAL_MARGIN = 100
+// 回到顶部按钮出现的滚动阈值。
+const BACK_TO_TOP_THRESHOLD = 100
+// 滚动处理的节流间隔（毫秒）。
+const SCROLL_THROTTLE_MS = 280
+
 const lastScrollY = ref(0)
 const scrollingDown = ref(false)
 const checkPageHeight = () => {
@@ -160,7 +139,7 @@ const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
     const windowHeight = scrollbarRef.value?.wrapRef?.clientHeight || 0
     scrollingDown.value = currentY > lastScrollY.value
 
-    if (typeof window !== 'undefined' && currentY < 150 && isFramedPage.value) {
+    if (typeof window !== 'undefined' && currentY < NAVBAR_TOP_ZONE && isFramedPage.value) {
         setNavbarVisible(true)
     } else if (scrollingDown.value) {
         setNavbarVisible(false)
@@ -169,14 +148,14 @@ const handleScroll = throttle(({ scrollTop }: { scrollTop: number }) => {
     }
     const documentHeight = contentContainer.value?.scrollHeight || 0
 
-    if (currentY + windowHeight >= documentHeight - 100) {
+    if (currentY + windowHeight >= documentHeight - BOTTOM_REVEAL_MARGIN) {
         setNavbarVisible(true)
         setFooterVisible(true)
     } else {
         setFooterVisible(false)
     }
     lastScrollY.value = currentY
-}, 280)
+}, SCROLL_THROTTLE_MS)
 
 // 控制栏
 const toggleControlPanel = () => {
@@ -206,15 +185,9 @@ const handleCopyLinkClick = async () => {
 
     try {
         await copyText(url.toString())
-        ElMessage({
-            message: '当前页面链接已复制',
-            type: 'success',
-        })
+        notify('当前页面链接已复制', 'success')
     } catch {
-        ElMessage({
-            message: '复制链接失败，请手动复制地址栏内容',
-            type: 'error',
-        })
+        notify('复制链接失败，请手动复制', 'error')
     }
 }
 
@@ -316,7 +289,7 @@ onMounted(() => {
     startMobileListener()
     contentContainer.value = scrollbarRef.value?.wrapRef?.querySelector('.el-scrollbar__view')
     const initialScrollTop = scrollbarRef.value?.wrapRef?.scrollTop || 0
-    setNavbarVisible(initialScrollTop < 100)
+    setNavbarVisible(initialScrollTop < NAVBAR_INITIAL_REVEAL)
     window.addEventListener('hashchange', handleHashChange)
     document.addEventListener('pointerdown', closeControlWhenOutside, true)
     nextTick(() => {

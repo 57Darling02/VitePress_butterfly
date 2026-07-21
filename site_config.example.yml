@@ -3,10 +3,10 @@
 # Example: public/image/avatar.png -> "/image/avatar.png"
 
 # Site information
-site_name: "My Awesome Site"
+site_name: "VitePress-Butterfly"
 site_description: "这是一个使用 VitePress 构建的博客站点。"
 # SEO uses this as the canonical domain and sitemap host.
-site_url: "https://example.com/"
+site_url: "https://vitepress.57d02.cn/"
 lang: "zh-CN"
 author: "57Darling02"
 
@@ -17,7 +17,7 @@ bg_rainfall: false
 
 # Home page
 home:
-  mainTitle: "My Custom Site"
+  mainTitle: "VitePress-Butterfly"
   subTitles:
     - "写 Markdown"
     - "推送文章"
@@ -40,7 +40,6 @@ introduction: "红红火火恍恍惚惚"
 socialLinks:
   - name: "GitHub"
     # icon supports Lucide kebab-case names and Font Awesome fa-* classes.
-    # Font Awesome CSS is loaded only when a fa-* icon is configured.
     icon: "fa-brands fa-github"
     # Replace icon with iconUrl for a local brand SVG, for example:
     # iconUrl: "/image/github.svg"
@@ -61,7 +60,7 @@ menuItems:
 # Navigation music player
 # volume range: 0 ~ 1.
 musicPlayer:
-  enabled: false
+  enabled: true
   url: "https://music.163.com/song/media/outer/url?id=3372997533.mp3"
   name: "lofi bbox"
   artist: "Shi Nian Yi Shi"

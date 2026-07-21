@@ -52,11 +52,13 @@
         </ClientOnly>
       </template>
 
-      <template #sidebar-stay>
+      <template #sidebar-non-stay>
         <ProfileCard />
+      </template>
+      <template #sidebar-stay>
         <TagFilterCard :posts="posts" v-model:selectedTags="selectedTags" />
         <FolderFilterCard :posts="posts" v-model:selectedFolder="selectedFolder" />
-        <SiteStatsCard class="home-site-stats" />
+        <SiteStatsCard />
       </template>
     </DocView>
   </div>
@@ -244,10 +246,6 @@ onUnmounted(() => {
 <style>
 .home-view {
   width: 100%;
-}
-
-.home-site-stats {
-  margin-top: 15px;
 }
 
 .firstview {
