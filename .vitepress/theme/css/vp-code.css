@@ -1,42 +1,184 @@
-/* .vitepress/theme/style/vp-code.css */
+/* Code blocks */
 
-/* 代码块：增加留空边距 增加阴影 */
-.vp-doc div[class*=language-] {
-  box-shadow: 0 10px 30px 0 rgb(0 0 0 / 40%);
-  padding-top: 20px;
+:root {
+  --theme-code-surface: var(--vp-code-block-bg);
+  --theme-code-toolbar: color-mix(in srgb, var(--vp-c-bg-elv) 72%, var(--vp-code-block-bg));
+  --theme-code-border: color-mix(in srgb, var(--vp-c-divider) 82%, transparent);
+  --theme-code-divider: color-mix(in srgb, var(--vp-c-divider) 92%, transparent);
+  --theme-code-line-number-bg: color-mix(in srgb, var(--vp-code-block-bg) 84%, var(--vp-c-bg-elv));
+  --theme-code-highlight: color-mix(in srgb, var(--vp-c-brand-1) 10%, transparent);
+  --theme-code-copy-hover: color-mix(in srgb, var(--vp-c-brand-1) 10%, transparent);
 }
 
-/* 代码块：添加macOS风格的小圆点 */
-.vp-doc div[class*=language-]::before {
-  content: "";
-  display: block;
+.vp-doc div[class*='language-'] {
+  border: 1px solid var(--theme-code-border);
+  border-radius: 8px;
+  background: var(--theme-code-surface);
+  box-shadow: var(--vp-shadow-1);
+  overflow: hidden;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.vp-doc div[class*='language-']::before {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 12px;
-  height: 12px;
-  background-color: #ff5f56;
-  border-radius: 50%;
-  box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27c93f;
-  z-index: 1;
-}
-
-/* 代码块：下移行号 隐藏右侧竖线 */
-.vp-doc .line-numbers-wrapper {
-  padding-top: 40px;
-  border-right: none;
-}
-
-/* 代码块：重建行号右侧竖线 */
-.vp-doc .line-numbers-wrapper::after {
-  content: "";
-  position: absolute;
-  top: 40px;
+  top: 41px;
   right: 0;
-  border-right: 1px solid var(--vp-code-block-divider-color);
-  height: calc(100% - 60px);
+  left: 0;
+  z-index: 4;
+  height: 1px;
+  background: var(--theme-code-divider);
+  content: '';
+  pointer-events: none;
+}
+
+.vp-doc div[class*='language-']:hover {
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) 28%, var(--theme-code-border));
+  box-shadow: var(--vp-shadow-2);
+}
+
+.vp-doc [class*='language-'] pre {
+  padding: 42px 0 18px;
+  background: transparent !important;
+}
+
+.vp-doc [class*='language-'] code {
+  padding: 0 20px;
+  line-height: 1.72;
+}
+
+.vp-doc [class*='language-'] code .highlighted,
+.vp-doc [class*='language-'] code .diff {
+  margin: 0 -20px;
+  padding: 0 20px;
+  width: calc(100% + 40px);
+}
+
+.vp-doc [class*='language-'] code .highlighted {
+  background-color: var(--theme-code-highlight);
 }
 
 .vp-doc div[class*='language-'].line-numbers-mode {
-  margin-bottom: 20px;
+  padding-left: 42px;
+}
+
+.vp-doc .line-numbers-wrapper {
+  border-right: 1px solid var(--theme-code-divider);
+  padding-top: 42px;
+  width: 42px;
+  background: var(--theme-code-line-number-bg);
+  color: var(--vp-c-text-3);
+}
+
+.vp-doc [class*='language-'] > span.lang {
+  top: 11px;
+  right: auto;
+  left: 14px;
+  z-index: 3;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--vp-c-text-3);
+  text-transform: uppercase;
+}
+
+.vp-doc [class*='language-']:hover > button.copy + span.lang,
+.vp-doc [class*='language-'] > button.copy:focus + span.lang {
+  opacity: 1;
+}
+
+.vp-doc [class*='language-'] > button.copy {
+  top: 6px;
+  right: 8px;
+  border-color: transparent;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  background-color: transparent;
+  background-size: 16px;
+  opacity: 0.72;
+}
+
+.vp-doc [class*='language-'] > button.copy:hover,
+.vp-doc [class*='language-'] > button.copy.copied {
+  border-color: var(--theme-code-border);
+  background-color: var(--theme-code-copy-hover);
+}
+
+.vp-doc [class*='language-'] > button.copy:focus-visible {
+  border-color: var(--vp-c-brand-1);
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+.vp-doc [class*='language-'] > button.copy.copied,
+.vp-doc [class*='language-'] > button.copy:hover.copied {
+  border-radius: 0 6px 6px 0;
+}
+
+.vp-doc [class*='language-'] > button.copy.copied::before,
+.vp-doc [class*='language-'] > button.copy:hover.copied::before {
+  top: 0;
+  border-color: var(--theme-code-border);
+  border-radius: 6px 0 0 6px;
+  height: 30px;
+  font-size: 11px;
+  background-color: var(--theme-code-copy-hover);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .vp-doc [class*='language-'] > button.copy {
+    opacity: 0;
+  }
+
+  .vp-doc [class*='language-']:hover > button.copy,
+  .vp-doc [class*='language-'] > button.copy:focus {
+    opacity: 1;
+  }
+}
+
+/* Code groups provide their own toolbar; their active block stays deliberately quiet. */
+.vp-doc .vp-code-group div[class*='language-'] {
+  margin: 0 !important;
+  border: 0;
+  border-radius: 0 !important;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+}
+
+.vp-doc .vp-code-group div[class*='language-']::before,
+.vp-doc .vp-code-group div[class*='language-'] > span.lang {
+  display: none;
+}
+
+.vp-doc .vp-code-group [class*='language-'] pre {
+  padding-top: 18px;
+}
+
+.vp-doc .vp-code-group [class*='language-'] > button.copy {
+  top: -36px;
+}
+
+.vp-doc .vp-code-group .line-numbers-wrapper {
+  padding-top: 18px;
+}
+
+@media (max-width: 639px) {
+  .vp-doc div[class*='language-'] {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .vp-doc li div[class*='language-'] {
+    border-radius: 8px 0 0 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-doc div[class*='language-'],
+  .vp-doc [class*='language-'] > button.copy {
+    transition: none;
+  }
 }
