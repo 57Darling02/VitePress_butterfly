@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch, type ObjectDirective } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useData } from 'vitepress'
 import DocView from '../layouts/DocView.vue'
 import HeroSurface from '../components/HeroSurface.vue'
@@ -74,6 +74,7 @@ import SiteStatsCard from '../components/cards/SiteStatsCard.vue'
 import TagFilterCard from '../components/cards/TagFilterCard.vue'
 import FolderFilterCard from '../components/cards/FolderFilterCard.vue'
 import ArticleCard from '../components/cards/ArticleCard.vue'
+import { vReveal } from '../utils/reveal'
 import { data as posts } from '../data/posts.data.ts'
 import type ThemeConfig from '../types/ThemeConfig'
 
@@ -94,10 +95,7 @@ type TypeItInstance = { destroy: () => void }
 
 let typeitInstance: TypeItInstance | null = null
 let typeitLoadId = 0
-let postRevealObservers: IntersectionObserver[] = []
 let motionMediaQuery: MediaQueryList | null = null
-
-const POST_REVEAL_VISIBLE_CLASS = 'is-visible'
 
 const filteredPosts = computed(() => {
   return posts.filter((post) => {
@@ -160,8 +158,6 @@ const startTypeIt = async () => {
   }).go()
 }
 
-const getScrollRoot = () => document.querySelector<HTMLElement>('.el-scrollbar__wrap')
-
 const updateMotionPreference = () => {
   isReducedMotion.value = motionMediaQuery?.matches ?? false
 
@@ -172,57 +168,6 @@ const updateMotionPreference = () => {
   }
 
   void startTypeIt()
-}
-
-const setPostRevealVisible = (el: Element, visible: boolean) => {
-  el.classList.toggle(POST_REVEAL_VISIBLE_CLASS, visible)
-}
-
-const createPostRevealObserver = (visible: boolean, options: IntersectionObserverInit) =>
-  new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting === visible) {
-        setPostRevealVisible(entry.target, visible)
-      }
-    })
-  }, options)
-
-const getPostRevealObservers = () => {
-  if (postRevealObservers.length) return postRevealObservers
-
-  const root = getScrollRoot()
-  postRevealObservers = [
-    createPostRevealObserver(true, {
-      root,
-      rootMargin: '0px 0px -8% 0px',
-      threshold: 0.12,
-    }),
-    createPostRevealObserver(false, {
-      root,
-      rootMargin: '96px 0px 96px 0px',
-      threshold: 0,
-    }),
-  ]
-
-  return postRevealObservers
-}
-
-const observePostReveal = (el: Element) => {
-  getPostRevealObservers().forEach((observer) => observer.observe(el))
-}
-
-const vReveal: ObjectDirective<HTMLElement> = {
-  mounted(el) {
-    if (isReducedMotion.value || typeof window === 'undefined' || !('IntersectionObserver' in window)) {
-      setPostRevealVisible(el, true)
-      return
-    }
-
-    observePostReveal(el)
-  },
-  unmounted(el) {
-    postRevealObservers.forEach((observer) => observer.unobserve(el))
-  },
 }
 
 onMounted(() => {
@@ -238,8 +183,6 @@ onUnmounted(() => {
   motionMediaQuery?.removeEventListener('change', updateMotionPreference)
   motionMediaQuery = null
   stopTypeIt()
-  postRevealObservers.forEach((observer) => observer.disconnect())
-  postRevealObservers = []
 })
 </script>
 
@@ -279,29 +222,6 @@ onUnmounted(() => {
   font-weight: 400;
   line-height: 1.5;
   text-shadow: 0 1px 12px rgb(var(--vp-c-bg-rgb) / 0.58);
-}
-
-.post-reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-  will-change: opacity, transform;
-}
-
-.post-reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-  will-change: auto;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .post-reveal {
-    opacity: 1;
-    transition: none;
-    transform: none;
-  }
 }
 
 @media (max-width: 748px) {

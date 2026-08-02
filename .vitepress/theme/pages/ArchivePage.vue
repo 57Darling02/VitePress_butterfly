@@ -35,7 +35,7 @@
             <h3>匹配文章（{{ filteredPosts.length }}篇）📚</h3>
             <el-divider />
             <div style="gap: 12px;display: flex;flex-direction: column;">
-                <div v-for="post in filteredPosts" :key="post.link">
+                <div v-for="post in filteredPosts" :key="post.link" v-reveal class="post-reveal">
                     <ArticleCard :post="post" />
                 </div>
             </div>
@@ -46,6 +46,7 @@
 import { ref, computed } from 'vue'
 import { data as posts } from '../data/posts.data.ts'
 import ArticleCard from '../components/cards/ArticleCard.vue'
+import { vReveal } from '../utils/reveal'
 
 const Tags = ref<string[]>([])
 const ExclusionList = ref<string[]>([])
