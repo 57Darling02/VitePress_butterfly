@@ -122,7 +122,6 @@ onBeforeUnmount(() => {
     placement="top-end"
     :popper-style="popperStyle"
     :show-arrow="false"
-    :teleported="false"
     @command="setAppearance"
   >
     <button
