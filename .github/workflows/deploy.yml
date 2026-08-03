@@ -13,7 +13,9 @@ permissions:
   id-token: write
 
 concurrency:
-  group: site-deploy
+  # The template-generated initial commit is bootstrap-only. Keeping it out of
+  # the normal group prevents it from cancelling the publisher's final dispatch.
+  group: ${{ github.event_name == 'push' && (github.event.created || github.event.before == '0000000000000000000000000000000000000000') && 'site-bootstrap' || 'site-deploy' }}
   cancel-in-progress: true
 
 env:
@@ -21,7 +23,62 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check.outputs.deploy }}
+    steps:
+      - name: Check deployment readiness
+        id: check
+        env:
+          BOOTSTRAP_PUSH: ${{ github.event_name == 'push' && (github.event.created || github.event.before == '0000000000000000000000000000000000000000') }}
+          WIKI_URL: ${{ secrets.WIKI_URL }}
+          PAT: ${{ secrets.PAT }}
+        run: |
+          if [ "$BOOTSTRAP_PUSH" = "true" ]; then
+            echo "::notice::Template bootstrap commit detected; waiting for publisher configuration."
+            exit 0
+          fi
+
+          if [ -z "$WIKI_URL" ] || [ -z "$PAT" ]; then
+            echo "::notice::Blog setup is incomplete; waiting for WIKI_URL and PAT."
+            exit 0
+          fi
+
+          wiki_url="${WIKI_URL%/}"
+          if [[ ! "$wiki_url" =~ ^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)(\.git)?$ ]]; then
+            echo "::warning::WIKI_URL is not a supported GitHub HTTPS URL; skipping this deployment."
+            exit 0
+          fi
+
+          owner="${BASH_REMATCH[1]}"
+          repository="${BASH_REMATCH[2]%.git}"
+          status="000"
+          for attempt in {1..5}; do
+            status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 \
+              --output /dev/null --write-out '%{http_code}' \
+              --header 'Accept: application/vnd.github+json' \
+              --header "Authorization: Bearer $PAT" \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/$owner/$repository/git/ref/heads/main" || true)"
+            if [ "$status" = "200" ]; then
+              echo "deploy=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              sleep 2
+            fi
+          done
+
+          if [ "$status" = "404" ]; then
+            echo "::notice::Article repository $owner/$repository is not ready yet; skipping this deployment."
+          else
+            echo "::warning::Cannot verify article repository $owner/$repository (HTTP $status); check PAT access or network."
+          fi
+
   build:
+    needs: readiness
+    if: needs.readiness.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

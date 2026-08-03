@@ -122,6 +122,14 @@ jobs:
               echo "::warning::Could not create GitHub Pages automatically. Set Settings -> Pages -> Source to GitHub Actions."
           fi
 
+      - name: Trigger first deployment
+        env:
+          GH_TOKEN: ${{ secrets.SETUP_PAT }}
+          BLOG_REPO: ${{ steps.setup.outputs.blog_repo }}
+        run: |
+          gh api --method POST "repos/$BLOG_REPO/dispatches" \
+            --raw-field event_type=contents-updated
+
       - name: Summary
         env:
           BLOG_REPO: ${{ steps.setup.outputs.blog_repo }}

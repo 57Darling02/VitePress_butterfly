@@ -92,6 +92,8 @@ Actions -> Setup Blog -> Run workflow
 - 尝试把 GitHub Pages 设置为 `GitHub Actions`
 - 创建知识库后，由知识库工作流通知主题仓库触发第一次部署
 
+模板生成的 `Initial commit` 在知识库和 secrets 尚未就绪时会成功跳过；最后一次有效通知才执行构建与部署。
+
 > 初始化成功后，`SETUP_PAT` 只在你重新运行 `Setup Blog` 时才需要；如果暂时不用，可以从主题仓库 secrets 里删除。
 
 如果 Pages 自动配置失败，手动进入：
