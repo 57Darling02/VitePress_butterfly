@@ -31,17 +31,8 @@ workflow一键部署上线，写 Markdown/VUE页面、推送、自动上线。
 
 这是推荐用法，不需要在电脑上安装 Node.js、pnpm 或任何本地环境。
 
-### 1. Fork 主题仓库
 
-点击 GitHub 页面右上角 `Fork`，把本仓库复制到你自己的账号下。
-
-推荐建议仓库名设为：
-```text
-你的用户名.github.io
-```
-以此作为站点域名。
-
-### 2. 创建初始化 Token
+### 1. 创建通行证
 
 创建一个 GitHub PAT，用来让初始化工作流帮你创建知识库、配置 secrets、触发部署。
 
@@ -56,57 +47,16 @@ repo
 workflow
 ```
 
-复制生成的 token。它只显示一次。
+保存好生成的 PAT。它只显示一次。
 
-回到你的主题仓库，添加 secret：
+### 2. 下载仓库
+进入[vitepress-butterfly-wiki](https://github.com/57Darling02/vitepress-butterfly-wiki)
 
-```text
-Settings -> Secrets and variables -> Actions -> New repository secret
-```
+git clone 或 下载源码到本地。
 
-名称填：
+### 3. 使用obsidian打开
+需要信任插件，打开插件页，输入PAT
 
-```text
-SETUP_PAT
-```
-
-值粘贴刚刚生成的 token。
-
-### 3. 运行自动初始化
-如果 GitHub 提示 Fork 后的 workflow 被禁用，点击允许启用。
-```text
-Actions -> Setup Blog -> Run workflow
-```
-填写：
-
-- `wiki_repo_name`：你的知识库仓库名，例如 `my-blog-wiki`
-
-知识库分支固定为 `main`，无需配置。
-
-运行后，它会自动：
-
-- 使用 [57Darling02/wiki_template](https://github.com/57Darling02/wiki_template) 创建你的知识库仓库
-- 知识库仓库固定创建为私密仓库
-- 给主题仓库配置 `WIKI_URL`、`PAT`
-- 给知识库仓库配置 `BLOG_REPO` 和 `PAT`
-- 尝试把 GitHub Pages 设置为 `GitHub Actions`
-- 配置完成后触发第一次部署；后续知识库 Push 自动通知主题仓库重建
-
-模板生成的 `Initial commit` 在知识库和 secrets 尚未就绪时会成功跳过；最后一次有效通知才执行构建与部署。
-
-> 初始化成功后，`SETUP_PAT` 只在你重新运行 `Setup Blog` 时才需要；如果暂时不用，可以从主题仓库 secrets 里删除。
-
-如果 Pages 自动配置失败，手动进入：
-
-```text
-Settings -> Pages
-```
-
-把 `Source` 设置为：
-
-```text
-GitHub Actions
-```
 
 ### 4. 写配置、文章和页面
 所有可定制的内容(站点配置、首页效果、文章、自定义页面等等)都只需要在知识库中改动！
