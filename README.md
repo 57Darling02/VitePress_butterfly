@@ -90,7 +90,7 @@ Actions -> Setup Blog -> Run workflow
 - 给主题仓库配置 `WIKI_URL`、`PAT`
 - 给知识库仓库配置 `BLOG_REPO` 和 `PAT`
 - 尝试把 GitHub Pages 设置为 `GitHub Actions`
-- 创建知识库后，由知识库工作流通知主题仓库触发第一次部署
+- 配置完成后触发第一次部署；后续知识库 Push 自动通知主题仓库重建
 
 模板生成的 `Initial commit` 在知识库和 secrets 尚未就绪时会成功跳过；最后一次有效通知才执行构建与部署。
 
