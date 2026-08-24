@@ -66,8 +66,15 @@ export interface FooterConfig {
   createdTime?: string;
 }
 
+export interface MenuChildItem extends IconReference {
+  key: string;
+  label: string;
+  link: string;
+}
+
 export interface MenuItem extends IconReference {
   label: string;
+  children?: MenuChildItem[];
   key?: string;
   link?: string;
 }

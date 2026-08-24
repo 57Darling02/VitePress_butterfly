@@ -47,11 +47,15 @@ socialLinks:
 
 # Navbar menu
 # link uses site paths such as "/FriendLink/" or external URLs such as "https://example.com".
-# Each item is a direct navbar entry; label is the text, icon is optional.
 menuItems:
-  - label: 友链
-    icon: users
-    link: /FriendLink/
+  - key: more
+    label: 更多
+    icon: "compass"
+    children:
+      - key: friends
+        label: 友链
+        icon: users
+        link: /FriendLink/
 
 # Navigation music player
 # volume range: 0 ~ 1.
