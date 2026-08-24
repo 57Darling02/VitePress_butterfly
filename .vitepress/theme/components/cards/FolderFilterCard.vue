@@ -153,7 +153,8 @@ const toggleFolder = (path: string) => {
 }
 
 const selectFolder = (folder: string) => {
-  emit('update:selectedFolder', folder)
+  // Clicking the active folder again deselects it (back to all posts).
+  emit('update:selectedFolder', folder === props.selectedFolder ? '' : folder)
 }
 
 const expandAncestors = (folder: string) => {
