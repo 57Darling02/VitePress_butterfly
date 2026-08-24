@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -19,3 +20,8 @@ jobs:
           # itself in sync with the theme.
           git reset --hard upstream/main
           git push origin HEAD:main --force-with-lease
+      - name: Trigger deployment
+        # A GITHUB_TOKEN push never triggers other workflows, so dispatch the
+        # deployment explicitly (workflow_dispatch is allowed with the token).
+        run: |
+          gh workflow run deploy.yml --ref main
