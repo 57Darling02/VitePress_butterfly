@@ -76,6 +76,10 @@ const cover = computed(() => resolvePostCover(props.post.sourceFile, props.post.
 .article-card-shell {
     &:hover {
         transform: translateY(-2px);
+        /* The glowing border highlight belongs to article list cards only. */
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1),
+            0 0 0 1px rgba(59, 130, 246, 0.3);
+        border-color: rgba(59, 130, 246, 0.5);
     }
 }
 .article-card {
