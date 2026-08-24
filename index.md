@@ -1,7 +1,7 @@
 ---
 layout: home
 ---
-<HomeView1 />
+<HomeView />
 <script setup>
-import HomeView1 from './.vitepress/theme/pages/HomeView1.vue'
+import HomeView from './.vitepress/theme/pages/HomeView.vue'
 </script>

@@ -42,7 +42,6 @@ const builtInIconNames = [
 ]
 
 type IconCarrier = {
-  children?: unknown
   icon?: unknown
   iconUrl?: unknown
 }
@@ -66,7 +65,7 @@ export function createThemeIconPlugin(config: ThemeConfig): Plugin {
 async function createVirtualModuleSource(config: ThemeConfig) {
   const names = new Set(builtInIconNames)
   collectConfiguredIcons(config.socialLinks, names)
-  collectConfiguredIcons(config.menuItems, names, true)
+  collectConfiguredIcons(config.menuItems, names)
 
   const lucide = await import('@lucide/vue') as Record<string, unknown>
   const sortedNames = [...names].sort()
@@ -84,7 +83,7 @@ async function createVirtualModuleSource(config: ThemeConfig) {
   ].join('\n')
 }
 
-function collectConfiguredIcons(value: unknown, names: Set<string>, includeChildren = false) {
+function collectConfiguredIcons(value: unknown, names: Set<string>) {
   if (!Array.isArray(value)) return
 
   value.forEach((item) => {
@@ -92,7 +91,6 @@ function collectConfiguredIcons(value: unknown, names: Set<string>, includeChild
     if (typeof item.icon === 'string' && !item.iconUrl && !isFontAwesomeIcon(item.icon)) {
       names.add(item.icon)
     }
-    if (includeChildren) collectConfiguredIcons(item.children, names)
   })
 }
 

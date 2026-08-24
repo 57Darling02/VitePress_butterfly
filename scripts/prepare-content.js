@@ -35,7 +35,7 @@ function main() {
       printSanitizeResult(result);
     } else {
       if (process.env.CI === 'true') {
-        throw new Error('WIKI_URL is required in CI. Run Setup Blog or configure WIKI_URL/PAT repository secrets.');
+        throw new Error('WIKI_URL is required in CI. Use the Obsidian publisher plugin in vitepress-butterfly-wiki to finish setup, or configure WIKI_URL/PAT repository secrets manually.');
       }
       console.log(`${LOG_PREFIX} WIKI_URL is not configured. Using local posts/ for local development only.`);
     }
@@ -108,6 +108,10 @@ function replacePostsFromRemote(wikiUrl, pat) {
     throw new Error(`git clone exited with code ${result.status}.`);
   }
 
+  // The clone command needs credentials, but the cloned .git/config should not
+  // keep the PAT URL around (posts/ is later reused as the content directory).
+  removeCredentialsFromClonedRemote(wikiUrl);
+
   removeDirectory(postsDir);
   try {
     fs.renameSync(tempCloneDir, postsDir);
@@ -127,6 +131,30 @@ function buildAuthenticatedUrl(wikiUrl, pat) {
   url.username = 'x-access-token';
   url.password = pat;
   return url.toString();
+}
+
+function removeCredentialsFromClonedRemote(wikiUrl) {
+  if (!wikiUrl.startsWith('https://')) return;
+
+  let cleanUrl = wikiUrl;
+  try {
+    const url = new URL(wikiUrl);
+    url.username = '';
+    url.password = '';
+    cleanUrl = url.toString();
+  } catch {
+    // Invalid URLs never reach git clone successfully; keep the original value.
+  }
+
+  const result = spawnSync(
+    'git',
+    ['-C', tempCloneDir, 'remote', 'set-url', 'origin', cleanUrl],
+    { stdio: 'ignore' },
+  );
+
+  if (result.error || result.status !== 0) {
+    console.warn(`${LOG_PREFIX} Could not remove credentials from the cloned remote URL.`);
+  }
 }
 
 function maskSecretInUrl(wikiUrl) {

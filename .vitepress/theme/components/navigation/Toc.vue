@@ -86,9 +86,9 @@ const serializeHeader = (element: HTMLHeadingElement): string => {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const child = node as HTMLElement
       if (ignoreHeaderChildRE.test(child.className)) continue
-      text += child.textContent
+      text += child.textContent ?? ''
     } else if (node.nodeType === Node.TEXT_NODE) {
-      text += node.textContent
+      text += node.textContent ?? ''
     }
   }
 

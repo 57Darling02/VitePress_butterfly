@@ -66,31 +66,8 @@
                     </span>
                 </button>
 
-                <template v-for="item in menuItems" :key="item.label">
-                    <button
-                        v-if="item.children?.length"
-                        type="button"
-                        :class="['menu-fitem', 'menu-fitem-menu', { 'menu-fitem-active': menuPanelVisible && activeMenuItem?.label === item.label }]"
-                        :aria-expanded="menuPanelVisible && activeMenuItem?.label === item.label"
-                        aria-controls="menu-panel"
-                        aria-haspopup="menu"
-                        :aria-label="item.label"
-                        @mouseenter="handleMenuTriggerMouseEnter(item, $event)"
-                        @mouseleave="scheduleCloseMenuPanel"
-                        @click="handleMenuTriggerClick(item, $event)"
-                    >
-                        <span class="menu-fitem-content">
-                            <ThemeIcon
-                                :name="item.icon"
-                                :src="item.iconUrl"
-                                :size="NAV_ICON_SIZE"
-                                class="menu-trigger-icon"
-                            />
-                            <span class="menu-label">{{ item.label }}</span>
-                        </span>
-                    </button>
+                <template v-for="item in menuItems" :key="item.key || item.label">
                     <a
-                        v-else
                         class="menu-fitem"
                         :href="item.link || undefined"
                         :target="getLinkTarget(item.link)"
@@ -111,23 +88,6 @@
         </div>
     </div>
 
-    <el-dropdown ref="menuDropdownRef" :virtual-ref="menuVirtualTriggerRef" :popper-style="popperStyle"
-        :disabled="!isNavInteractive"
-        :show-arrow="false" :hide-on-click="false" :popper-options="menuPopperOptions" virtual-triggering trigger="click"
-        placement="bottom-start" @visible-change="onMenuPanelVisibleChange">
-        <template #dropdown>
-            <div id="menu-panel" class="menu-panel-shell" @mouseenter="cancelCloseMenuPanel" @mouseleave="scheduleCloseMenuPanel">
-                <el-dropdown-menu>
-                    <el-dropdown-item v-for="subitem in activeMenuItem?.children || []" :key="subitem.key" class="menu-item"
-                        @click="handleMenuClick(subitem, $event)">
-                        <ThemeIcon :name="subitem.icon" :src="subitem.iconUrl" />
-                        <span class="menu-item-label" :title="subitem.label">{{ subitem.label }}</span>
-                    </el-dropdown-item>
-                </el-dropdown-menu>
-            </div>
-        </template>
-    </el-dropdown>
-
     <el-dropdown v-if="shouldShowMusicPlayer" ref="musicDropdownRef" :virtual-ref="musicVirtualTriggerRef" :popper-style="popperStyle"
         :disabled="!isNavInteractive"
         :show-arrow="false" :hide-on-click="false" :popper-options="musicPopperOptions" virtual-triggering trigger="click"
@@ -147,7 +107,7 @@ import type { DropdownInstance } from 'element-plus'
 import { useData, useRouter } from 'vitepress'
 import { VPNavBarSearch } from 'vitepress/theme'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { MenuChildItem, MenuItem } from '../../types/ThemeConfig'
+import type { MenuItem } from '../../types/ThemeConfig'
 import type ThemeConfig from '../../types/ThemeConfig'
 import { useLayoutState } from '../../composables/useLayoutState'
 import { useToast } from '../../composables/useToast'
@@ -171,9 +131,6 @@ const navRef = ref<HTMLElement | null>(null)
 const navPhase = ref<NavPhase>('expanded')
 const isCompact = computed(() => navPhase.value !== 'expanded')
 const navHovered = ref(false)
-const menuDropdownRef = ref<DropdownInstance>()
-const menuPanelVisible = ref(false)
-const activeMenuItem = ref<MenuItem | null>(null)
 
 const musicDropdownRef = ref<DropdownInstance>()
 const musicPanelVisible = ref(false)
@@ -182,24 +139,11 @@ const musicTriggerRef = ref<HTMLElement | null>(null)
 const isNavInteractive = computed(() => (
     navPhase.value !== 'hidden'
     || navHovered.value
-    || menuPanelVisible.value
     || musicPanelVisible.value
 ))
 
 // The menu is faded out behind the toast, so keep it out of tab/pointer reach then.
 const menuInert = computed(() => !isNavInteractive.value || Boolean(activeToast.value))
-
-const menuTriggerRect = ref(
-    DOMRect.fromRect({
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0,
-    }),
-)
-const menuVirtualTriggerRef = ref({
-    getBoundingClientRect: () => menuTriggerRect.value,
-})
 
 const musicTriggerRect = ref(
     DOMRect.fromRect({
@@ -221,14 +165,10 @@ const popperStyle = {
     boxShadow: 'none',
 }
 
-const menuPopperOptions = {
-    modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
-}
 const musicPopperOptions = {
     modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
 }
 
-let menuCloseTimer: ReturnType<typeof setTimeout> | null = null
 let musicCloseTimer: ReturnType<typeof setTimeout> | null = null
 let navPhaseTimer: ReturnType<typeof setTimeout> | null = null
 let navPhaseTimerTarget: Extract<NavPhase, 'expanded' | 'hidden'> | null = null
@@ -402,71 +342,6 @@ const handleLinkClick = (link: string | undefined, event: MouseEvent) => {
     void router.go(`${getUrl(link).pathname}${getUrl(link).search}${getUrl(link).hash}`)
 }
 
-const handleMenuClick = (item: MenuChildItem, event?: MouseEvent) => {
-    closeMenuPanel()
-    if (!item.link) return
-
-    navigateTo(item.link, event)
-}
-
-const syncRectFromElement = (
-    element: HTMLElement | null | undefined,
-    targetRect: typeof menuTriggerRect,
-) => {
-    if (!element) return
-    const rect = element.getBoundingClientRect()
-    targetRect.value = DOMRect.fromRect({
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height,
-    })
-}
-
-const cancelCloseMenuPanel = () => {
-    if (!menuCloseTimer) return
-    clearTimeout(menuCloseTimer)
-    menuCloseTimer = null
-}
-
-const closeMenuPanel = () => {
-    cancelCloseMenuPanel()
-    menuDropdownRef.value?.handleClose()
-}
-
-const scheduleCloseMenuPanel = () => {
-    cancelCloseMenuPanel()
-    menuCloseTimer = setTimeout(closeMenuPanel, 140)
-}
-
-const openMenuPanel = (item: MenuItem, triggerEl: HTMLElement) => {
-    if (!item.children?.length) return
-    cancelCloseMenuPanel()
-    activeMenuItem.value = item
-    syncRectFromElement(triggerEl, menuTriggerRect)
-    menuDropdownRef.value?.handleOpen()
-}
-
-const handleMenuTriggerMouseEnter = (item: MenuItem, event: MouseEvent) => {
-    openMenuPanel(item, event.currentTarget as HTMLElement)
-}
-
-const handleMenuTriggerClick = (item: MenuItem, event: MouseEvent) => {
-    const triggerEl = event.currentTarget as HTMLElement
-    const isSameTrigger = activeMenuItem.value?.label === item.label
-    if (menuPanelVisible.value && isSameTrigger) {
-        closeMenuPanel()
-        return
-    }
-
-    openMenuPanel(item, triggerEl)
-}
-
-const onMenuPanelVisibleChange = (visible: boolean) => {
-    menuPanelVisible.value = visible
-    if (!visible) activeMenuItem.value = null
-}
-
 const cancelCloseMusicPanel = () => {
     if (!musicCloseTimer) return
     clearTimeout(musicCloseTimer)
@@ -482,7 +357,6 @@ const blurNavFocus = () => {
     const activeElement = document.activeElement
     const focusOwners = [
         navRef.value,
-        document.getElementById('menu-panel'),
         document.getElementById('music-player-panel'),
     ]
 
@@ -772,21 +646,8 @@ $nav-transform-duration: 240ms;
             opacity 120ms ease-out 60ms;
     }
 
-    .menu-trigger-icon {
-        transform-origin: center;
-        transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .menu-fitem.menu-fitem-active .menu-trigger-icon {
-        transform: rotate(180deg);
-    }
-
     .menu-fitem-music {
         cursor: pointer;
-    }
-
-    .menu-fitem-menu {
-        order: 1;
     }
 
     .music-icon {
@@ -918,24 +779,6 @@ $nav-transform-duration: 240ms;
     background: var(--vp-c-bg);
 }
 
-.menu-panel-shell {
-    inline-size: min(13.5rem, calc(100vw - 2rem));
-}
-
-.menu-panel-shell :deep(.menu-item) {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
-}
-
-.menu-item-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 @media (prefers-reduced-motion: reduce) {
     #nav,
     #nav.nav-hidden,
@@ -945,7 +788,6 @@ $nav-transform-duration: 240ms;
     #menu .menu-fitem::before,
     #menu .menu-fitem-content,
     #menu .menu-label,
-    #menu .menu-trigger-icon,
     #menu .menu-fitem-search :deep(.VPNavBarSearchButton),
     #menu .menu-fitem-search :deep(.VPNavBarSearchButton .text),
     #nav.nav-compact #menu .menu-fitem-content,
@@ -957,10 +799,6 @@ $nav-transform-duration: 240ms;
 }
 
 @media (max-width: 748px) {
-    .menu-panel-shell {
-        inline-size: min(125px, calc(100vw - 2rem));
-    }
-
     #nav {
         max-inline-size: calc(100vw - 16px);
     }

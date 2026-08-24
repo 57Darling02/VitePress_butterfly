@@ -13,7 +13,7 @@
         <span class="divider" />
         <span class="meta-item">
           <ThemeIcon name="eye" />
-          <span><span id="busuanzi_value_page_pv">--</span>次</span>
+          <span>{{ pageViewsText }}次</span>
         </span>
         <span class="divider" />
         <time class="meta-item" :datetime="date">
@@ -35,9 +35,11 @@ import VPDocFooterLastUpdated from '../controls/VPDocFooterLastUpdated.vue'
 import ThemeIcon from '../ThemeIcon.vue'
 import HeroSurface from '../HeroSurface.vue'
 import type ThemeConfig from '../../types/ThemeConfig'
+import { useVisitData } from '../../composables/useVisitData'
 import { resolvePostCover } from 'virtual:post-covers'
 
 const { frontmatter, theme, page, lang } = useData<ThemeConfig>()
+const { visitData } = useVisitData()
 const isMounted = ref(false)
 
 const toText = (value: unknown, fallback = '') => value == null ? fallback : String(value)
@@ -52,6 +54,12 @@ const cover = computed(() => (
     post.value?.cover || toText(frontmatter.value.cover).trim(),
   )
 ))
+const pageViewsText = computed(() => {
+  const value = visitData.value?.page_pv
+  if (!isMounted.value || value === undefined) return '--'
+
+  return new Intl.NumberFormat(lang.value || 'zh-CN').format(value)
+})
 const pageLastUpdated = computed(() => {
   const value = (page.value as unknown as Record<string, unknown>).lastUpdated
   return typeof value === 'number' ? value : undefined

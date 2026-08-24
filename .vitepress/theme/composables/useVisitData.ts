@@ -81,7 +81,8 @@ function getVisitorCookieName() {
 }
 
 function hasVisitorCookie() {
-  return document.cookie.split('; ').some((entry) => entry === `${getVisitorCookieName()}=1`)
+  const cookieName = getVisitorCookieName()
+  return document.cookie.split(';').some((entry) => entry.trim() === `${cookieName}=1`)
 }
 
 function setVisitorCookie() {

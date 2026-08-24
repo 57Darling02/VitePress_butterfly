@@ -10,7 +10,7 @@
     </div>
     
     <div class="tags-container">
-      <button v-for="tag in allTags"
+      <button v-for="tag in tagSummary.tags"
            :key="tag" 
            class="tag-item"
            :class="{ 'is-active': selectedTags.includes(tag) }"
@@ -18,7 +18,7 @@
            :aria-pressed="selectedTags.includes(tag)"
            @click="toggleTag(tag)">
         <span class="tag-name">{{ tag }}</span>
-        <span class="tag-count" v-if="tagCounts[tag]">{{ tagCounts[tag] }}</span>
+        <span class="tag-count" v-if="tagSummary.counts[tag]">{{ tagSummary.counts[tag] }}</span>
       </button>
     </div>
   </div>
@@ -38,27 +38,18 @@ const emit = defineEmits<{
   (e: 'update:selectedTags', tags: string[]): void
 }>()
 
-// 统计标签
-const allTags = computed(() => {
-  const tags = new Set<string>()
+// 一次遍历同时得到去重标签和计数。
+const tagSummary = computed(() => {
+  const counts = new Map<string, number>()
   props.posts.forEach(post => {
-    if (post.tags) {
-      post.tags.forEach((tag: string) => tags.add(tag))
+    for (const tag of post.tags) {
+      counts.set(tag, (counts.get(tag) || 0) + 1)
     }
   })
-  return Array.from(tags).sort()
-})
-
-const tagCounts = computed(() => {
-  const counts: Record<string, number> = {}
-  props.posts.forEach(post => {
-    if (post.tags) {
-      post.tags.forEach((tag: string) => {
-        counts[tag] = (counts[tag] || 0) + 1
-      })
-    }
-  })
-  return counts
+  return {
+    tags: Array.from(counts.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN')),
+    counts: Object.fromEntries(counts),
+  }
 })
 
 const toggleTag = (tag: string) => {

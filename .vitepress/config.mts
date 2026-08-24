@@ -1,4 +1,4 @@
-import ThemeConfig from './theme/types/ThemeConfig'
+import type ThemeConfig from './theme/types/ThemeConfig'
 import { defineConfig, type HeadConfig } from 'vitepress'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
@@ -13,8 +13,7 @@ import { fontAwesomeStylesheet, hasFontAwesomeIcons } from './theme/utils/fontAw
 import { createThemeIconPlugin } from './theme/utils/themeIconPlugin'
 import { createPostCoverPlugin } from './theme/utils/postCoverPlugin'
 
-const rawConfig = loadSiteConfig();
-const myconfig = rawConfig as ThemeConfig;
+const myconfig = loadSiteConfig();
 const fontAwesomeHead: HeadConfig[] = hasFontAwesomeIcons(myconfig)
   ? [['link', {
       rel: 'stylesheet',
@@ -25,6 +24,7 @@ const fontAwesomeHead: HeadConfig[] = hasFontAwesomeIcons(myconfig)
   : []
 const rewriteTargets = new Map<string, string>();
 const postsDir = path.resolve(process.cwd(), 'posts')
+const frontmatterLayoutCache = new Map<string, { mtimeMs: number; size: number; layout: string }>()
 
 function rewritePostPath(id: string) {
   if (!id.startsWith('posts/') || !id.endsWith('.md')) return id
@@ -59,13 +59,26 @@ function getStandalonePageTarget(id: string) {
 
 function getMarkdownLayout(id: string) {
   const filePath = path.resolve(process.cwd(), id)
-  if (!fs.existsSync(filePath)) return ''
+  const stat = fs.statSync(filePath, { throwIfNoEntry: false })
+  if (!stat?.isFile()) return ''
+
+  const cached = frontmatterLayoutCache.get(id)
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+    return cached.layout
+  }
 
   const source = fs.readFileSync(filePath, 'utf-8')
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
-  if (!match) return ''
+  const layout = match
+    ? parseLayout(match[1])
+    : ''
+  frontmatterLayoutCache.set(id, { mtimeMs: stat.mtimeMs, size: stat.size, layout })
 
-  const frontmatter = yaml.load(match[1])
+  return layout
+}
+
+function parseLayout(frontmatterSource: string) {
+  const frontmatter = yaml.load(frontmatterSource)
   return frontmatter && typeof frontmatter === 'object' && !Array.isArray(frontmatter)
     ? String((frontmatter as Record<string, unknown>).layout || '').trim()
     : ''
@@ -120,7 +133,7 @@ export default defineConfig<ThemeConfig>({
   head: fontAwesomeHead,
   appearance: true,
   cleanUrls: true,
-  ignoreDeadLinks: true,
+  ignoreDeadLinks: false,
   // The theme data loader owns timestamp caching so it can fall back to mtime
   // when a deployment has no Git metadata.
   lastUpdated: false,

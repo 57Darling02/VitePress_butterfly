@@ -32,8 +32,8 @@ const cover = computed(() => resolvePostCover(props.post.sourceFile, props.post.
 </script>
 
 <template>
-    <div class="a-card" id="article-card">
-        <a class="article-card" :href="props.post.link.replace('.html', '')">
+    <div class="a-card article-card-shell">
+        <a class="article-card" :href="props.post.link">
             <el-image v-if="cover && !props.mini" class="article-cover" :src="cover"
                 :alt="props.post.title" fit="cover" lazy>
                 <template #placeholder>
@@ -43,10 +43,10 @@ const cover = computed(() => resolvePostCover(props.post.sourceFile, props.post.
                 </template>
             </el-image>
             <article>
-                <h1 class="article-title">
+                <h2 class="article-title">
                     {{ props.post.title ?? 'Untitled Article' }}
-                </h1>
-                <p v-if="props.post.excerpt && !props.mini" class="article-descrption">
+                </h2>
+                <p v-if="props.post.excerpt && !props.mini" class="article-description">
                     {{ props.post.excerpt }}
                 </p>
                 <div class="article-info" data-allow-mismatch>
@@ -73,7 +73,7 @@ const cover = computed(() => resolvePostCover(props.post.sourceFile, props.post.
     font-weight: 550;
 }
 
-#article-card {
+.article-card-shell {
     &:hover {
         transform: translateY(-2px);
     }
@@ -124,7 +124,7 @@ const cover = computed(() => resolvePostCover(props.post.sourceFile, props.post.
     color: var(--vp-c-text);
 }
 
-.article-descrption {
+.article-description {
     font-size: 0.9em;
     color: var(--vp-c-text-2);
 }

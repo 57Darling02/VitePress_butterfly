@@ -11,8 +11,5 @@ export function isFontAwesomeIcon(value: unknown): value is string {
 
 export function hasFontAwesomeIcons(config: Pick<ThemeConfig, 'menuItems' | 'socialLinks'>): boolean {
   return config.socialLinks.some((link) => isFontAwesomeIcon(link.icon))
-    || config.menuItems.some((item) => (
-      isFontAwesomeIcon(item.icon)
-      || item.children?.some((child) => isFontAwesomeIcon(child.icon))
-    ))
+    || config.menuItems.some((item) => isFontAwesomeIcon(item.icon))
 }

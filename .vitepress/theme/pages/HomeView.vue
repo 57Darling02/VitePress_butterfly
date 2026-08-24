@@ -14,15 +14,14 @@
         <ClientOnly>
           <div
             v-reveal
-            class="post-reveal"
+            class="post-reveal post-card-row"
             v-for="post in currentPosts"
             :key="post.link"
-            style="padding: 0px 5px 12px;"
           >
             <ArticleCard :post="post" />
           </div>
 
-          <div style="display: flex; justify-content: center;">
+          <div class="post-pagination">
             <el-pagination
               hide-on-single-page
               :total="filteredPosts.length"
@@ -83,13 +82,13 @@ const { theme } = useData<ThemeConfig>()
 const selectedTags = ref<string[]>([])
 const selectedFolder = ref('')
 const currentPage = ref(1)
-const pageSize = ref(theme.value.pageSize || 8)
+const pageSize = computed(() => theme.value.pageSize || 8)
 
 const subtitleRef = ref<HTMLElement | null>(null)
 const isReducedMotion = ref(false)
 
-const mainTitle = ref(theme.value.home.mainTitle || 'VitePress Theme')
-const subTitles = ref(theme.value.home.subTitles || ['VitePress Theme'])
+const mainTitle = computed(() => theme.value.home.mainTitle || 'VitePress Theme')
+const subTitles = computed(() => theme.value.home.subTitles || ['VitePress Theme'])
 
 type TypeItInstance = { destroy: () => void }
 

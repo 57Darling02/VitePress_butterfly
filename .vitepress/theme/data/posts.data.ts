@@ -11,7 +11,7 @@ import type { PostDate, PostSummary } from "../types/PostSummary";
 import { loadSiteConfig } from "../utils/configLoader";
 import { getPostCategory } from "../utils/postCategory";
 
-const theme = loadSiteConfig() as ThemeConfig;
+const theme = loadSiteConfig();
 
 const EXCERPT_LENGTH = 100;
 const EXCERPT_SUFFIX = "......";
@@ -63,8 +63,8 @@ const contentLoaderConfig = {
         const data = await Promise.all(docPages.map(async (page): Promise<PostSummary> => {
             const sourceFile = getSourceMarkdownPath(page.url).replace(/^\/+/, '');
             const sourcePath = getMarkdownFilePath(sourceFile);
-            const plainText = toExcerptText(page.src ?? "").substring(0, EXCERPT_LENGTH);
-            const excerpt = `${plainText}${plainText.length >= 30 ? EXCERPT_SUFFIX : ""}`.trim();
+            const plainText = toExcerptText(page.src ?? "").trim();
+            const excerpt = `${plainText.substring(0, EXCERPT_LENGTH)}${plainText.length >= 30 ? EXCERPT_SUFFIX : ""}`;
 
             return {
                 title: toText(page.frontmatter.title),
@@ -78,7 +78,7 @@ const contentLoaderConfig = {
                 ...(shouldCalculateLastUpdated
                     ? { lastUpdated: await getLastUpdated(sourcePath, useGitTimestamps) }
                     : {}),
-                textNum: page.src?.length ?? 0,
+                textNum: countVisibleCharacters(plainText),
             };
         }));
 
@@ -100,6 +100,10 @@ function toExcerptText(src: string) {
         (text, [pattern, replacement]) => text.replace(pattern, replacement),
         src,
     );
+}
+
+function countVisibleCharacters(text: string) {
+    return text.replace(/\s+/g, "").length;
 }
 
 function getSortTime(post: PostSummary): number {

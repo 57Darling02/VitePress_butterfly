@@ -10,7 +10,7 @@
   "scripts": {
     "prepare-content": "node scripts/prepare-content.js",
     "dev": "pnpm prepare-content && vitepress dev --host 0.0.0.0",
-    "preview": "vitepress preview",
+    "preview": "pnpm prepare-content && vitepress preview",
     "docs:build": "pnpm prepare-content && vitepress build",
     "build": "pnpm docs:build"
   },
@@ -22,5 +22,10 @@
     "js-yaml": "^4.1.1",
     "typeit": "^8.8.7"
   },
-  "type": "module"
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "license": "MIT"
 }

@@ -1,4 +1,3 @@
-@import './link.css';
 @import './custom-block.css';
 @import './vp-code-group.css';
 @import './vp-code.css';
@@ -132,6 +131,15 @@ body .VPLocalSearchBox.VPLocalSearchBox {
 }
 
 /* 文章卡片列表滚动入场动画（配合 v-reveal 指令） */
+.post-card-row {
+  padding: 0 5px 12px;
+}
+
+.post-pagination {
+  display: flex;
+  justify-content: center;
+}
+
 .post-reveal {
   opacity: 0;
   transform: translateY(20px);
@@ -154,14 +162,6 @@ body .VPLocalSearchBox.VPLocalSearchBox {
     transform: none;
     transition: none;
   }
-}
-
-.vp-doc blockquote {
-  border-radius: 10px;
-  padding: 18px 20px 20px 15px;
-  position: relative;
-  background-color: var(--vp-c-gray-soft);
-  border-left: 6px solid var(--vp-c-green-2);
 }
 
 .vp-doc img:not([data-no-preview]) {

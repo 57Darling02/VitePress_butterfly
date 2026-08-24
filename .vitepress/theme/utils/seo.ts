@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { HeadConfig, SiteConfig, TransformContext, UserConfig } from 'vitepress'
 import type ThemeConfig from '../types/ThemeConfig'
+import { isArticleLayout } from './pageLayout'
 
 type SeoConfig = Pick<
   UserConfig<ThemeConfig>,
@@ -68,7 +69,7 @@ function createSeoHead(
   const canonicalUrl = resolveCanonicalUrl(ctx.page, siteUrl)
   const head: HeadConfig[] = [
     ['meta', { name: 'author', content: frontmatter.author || themeConfig.author || siteTitle }],
-    ['meta', { property: 'og:type', content: frontmatter.layout === 'doc' ? 'article' : 'website' }],
+    ['meta', { property: 'og:type', content: isArticleLayout(frontmatter.layout) ? 'article' : 'website' }],
     ['meta', { property: 'og:title', content: title }],
     ['meta', { property: 'og:description', content: description }],
     ['meta', { property: 'og:site_name', content: siteTitle }],

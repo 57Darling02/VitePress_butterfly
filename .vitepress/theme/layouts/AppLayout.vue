@@ -60,7 +60,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useData, onContentUpdated } from 'vitepress'
 import type ThemeConfig from '../types/ThemeConfig'
-const { theme, page, frontmatter } = useData<ThemeConfig>()
+const { page, frontmatter } = useData<ThemeConfig>()
 import Nav from '../components/navigation/Nav.vue'
 import Footer from '../components/navigation/Footer.vue'
 import MainView from '../pages/MainView.vue'

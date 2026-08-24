@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useData } from 'vitepress'
 import { data as posts } from '../../data/posts.data'
 import type { PostDate } from '../../types/PostSummary'
@@ -17,8 +17,8 @@ const toTimestamp = (date: PostDate | undefined) => {
   return Number.isFinite(timestamp) ? timestamp : 0
 }
 
-const daysSince = (timestamp: number) => timestamp > 0
-  ? Math.max(0, Math.floor((Date.now() - timestamp) / DAY_MS))
+const daysSince = (timestamp: number, now = Date.now()) => timestamp > 0
+  ? Math.max(0, Math.floor((now - timestamp) / DAY_MS))
   : null
 
 const totalWords = posts.reduce((sum, post) => sum + post.textNum, 0)
@@ -33,16 +33,32 @@ const formatNumber = (value: number | null) => value === null
 
 const { visitData } = useVisitData()
 
+const isMounted = ref(false)
+
 const stats = computed(() => {
+  if (!isMounted.value) {
+    return [
+      { label: '访问量', icon: 'eye', value: '—' },
+      { label: '总字数', icon: 'pen-line', value: formatNumber(totalWords) },
+      { label: '运行时长', icon: 'calendar-clock', value: '—', suffix: '天' },
+      { label: '最后活动', icon: 'activity', value: '—', suffix: '天前' },
+    ]
+  }
+
+  const now = Date.now()
   const createdAt = toTimestamp(theme.value.footer?.createdTime)
   const visits = visitData.value?.site_pv ?? null
 
   return [
     { label: '访问量', icon: 'eye', value: formatNumber(visits) },
     { label: '总字数', icon: 'pen-line', value: formatNumber(totalWords) },
-    { label: '运行时长', icon: 'calendar-clock', value: formatNumber(daysSince(createdAt)), suffix: '天' },
-    { label: '最后活动', icon: 'activity', value: formatNumber(daysSince(latestActivity)), suffix: '天前' },
+    { label: '运行时长', icon: 'calendar-clock', value: formatNumber(daysSince(createdAt, now)), suffix: '天' },
+    { label: '最后活动', icon: 'activity', value: formatNumber(daysSince(latestActivity, now)), suffix: '天前' },
   ]
+})
+
+onMounted(() => {
+  isMounted.value = true
 })
 </script>
 

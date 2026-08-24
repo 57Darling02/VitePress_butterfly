@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
+import type ThemeConfig from '../types/ThemeConfig';
 import { isFontAwesomeIcon } from './fontAwesome';
 
 const defaultSiteConfig = {
@@ -73,7 +74,11 @@ function sanitizeInlineScriptValue(value: unknown): unknown {
   return value;
 }
 
-export function loadSiteConfig() {
+let cachedConfig: ThemeConfig | undefined;
+
+export function loadSiteConfig(): ThemeConfig {
+  if (cachedConfig) return cachedConfig;
+
   const rootDir = process.cwd();
   const configPath = path.resolve(rootDir, 'posts/site_config.yml');
 
@@ -93,7 +98,8 @@ export function loadSiteConfig() {
 
   assertNoDeprecatedProfileFields(config);
   normalizeIconReferences(config);
-  return sanitizeInlineScriptValue(config);
+  cachedConfig = sanitizeInlineScriptValue(config) as ThemeConfig;
+  return cachedConfig;
 }
 
 const deprecatedProfileFields = {
@@ -115,10 +121,10 @@ function assertNoDeprecatedProfileFields(config: Record<string, unknown>) {
 
 function normalizeIconReferences(config: Record<string, unknown>) {
   normalizeIconReferenceList(config.socialLinks, 'socialLinks');
-  normalizeIconReferenceList(config.menuItems, 'menuItems', true);
+  normalizeIconReferenceList(config.menuItems, 'menuItems');
 }
 
-function normalizeIconReferenceList(value: unknown, path: string, includeChildren = false) {
+function normalizeIconReferenceList(value: unknown, path: string) {
   if (!Array.isArray(value)) {
     throw new Error(`[Config Loader] ${path} must be an array.`);
   }
@@ -130,10 +136,6 @@ function normalizeIconReferenceList(value: unknown, path: string, includeChildre
     }
 
     normalizeIconReference(item, itemPath);
-
-    if (includeChildren && item.children !== undefined) {
-      normalizeIconReferenceList(item.children, `${itemPath}.children`);
-    }
   });
 }
 

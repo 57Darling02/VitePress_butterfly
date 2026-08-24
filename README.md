@@ -1,80 +1,35 @@
 # VitePress-Butterfly Theme
 
-基于 VitePress + Element Plus 的卡片风博客主题。
+基于 VitePress + Element Plus 的卡片风博客主题，采用双仓库模型：
 
-以此致敬我的博客启蒙样式[hexo-theme-butterfly](https://github.com/jerryc127/hexo-theme-butterfly)
+- **博客仓库（本仓库）**：只负责主题、构建与部署。
+- **知识库仓库**：只负责 `site_config.yml`、Markdown 和 `public/` 静态资源。
 
-目标很简单：一键部署上线，轻松更新内容。
+线上 CI 需要博客仓库配置 `WIKI_URL`、`PAT` 两个 secrets；知识库 Push 后通过 `repository_dispatch` 触发博客重建。
 
-workflow一键部署上线，写 Markdown/VUE页面、推送、自动上线。
+## 推荐：用 Obsidian 快速部署
 
-[介绍与入门教程](https://www.bilibili.com/video/BV12y9yBzE4c/)
+普通用户不需要安装 Node.js 或 pnpm，直接使用知识库模板：
 
-我的博客:https://57darling02.github.io
+1. 下载或克隆 [vitepress-butterfly-wiki](https://github.com/57Darling02/vitepress-butterfly-wiki)，用 Obsidian 作为 Vault 打开。
+2. 在 Obsidian 中关闭受限模式，启用内置的 `obsidian-git` 和 `VitePress Butterfly` 插件。
+3. 创建一个 **Tokens (classic)** PAT，勾选 `repo` 和 `workflow`。
+4. 点击左侧 Ribbon 的火箭图标打开控制台，进入「仓库设置」：
+   - 输入 PAT 并检测连通性；
+   - 检测/创建文章仓库；
+   - 检测/创建博客仓库。
+5. 插件会自动完成：创建仓库、写入 `WIKI_URL/PAT` 等 secrets、配置 GitHub Pages、触发首次部署。之后切换到「控制台」标签即可日常写作与发布。
 
-博客模板展示:https://vitepress.57d02.cn
+后续在知识库中写文章，打开控制台点击“提交并推送”即可自动上线；Git 引擎由 obsidian-git 提供。
 
-## 核心模型
+完整流程、重试策略和常见问题见 [知识库 README](https://github.com/57Darling02/vitepress-butterfly-wiki)。
 
-正式使用提醒：本项目采用双仓库模式：
+## 内容约定
 
-```text
-主题仓库：只负责主题、构建、部署
-知识库仓库：负责文章、图片、站点配置
-```
+站点配置只读取知识库根目录的 `site_config.yml`；本仓库的 `site_config.example.yml` 只是参考模板。静态资源放在知识库 `public/`，例如 `public/avatar.png` 对应 `/avatar.png`。
 
-`Setup Blog` 会自动创建私密知识库，并把知识库同步到主题仓库的 `posts/` 工作区。线上 CI 必须配置 `WIKI_URL`，本地 `posts/` 只用于主题开发。
+### 文章
 
-配置只认知识库里的 `site_config.yml`。主题仓库里的`site_config.example.yml` 只是参考模板。
-
-## 快速开始：线上自动部署
-
-这是推荐用法，不需要在电脑上安装 Node.js、pnpm 或任何本地环境。
-
-
-### 1. 创建通行证
-
-创建一个 GitHub PAT，用来让初始化工作流帮你创建知识库、配置 secrets、触发部署。
-
-```text
-GitHub 头像 -> Settings -> Developer settings -> Personal access tokens -> Tokens (classic)
-```
-
-推荐勾选：
-
-```text
-repo
-workflow
-```
-
-保存好生成的 PAT。它只显示一次。
-
-### 2. 下载仓库
-进入[vitepress-butterfly-wiki](https://github.com/57Darling02/vitepress-butterfly-wiki)
-
-git clone 或 下载源码到本地。
-
-### 3. 使用obsidian打开
-需要信任插件，打开插件页，输入PAT
-
-
-### 4. 写配置、文章和页面
-所有可定制的内容(站点配置、首页效果、文章、自定义页面等等)都只需要在知识库中改动！
-详情见README：https://github.com/57Darling02/wiki_template/ 
-或https://vitepress.57d02.cn/p/d2e9fe6f
-
-简单介绍：
-只需要在知识库里维护一下内容
-```text
-site_config.yml
-public/
-文章目录/
-```
-其中public用于非文章专属的资源。
-
-站点配置中的 `icon` 支持 [Lucide](https://lucide.nodejs.cn/icons/) 的 kebab-case 名称（例如 `compass`、`users`），也支持 Font Awesome Free 类名（例如 `fa-brands fa-github`）。只要配置中出现 `fa-*`，主题会按需引入一次 Font Awesome CDN；不会校验具体 Font Awesome 图标名。使用前请遵守 [Font Awesome Free 许可条款](https://fontawesome.com/license/free)。需要自行维护的品牌资源时，也可使用 `iconUrl` 指向知识库 `public/` 中的 SVG 或图片资源。
-
-#### 4.1 写文章
 ```md
 ---
 title: Hello World
@@ -86,23 +41,18 @@ layout: doc
 
 # Hello World
 ```
-文章需要带 `layout: doc`：
-`layout: doc` 会进入首页、归档、标签等文章流。
 
-封面可直接引用文章仓库中的相对图片，例如 `cover: ./cover.webp` 或 `cover: ../附件/image.png`。相对路径与 Markdown 图片一样以当前文章为基准，构建时会自动生成带 hash 的静态资源；以 `/` 开头的路径仍指向 `public/`，`https://` 外链也保持可用。
+- `layout: doc` 进入首页文章流、标签与目录筛选。
+- `cover` 支持文章相对路径、`public/` 根路径和 `https://` 外链。
+- 不带 `layout: doc` 的文件不会进入文章流。
 
-#### 4.2 写页面
-如果希望展示自己的页面，本文也提供 VUE 完成自己的页面。`layout: page` 会复用主题的普通页面框架：首屏信息区、正文容器和首页相同的个人资料侧栏；它不会附带文章日期、目录或评论。
-例如[友链页面](https://vitepress.57d02.cn/FriendLink/)的效果
-在知识库中的配置见[模板仓库的FriendLink文件夹](https://github.com/57Darling02/wiki_template/tree/main/FriendLink)
+### 独立页面
 
-比如我希望xxx/FriendLink创建页面，则只需要在目标链接对应目录下完成页面：
+`layout: page` 复用主题的页面框架（信息区 + 正文卡片 + 个人资料侧栏），不显示文章日期、目录和评论。示例：
 
-- 写好vue页面于FriendLink/FriendLinkPage.vue
-- 在FriendLink/index.md中引入，配置`layout: page`
 ```md
 ---
-title: FriendLink
+title: 友链
 layout: page
 ---
 
@@ -113,129 +63,46 @@ import FriendLinkPage from './FriendLinkPage.vue'
 <FriendLinkPage />
 ```
 
-然后在 `site_config.yml` 的 `menuItems` 中手动配置,告知访客入口即可。
+导航入口需要在 `site_config.yml` 的 `menuItems` 中配置。图标支持 Lucide kebab-case 名称和 `fa-*` Font Awesome 类名；品牌资源也可以使用 `iconUrl`。
 
-短内容可以先使用自定义 layout，例如：
+## 可选：Vercel 部署
 
-```md
----
-layout: shuoshuo
-date: 2026-01-01
----
+需要在博客仓库补充 `VERCEL_TOKEN`、`VERCEL_ORG_ID`、`VERCEL_PROJECT_ID` 三个 secrets；不配置时 GitHub Pages 会正常部署。
 
-今天也在认真生活。
-```
-
-这类内容当前只会被构建保留，不会影响现有文章展示；之后可以再做专门的“说说”页面。
-
-推送知识库后，它会通知主题仓库重新部署。
-
-### 5. 查看网站
-
-部署完成后，在仓库的 `Actions` 页面可以看到构建状态；在 `Settings -> Pages` 可以看到访问地址。
-
-## 可选：接入 Vercel 自动部署
-
-如果要部署的网页不止一个，或者希望使用自己的域名，那么推荐vercel部署。
-只需要补充填入这三个 secret：
-```text
-VERCEL_TOKEN
-VERCEL_ORG_ID
-VERCEL_PROJECT_ID
-```
-
-[Two Ways to Find Vercel ORG_ID and PROJECT_ID (codenote.net)](https://codenote.net/en/posts/how-to-find-vercel-org-project-ids/)
-简单来说：
-1. 在vercel中配置token
-2. 关联github仓库
-3. 获取`Project ID` 和`Team ID`
-	并将它们分别配置为`VERCEL_TOKEN` `VERCEL_TOKEN`和`VERCEL_ORG_ID`
-## 主题更新
-
-在源码仓库中点击更新上游即可
-
-
-或者使用命令行，打开源码仓库终端执行
-
-```bash
-git remote add upstream https://github.com/57Darling02/VitePress_butterfly.git
-
-git fetch upstream && git checkout main && git reset --hard upstream/main && git push origin main --force
-```
-
-
-## 备用：手动配置（可跳过）
-
-如果自动初始化失败，可以手动用 [57Darling02/wiki_template](https://github.com/57Darling02/wiki_template) 创建私密知识库，然后在主题仓库配置 `WIKI_URL`、`PAT` 两个 Actions secrets。知识库固定使用 `main` 分支。
-
-知识库自动触发主题仓库重建需要在知识库里配置 `BLOG_REPO` 和 `PAT`，并添加 `repository_dispatch` workflow。正常用户优先使用 `Setup Blog`，不需要手动做这些。
-
-## 本地开发（可跳过）
-
-只有当你想本地预览或开发主题时，才需要这一节。
-
-安装依赖：
+## 本地开发（可选）
 
 ```bash
 pnpm install
-```
-
-本地预览：
-
-```bash
 pnpm dev
 ```
 
-构建：
+构建与预览：
 
 ```bash
 pnpm docs:build
+pnpm preview
 ```
 
-## 私密知识库本地开发
-
-在源码仓库根目录创建 `.env.local`：
+需要同步私密知识库时，在博客仓库根目录创建不会提交的 `.env.local`：
 
 ```text
 WIKI_URL=https://github.com/yourname/your-private-wiki.git
 PAT=ghp_xxx
 ```
 
-`.env.local` 不会提交。之后直接运行：
+之后运行 `pnpm dev` 会先同步知识库，再启动 VitePress。
+
+## 更新主题
+
+使用 Obsidian 插件创建博客仓库时，主题不会自动升级。需要更新时可参考：
 
 ```bash
-pnpm dev
+git remote add upstream https://github.com/57Darling02/VitePress_butterfly.git
+git fetch upstream && git checkout main && git reset --hard upstream/main && git push origin main --force
 ```
 
-脚本会先同步知识库，再启动 VitePress。
-
-
-
-## 常用命令
-
-```bash
-pnpm prepare-content
-pnpm dev
-pnpm docs:build
-pnpm preview
-```
-
-
-
-## 项目结构
-
-```text
-VitePress-Butterfly/
-├── .vitepress/              # Theme core
-├── scripts/
-│   └── prepare-content.js   # Content preparation
-├── posts/                   # Content workspace
-├── public/                  # Theme public assets
-├── site_config.example.yml  # Config template
-├── package.json
-└── update_theme.sh
-```
+> 该命令会丢弃博客仓库的本地自定义修改，使用前请确认无需保留。
 
 ## License
 
-[MIT](LICENSE) © 2024-present 57Darling02
+[MIT](https://opensource.org/licenses/MIT) © 2024-present 57Darling02

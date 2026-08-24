@@ -1,17 +1,17 @@
 <template>
-  <content v-if="layout === 'home'" />
+  <Content v-if="layout === 'home'" />
   <ArticleLayout v-else-if="isArticlePage">
-    <content />
+    <Content />
   </ArticleLayout>
   <PageLayout v-else-if="layout === 'page'">
-    <content />
+    <Content />
   </PageLayout>
-  <content v-else />
+  <Content v-else />
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { useData } from 'vitepress'
+import { Content, useData } from 'vitepress'
 import ArticleLayout from '../layouts/ArticleLayout.vue'
 import PageLayout from '../layouts/PageLayout.vue'
 import type ThemeConfig from '../types/ThemeConfig'
