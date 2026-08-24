@@ -1,0 +1,21 @@
+name: Sync Theme
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync theme
+        run: |
+          git remote add upstream https://github.com/57Darling02/VitePress_butterfly.git || true
+          git fetch upstream main
+          # The blog is a customization-free copy of the theme, so align it
+          # directly with the theme head. This also keeps this workflow file
+          # itself in sync with the theme.
+          git reset --hard upstream/main
+          git push origin HEAD:main --force-with-lease
