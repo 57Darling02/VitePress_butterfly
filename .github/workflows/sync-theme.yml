@@ -4,6 +4,7 @@ on:
 permissions:
   contents: write
   actions: write
+  workflows: write
 jobs:
   sync:
     runs-on: ubuntu-latest
