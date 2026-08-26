@@ -130,8 +130,21 @@ jobs:
           name: site-dist
           path: theme/.vitepress/dist
           retention-days: 7
+      - name: Check Vercel config
+        if: steps.readiness.outputs.ready == 'true'
+        id: vercel
+        env:
+          VERCEL_TOKEN: \${ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: \${ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: \${ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Deploy to Vercel (optional)
-        if: steps.readiness.outputs.ready == 'true' && secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != ''
+        if: steps.readiness.outputs.ready == 'true' && steps.vercel.outputs.enabled == 'true'
         run: |
           npx vercel deploy --prod --yes --token=\${ secrets.VERCEL_TOKEN }} theme/.vitepress/dist
 `;
