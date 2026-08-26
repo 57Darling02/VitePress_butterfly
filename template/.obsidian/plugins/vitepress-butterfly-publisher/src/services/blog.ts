@@ -35,6 +35,18 @@ const THEME_REF_PLACEHOLDER = "__THEME_REF__";
  * GitHub expression syntax (${{ ... }}) and bash substitutions need no
  * escaping. Replaces __THEME_REF__ with the desired commit before writing.
  */
+/**
+ * The blog repository is a pure shell: this single workflow file, whose
+ * __THEME_REF__ line pins the theme version. Built as a plain string array so
+ * GitHub expression syntax (${{ ... }}) and bash substitutions need no
+ * escaping. Replaces __THEME_REF__ with the desired commit before writing.
+ */
+/**
+ * The blog repository is a pure shell: this single workflow file, whose
+ * __THEME_REF__ line pins the theme version. Built as a plain string array so
+ * GitHub expression syntax (${{ ... }}) and bash substitutions need no
+ * escaping. Replaces __THEME_REF__ with the desired commit before writing.
+ */
 const BLOG_WORKFLOW_YAML = [
     "name: Deploy Site",
     "on:",
@@ -67,23 +79,24 @@ const BLOG_WORKFLOW_YAML = [
     "          PAT: ${{ secrets.PAT }}",
     "        run: |",
     "          if [ -z \"$WIKI_URL\" ] || [ -z \"$PAT\" ]; then",
+    "            echo \"::notice::Blog setup is incomplete; waiting for WIKI_URL and PAT.\"",
     "            echo \"ready=false\" >> \"$GITHUB_OUTPUT\"",
     "            exit 0",
     "          fi",
-    "          wiki_url=\"${WIKI_URL%/}\"",
-    "          if [[ ! \"$wiki_url\" =~ ^https://github\\\\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)(\\\\.git)?$ ]]; then",
-    "            echo \"ready=false\" >> \"$GITHUB_OUTPUT\"",
-    "            exit 0",
-    "          fi",
-    "          owner=\"${BASH_REMATCH[1]}\"",
-    "          repository=\"${BASH_REMATCH[2]%.git}\"",
+    "          wikipath=\"${WIKI_URL%/}\"",
+    "          wikipath=\"${wikipath#https://github.com/}\"",
+    "          owner=\"${wikipath%%/*}\"",
+    "          repository=\"${wikipath#*/}\"",
+    "          repository=\"${repository%.git}\"",
+    "          echo \"::notice::Checking article repository $owner/$repository\"",
     "          status=\"000\"",
     "          for attempt in {1..5}; do",
-    "            status=\"$(curl --silent --show-error --connect-timeout 5 --max-time 15 \\",
+    "            status=\"$(curl --silent --show-error --connect-timeout 5 --max-time 15 -L \\",
     "              --output /dev/null --write-out '%{http_code}' \\",
     "              --header 'Accept: application/vnd.github+json' \\",
     "              --header \"Authorization: Bearer $PAT\" \\",
     "              \"https://api.github.com/repos/$owner/$repository/git/ref/heads/main\" || true)\"",
+    "            echo \"::notice::Article check attempt $attempt: HTTP $status\"",
     "            if [ \"$status\" = \"200\" ]; then",
     "              echo \"ready=true\" >> \"$GITHUB_OUTPUT\"",
     "              exit 0",
@@ -155,6 +168,8 @@ const BLOG_WORKFLOW_YAML = [
     "        run: |",
     "          npx vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} theme/.vitepress/dist",
 ].join("\n");
+
+
 
 
 export interface BlogServiceDeps {

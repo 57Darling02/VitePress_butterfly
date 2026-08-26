@@ -1,7 +1,7 @@
 {
   "id": "vitepress-butterfly-publisher",
   "name": "VitePress Butterfly",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "minAppVersion": "1.5.0",
   "description": "VitePress Butterfly 博客控制台：一个 PAT 完成仓库初始化、内容发布、站点配置与部署。",
   "author": "57Darling02",
