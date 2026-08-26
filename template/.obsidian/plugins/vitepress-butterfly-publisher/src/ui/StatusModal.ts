@@ -47,6 +47,7 @@ export class StatusModal extends Modal {
 	private articleSync: "secrets" | "overwrite" | "remote" = "secrets";
 	private articleExists: boolean | null = null;
 	private blogExists: boolean | null = null;
+	private blogSync: "follow" | "secrets" = "follow";
 	private localGitHasHistory = true;
 	private initRecord: InitializationRecord | null = null;
 	private stepIndex = 0;
@@ -247,6 +248,7 @@ export class StatusModal extends Modal {
 			this.blogExists = blog.exists;
 			this.localGitHasHistory = local.hasHistory;
 			this.articleSync = "secrets";
+			this.blogSync = "follow";
 			this.clearError();
 			this.initPhase = "confirm";
 			this.render();
@@ -299,10 +301,26 @@ export class StatusModal extends Modal {
 		plan.createEl("strong", { text: "博客仓库" });
 		plan.createEl("div", {
 			text: this.blogExists
-				? `已存在 ${settings.blogRepoName}：只更新 WIKI_URL 与 PAT，不修改主题。`
-				: `不存在：将从官方模板创建公开仓库 ${settings.blogRepoName}，并配置 Pages 与首次构建。`,
+				? `已存在 ${settings.blogRepoName}：选择「更新主题」将升级到最新主题并触发构建（博客仓库仅一个 deploy.yml，覆盖无风险）；「仅配置变量」只更新 WIKI_URL 与 PAT，不改内容。`
+				: `不存在：将创建公开壳仓库 ${settings.blogRepoName}（仅 .github/workflows/deploy.yml，钉定最新主题），并配置 Pages 与首次构建。`,
 			cls: "vpb-plan-item",
 		});
+		if (this.blogExists) {
+			const group = plan.createDiv({ cls: "vpb-radio-group" });
+			const choices: { value: "follow" | "secrets"; label: string }[] = [
+				{ value: "follow", label: "更新主题（推荐）：将博客升级到最新主题版本（重写 deploy.yml 钉定最新 commit，自动触发构建）" },
+				{ value: "secrets", label: "仅配置变量：只更新 WIKI_URL 与 PAT 等变量，不修改仓库内容" },
+			];
+			for (const choice of choices) {
+				const row = group.createEl("label", { cls: "vpb-check-row" });
+				const input = row.createEl("input", { attr: { type: "radio", name: "vpb-blog-sync" } });
+				if (choice.value === "follow") input.checked = true;
+				input.addEventListener("change", () => {
+					this.blogSync = choice.value;
+				});
+				row.createEl("span", { text: choice.label });
+			}
+		}
 
 		this.renderError();
 		const footer = this.contentEl.createDiv({ cls: "modal-button-container" });
@@ -404,6 +422,11 @@ export class StatusModal extends Modal {
 		}
 	}
 
+	/** True when the article step pushes content (trigger.yml auto-dispatches the blog build). */
+	private articlePushHappened(articleExists: boolean): boolean {
+		return !articleExists || this.articleSync === "overwrite";
+	}
+
 	/**
 	 * Executes one wizard step and persists its completion immediately, so a
 	 * crash or network failure never requires redoing finished work.
@@ -435,7 +458,11 @@ export class StatusModal extends Modal {
 					if (!record.blogReady) {
 						const check = await this.deps.blog.checkBlogRepository();
 						if (check.exists) {
-							await this.deps.blog.configureBlogSecretsOnly();
+							if (this.blogSync === "follow") {
+								await this.deps.blog.configureBlogRepository();
+							} else {
+								await this.deps.blog.configureBlogSecretsOnly();
+							}
 						} else {
 							await this.deps.blog.createBlogRepository();
 						}

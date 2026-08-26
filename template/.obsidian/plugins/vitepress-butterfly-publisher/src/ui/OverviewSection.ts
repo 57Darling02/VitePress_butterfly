@@ -91,6 +91,8 @@ export class OverviewSection {
 				return "初始化博客";
 			case "initializing":
 				return "继续初始化";
+			case "cancelled":
+				return "重新构建";
 			default:
 				return "查看部署";
 		}
@@ -565,18 +567,26 @@ class UpdateModal extends Modal {
 			});
 		}
 
-		// Theme section: the simplest reliable update is deleting the blog
-		// repository and recreating it from the theme template.
+		// Theme section: disabled when the blog repository IS the theme source
+		// (demo-site mode), otherwise it pins the blog to the latest theme
+		// commit by rewriting the ref line of the shell deploy workflow.
 		const themeSection = contentEl.createDiv({ cls: "vpb-update-item" });
 		themeSection.createEl("strong", { text: "博客主题" });
-		themeSection.createEl("div", {
-			text: `将把博客仓库 ${this.deps.blogRepo} 钉定到最新主题版本：更新 .github/workflows/deploy.yml 中的主题 commit（博客仓库的唯一文件），推送后自动触发构建。无需删除或重建仓库。`,
-			cls: "vpb-modal-hint",
-		});
-		const update = themeSection.createEl("button", { text: "更新主题（重建博客）", cls: "mod-cta" });
-		update.addEventListener("click", () => {
-			void this.doUpdateTheme(update);
-		});
+		if (this.deps.blog.isBlogThemeSource()) {
+			themeSection.createEl("div", {
+				text: "当前博客仓库是主题仓库（演示站模式）：主题更新已禁用。发布内容仍会正常构建演示站。",
+				cls: "vpb-update-ok",
+			});
+		} else {
+			themeSection.createEl("div", {
+				text: `将把博客仓库 ${this.deps.blogRepo} 钉定到最新主题版本：更新 .github/workflows/deploy.yml 中的主题 commit（博客仓库的唯一文件），推送后自动触发构建。无需删除或重建仓库。`,
+				cls: "vpb-modal-hint",
+			});
+			const update = themeSection.createEl("button", { text: "更新主题", cls: "mod-cta" });
+			update.addEventListener("click", () => {
+				void this.doUpdateTheme(update);
+			});
+		}
 
 		const footer = contentEl.createDiv({ cls: "modal-button-container" });
 		footer.createEl("button", { text: "关闭", cls: "mod-cta" })

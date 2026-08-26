@@ -3206,6 +3206,47 @@ var GitHubClient = class {
   branchRefsPath(repository, branch) {
     return `${this.repositoryPath(repository)}/git/refs/heads/${encodeURIComponent(branch)}`;
   }
+  /** Latest release metadata and its asset names with browser download URLs. */
+  async getLatestRelease(repository) {
+    const result = await this.request(
+      `${this.repositoryPath(repository)}/releases/latest`
+    );
+    return {
+      tagName: result.tag_name,
+      assets: result.assets.map((asset) => ({
+        name: asset.name,
+        downloadUrl: asset.browser_download_url
+      }))
+    };
+  }
+  /** Downloads a public release asset (text) by its browser download URL. */
+  async downloadReleaseAsset(url) {
+    const controller = new AbortController();
+    let timedOut = false;
+    const timeout = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new GitHubApiError(`\u4E0B\u8F7D\u63D2\u4EF6\u6587\u4EF6\u5931\u8D25\uFF08HTTP ${response.status}\uFF09\u3002`, response.status, url);
+      }
+      return await response.text();
+    } catch (error) {
+      if (error instanceof GitHubApiError) {
+        throw error;
+      }
+      if (timedOut || isAbortError(error)) {
+        throw new GitHubRequestTimeoutError(REQUEST_TIMEOUT_MS, url);
+      }
+      const networkError = new Error("\u65E0\u6CD5\u4E0B\u8F7D\u63D2\u4EF6\u6587\u4EF6\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5\u3002");
+      networkError.cause = error;
+      throw networkError;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
   async request(path, options = {}) {
     const url = this.url(path, options.query);
     const controller = new AbortController();
@@ -3599,10 +3640,6 @@ async function ensureTemplateFiles(app) {
 // src/services/blog.ts
 var PLUGIN_DIR = ".obsidian/plugins/vitepress-butterfly-publisher";
 var PLUGIN_FILES = ["main.js", "manifest.json", "styles.css"];
-var PLUGIN_SOURCE_REPO = {
-  owner: "57Darling02",
-  name: "vitepress-butterfly-wiki"
-};
 var THEME_SOURCE_REPO = {
   owner: "57Darling02",
   name: "VitePress_butterfly"
@@ -3783,14 +3820,19 @@ var BlogService = class {
     return this.syncArticleRepository();
   }
   /**
-   * Compares the local plugin version with the version in the article
-   * repository (the plugin's distribution source).
+   * Compares the local plugin version with the version published in the
+   * theme repository's latest release (the plugin's distribution source).
    */
   async checkPluginUpdate() {
     const settings = this.requirePat("\u66F4\u65B0\u63D2\u4EF6");
     const client = this.client();
-    const remote = await client.getFileContent(PLUGIN_SOURCE_REPO, `${PLUGIN_DIR}/manifest.json`);
-    const remoteVersion = parseManifestVersion(decodeBase64(remote.content));
+    const release = await client.getLatestRelease(THEME_SOURCE_REPO);
+    const manifestAsset = release.assets.find((asset) => asset.name === "manifest.json");
+    if (!manifestAsset) {
+      throw new Error("\u4E3B\u9898\u4ED3\u5E93\u6700\u65B0 Release \u7F3A\u5C11 manifest.json \u8D44\u4EA7\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002");
+    }
+    const manifestText = await client.downloadReleaseAsset(manifestAsset.downloadUrl);
+    const remoteVersion = parseManifestVersion(manifestText);
     return {
       latest: remoteVersion === this.deps.pluginVersion,
       current: this.deps.pluginVersion,
@@ -3802,12 +3844,27 @@ var BlogService = class {
    * from the article repository and writes them into the plugin directory.
    * data.json is never touched, so local settings survive.
    */
+  /**
+   * True when the configured blog repository IS the theme source repo
+   * (demo-site mode): theme updates must stay disabled, because they would
+   * rewrite the demo site's full deploy workflow into the shell template
+   * (its GitHub Pages is not enabled).
+   */
+  isBlogThemeSource() {
+    const settings = this.deps.getSettings();
+    const login = settings.githubConnection?.login ?? "";
+    return settings.blogRepoName.trim().toLowerCase() === THEME_SOURCE_REPO.name.toLowerCase() && (login === "" || login.toLowerCase() === THEME_SOURCE_REPO.owner.toLowerCase());
+  }
   async updatePlugin() {
     const settings = this.requirePat("\u66F4\u65B0\u63D2\u4EF6");
     const client = this.client();
+    const release = await client.getLatestRelease(THEME_SOURCE_REPO);
     for (const file of PLUGIN_FILES) {
-      const remote = await client.getFileContent(PLUGIN_SOURCE_REPO, `${PLUGIN_DIR}/${file}`);
-      const text = decodeBase64(remote.content);
+      const asset = release.assets.find((candidate) => candidate.name === file);
+      if (!asset) {
+        throw new Error(`\u4E3B\u9898\u4ED3\u5E93\u6700\u65B0 Release \u7F3A\u5C11 ${file} \u8D44\u4EA7\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002`);
+      }
+      const text = await client.downloadReleaseAsset(asset.downloadUrl);
       await this.deps.app.vault.adapter.write(`${PLUGIN_DIR}/${file}`, text);
     }
   }
@@ -3934,6 +3991,48 @@ var BlogService = class {
   // Blog repository.
   // ------------------------------------------------------------------
   /** Existing blog repository: update WIKI_URL and PAT only. */
+  /**
+   * Existing blog repository, "follow" mode: rewrite its deploy workflow to
+   * the latest shell template pinned to the current theme head (the blog is
+   * a pure shell, so this is the whole content), then configure secrets,
+   * Pages and dispatch a build. Old full-copy blogs are migrated in place.
+   */
+  async configureBlogRepository() {
+    const settings = this.requireConnectedRepositoryNames("\u914D\u7F6E\u535A\u5BA2\u4ED3\u5E93");
+    const client = this.client();
+    const user = await client.getAuthenticatedUser();
+    const articleName = validateRepoName(settings.repoName, "\u6587\u7AE0\u4ED3\u5E93");
+    const blog = { owner: user.login, name: validateRepoName(settings.blogRepoName, "\u535A\u5BA2\u4ED3\u5E93") };
+    const themeHead = await client.getBranchHead(THEME_SOURCE_REPO, DEFAULT_BRANCH);
+    const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, themeHead.sha);
+    const existing = await client.getFileContent(blog, DEPLOY_WORKFLOW_PATH).catch(() => null);
+    if (!existing || decodeBase64(existing.content) !== shell) {
+      await client.writeFileContent(
+        blog,
+        DEPLOY_WORKFLOW_PATH,
+        shell,
+        `chore: \u5BF9\u9F50\u58F3\u535A\u5BA2\uFF08\u9489\u5B9A\u4E3B\u9898 ${themeHead.sha.slice(0, 7)}\uFF09`,
+        existing?.sha
+      );
+    }
+    const vercel = this.readVercelSecrets(settings);
+    const vercelConfigured = await this.writeBlogSecrets(
+      client,
+      blog,
+      user.login,
+      articleName,
+      settings.pat,
+      vercel
+    );
+    let warning;
+    try {
+      await client.configurePages(blog);
+    } catch (error) {
+      warning = `Pages \u672A\u80FD\u81EA\u52A8\u914D\u7F6E\uFF1A${errorMessage(error)}\u3002\u53EF\u7A0D\u540E\u5728 GitHub \u4ED3\u5E93 Settings \u2192 Pages \u4E2D\u9009\u62E9 GitHub Actions\u3002`;
+    }
+    return { repository: blog, created: false, initialized: true, warning, vercelConfigured };
+  }
+  /** Existing blog repository, "secrets only" mode: never touch content. */
   async configureBlogSecretsOnly() {
     const settings = this.requireConnectedRepositoryNames("\u914D\u7F6E\u535A\u5BA2\u4ED3\u5E93");
     const client = this.client();
@@ -3949,11 +4048,10 @@ var BlogService = class {
       settings.pat,
       vercel
     );
-    const warning = await this.dispatchBlogBuild(client, blog);
     if (settings.pendingBlogRepo) {
       await this.deps.saveSettings({ pendingBlogRepo: "" });
     }
-    return { repository: blog, created: false, initialized: false, warning, vercelConfigured };
+    return { repository: blog, created: false, initialized: false, warning: void 0, vercelConfigured };
   }
   /**
    * Missing blog repository: create it once from the official GitHub
@@ -4009,8 +4107,6 @@ var BlogService = class {
       } catch (error) {
         warning = `Pages \u672A\u80FD\u81EA\u52A8\u914D\u7F6E\uFF1A${errorMessage(error)}\u3002\u53EF\u7A0D\u540E\u5728 GitHub \u4ED3\u5E93 Settings \u2192 Pages \u4E2D\u9009\u62E9 GitHub Actions\u3002`;
       }
-      const dispatchWarning = await this.dispatchBlogBuild(client, blog);
-      warning = warning && dispatchWarning ? `${warning} ${dispatchWarning}` : warning ?? dispatchWarning;
       await this.deps.saveSettings({ pendingBlogRepo: "" });
     }
     return {
@@ -4020,14 +4116,6 @@ var BlogService = class {
       warning,
       vercelConfigured
     };
-  }
-  async dispatchBlogBuild(client, blog) {
-    try {
-      await client.dispatchRepositoryEvent(blog, "contents-updated");
-    } catch (error) {
-      return `\u6784\u5EFA\u672A\u80FD\u81EA\u52A8\u89E6\u53D1\uFF1A${errorMessage(error)}\u3002\u53EF\u7A0D\u540E\u70B9\u51FB\u300C\u89E6\u53D1\u6784\u5EFA\u300D\u3002`;
-    }
-    return void 0;
   }
   async writeBlogSecrets(client, blog, owner, articleName, pat, vercel) {
     const secrets = {
@@ -4060,13 +4148,18 @@ var BlogService = class {
   // Shared helpers.
   // ------------------------------------------------------------------
   /**
-   * Pins the blog to a theme commit by rewriting the ref line of the shell
-   * deploy workflow (the blog repository's only file). The contents-API push
-   * triggers the deployment automatically. Pass an explicit ref to roll
-   * back to a previous theme version.
+   * Updates the blog to the current theme head by aligning its deploy
+   * workflow with the latest shell template (the blog repository's only
+   * file, pinned to the latest theme commit). Same implementation as the
+   * "follow" mode during initialization; the contents-API push triggers the
+   * deployment automatically. Pass an explicit ref to roll back to a
+   * previous theme version.
    */
   async updateTheme(ref) {
     const settings = this.requireConnectedRepositoryNames("\u66F4\u65B0\u4E3B\u9898");
+    if (this.isBlogThemeSource()) {
+      throw new Error("\u5F53\u524D\u535A\u5BA2\u4ED3\u5E93\u5C31\u662F\u4E3B\u9898\u4ED3\u5E93\uFF08\u6F14\u793A\u7AD9\u6A21\u5F0F\uFF09\uFF0C\u4E3B\u9898\u66F4\u65B0\u5DF2\u7981\u7528\u3002");
+    }
     const client = this.client();
     const user = await client.getAuthenticatedUser();
     const blog = { owner: user.login, name: validateRepoName(settings.blogRepoName, "\u535A\u5BA2\u4ED3\u5E93") };
@@ -4078,9 +4171,15 @@ var BlogService = class {
     }
     const content = decodeBase64(existing.content);
     if (!/ref:\s+[0-9a-f]{40}/.test(content)) {
-      throw new Error(
-        "deploy.yml \u4E0D\u662F\u58F3\u7248\u6A21\u677F\uFF08\u7F3A\u5C11\u4E3B\u9898\u7248\u672C\u9489\u5B9A\u884C\uFF09\u3002\u8BF7\u624B\u52A8\u5220\u9664\u535A\u5BA2\u4ED3\u5E93\u540E\u91CD\u65B0\u521D\u59CB\u5316\u3002"
+      const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, target);
+      await client.writeFileContent(
+        blog,
+        DEPLOY_WORKFLOW_PATH,
+        shell,
+        `chore: \u8FC1\u79FB\u4E3A\u58F3\u535A\u5BA2\uFF08\u9489\u5B9A\u4E3B\u9898 ${target.slice(0, 7)}\uFF09`,
+        existing.sha
       );
+      return { themeSha: target };
     }
     const updated = content.replace(/ref:\s+[0-9a-f]{40}/, `ref: ${target}`);
     if (updated === content) {
@@ -4460,6 +4559,8 @@ var DeploymentMonitor = class {
       status = "building";
     } else if (run.status === "completed" && run.conclusion === "success") {
       status = "success";
+    } else if (run.status === "completed" && run.conclusion === "cancelled") {
+      status = "cancelled";
     } else if (run.status === "completed") {
       status = "failure";
     } else {
@@ -4501,6 +4602,13 @@ var DeploymentMonitor = class {
           phase: "failure",
           title: "\u90E8\u7F72\u5931\u8D25",
           detail: record.message ? `\u6700\u8FD1\u90E8\u7F72\u5931\u8D25\uFF1A${record.message}` : "\u6700\u8FD1\u4E00\u6B21\u90E8\u7F72\u5931\u8D25\uFF0C\u8BF7\u67E5\u770B\u64CD\u4F5C\u8BB0\u5F55\u3002"
+        };
+      case "cancelled":
+        return {
+          ...common,
+          phase: "cancelled",
+          title: "\u6784\u5EFA\u5DF2\u53D6\u6D88",
+          detail: record.message ? `\u6784\u5EFA\u88AB\u65B0\u8BF7\u6C42\u53D6\u4EE3\uFF1A${record.message}` : "\u8BE5\u6B21\u6784\u5EFA\u5DF2\u88AB\u53D6\u6D88\uFF08\u901A\u5E38\u56E0\u89E6\u53D1\u65B0\u6784\u5EFA\uFF09\u3002"
         };
     }
   }
@@ -12335,6 +12443,7 @@ var StatusModal = class extends import_obsidian5.Modal {
     this.articleSync = "secrets";
     this.articleExists = null;
     this.blogExists = null;
+    this.blogSync = "follow";
     this.localGitHasHistory = true;
     this.initRecord = null;
     this.stepIndex = 0;
@@ -12502,6 +12611,7 @@ var StatusModal = class extends import_obsidian5.Modal {
       this.blogExists = blog.exists;
       this.localGitHasHistory = local.hasHistory;
       this.articleSync = "secrets";
+      this.blogSync = "follow";
       this.clearError();
       this.initPhase = "confirm";
       this.render();
@@ -12547,9 +12657,25 @@ var StatusModal = class extends import_obsidian5.Modal {
     }
     plan.createEl("strong", { text: "\u535A\u5BA2\u4ED3\u5E93" });
     plan.createEl("div", {
-      text: this.blogExists ? `\u5DF2\u5B58\u5728 ${settings.blogRepoName}\uFF1A\u53EA\u66F4\u65B0 WIKI_URL \u4E0E PAT\uFF0C\u4E0D\u4FEE\u6539\u4E3B\u9898\u3002` : `\u4E0D\u5B58\u5728\uFF1A\u5C06\u4ECE\u5B98\u65B9\u6A21\u677F\u521B\u5EFA\u516C\u5F00\u4ED3\u5E93 ${settings.blogRepoName}\uFF0C\u5E76\u914D\u7F6E Pages \u4E0E\u9996\u6B21\u6784\u5EFA\u3002`,
+      text: this.blogExists ? `\u5DF2\u5B58\u5728 ${settings.blogRepoName}\uFF1A\u9009\u62E9\u300C\u66F4\u65B0\u4E3B\u9898\u300D\u5C06\u5347\u7EA7\u5230\u6700\u65B0\u4E3B\u9898\u5E76\u89E6\u53D1\u6784\u5EFA\uFF08\u535A\u5BA2\u4ED3\u5E93\u4EC5\u4E00\u4E2A deploy.yml\uFF0C\u8986\u76D6\u65E0\u98CE\u9669\uFF09\uFF1B\u300C\u4EC5\u914D\u7F6E\u53D8\u91CF\u300D\u53EA\u66F4\u65B0 WIKI_URL \u4E0E PAT\uFF0C\u4E0D\u6539\u5185\u5BB9\u3002` : `\u4E0D\u5B58\u5728\uFF1A\u5C06\u521B\u5EFA\u516C\u5F00\u58F3\u4ED3\u5E93 ${settings.blogRepoName}\uFF08\u4EC5 .github/workflows/deploy.yml\uFF0C\u9489\u5B9A\u6700\u65B0\u4E3B\u9898\uFF09\uFF0C\u5E76\u914D\u7F6E Pages \u4E0E\u9996\u6B21\u6784\u5EFA\u3002`,
       cls: "vpb-plan-item"
     });
+    if (this.blogExists) {
+      const group = plan.createDiv({ cls: "vpb-radio-group" });
+      const choices = [
+        { value: "follow", label: "\u66F4\u65B0\u4E3B\u9898\uFF08\u63A8\u8350\uFF09\uFF1A\u5C06\u535A\u5BA2\u5347\u7EA7\u5230\u6700\u65B0\u4E3B\u9898\u7248\u672C\uFF08\u91CD\u5199 deploy.yml \u9489\u5B9A\u6700\u65B0 commit\uFF0C\u81EA\u52A8\u89E6\u53D1\u6784\u5EFA\uFF09" },
+        { value: "secrets", label: "\u4EC5\u914D\u7F6E\u53D8\u91CF\uFF1A\u53EA\u66F4\u65B0 WIKI_URL \u4E0E PAT \u7B49\u53D8\u91CF\uFF0C\u4E0D\u4FEE\u6539\u4ED3\u5E93\u5185\u5BB9" }
+      ];
+      for (const choice of choices) {
+        const row = group.createEl("label", { cls: "vpb-check-row" });
+        const input = row.createEl("input", { attr: { type: "radio", name: "vpb-blog-sync" } });
+        if (choice.value === "follow") input.checked = true;
+        input.addEventListener("change", () => {
+          this.blogSync = choice.value;
+        });
+        row.createEl("span", { text: choice.label });
+      }
+    }
     this.renderError();
     const footer = this.contentEl.createDiv({ cls: "modal-button-container" });
     const back = footer.createEl("button", { text: "\u8FD4\u56DE\u4FEE\u6539", type: "button" });
@@ -12643,6 +12769,10 @@ var StatusModal = class extends import_obsidian5.Modal {
       this.setBusy(false);
     }
   }
+  /** True when the article step pushes content (trigger.yml auto-dispatches the blog build). */
+  articlePushHappened(articleExists) {
+    return !articleExists || this.articleSync === "overwrite";
+  }
   /**
    * Executes one wizard step and persists its completion immediately, so a
    * crash or network failure never requires redoing finished work.
@@ -12672,7 +12802,11 @@ var StatusModal = class extends import_obsidian5.Modal {
           if (!record.blogReady) {
             const check = await this.deps.blog.checkBlogRepository();
             if (check.exists) {
-              await this.deps.blog.configureBlogSecretsOnly();
+              if (this.blogSync === "follow") {
+                await this.deps.blog.configureBlogRepository();
+              } else {
+                await this.deps.blog.configureBlogSecretsOnly();
+              }
             } else {
               await this.deps.blog.createBlogRepository();
             }
@@ -12903,6 +13037,8 @@ var OverviewSection = class {
         return "\u521D\u59CB\u5316\u535A\u5BA2";
       case "initializing":
         return "\u7EE7\u7EED\u521D\u59CB\u5316";
+      case "cancelled":
+        return "\u91CD\u65B0\u6784\u5EFA";
       default:
         return "\u67E5\u770B\u90E8\u7F72";
     }
@@ -13275,21 +13411,28 @@ var UpdateModal = class extends import_obsidian6.Modal {
         text: `\u68C0\u6D4B\u5230\u65B0\u7248\u672C\uFF1Av${this.plugin?.current ?? "?"} \u2192 v${this.plugin?.latestVersion ?? "?"}\uFF08\u4ECE\u6A21\u677F\u4ED3\u5E93\u4E0B\u8F7D\uFF0C\u672C\u673A\u8BBE\u7F6E\u4E0D\u53D7\u5F71\u54CD\uFF09\u3002`,
         cls: "vpb-modal-hint"
       });
-      const update2 = pluginSection.createEl("button", { text: "\u66F4\u65B0\u63D2\u4EF6", cls: "mod-cta" });
-      update2.addEventListener("click", () => {
-        void this.doUpdatePlugin(update2);
+      const update = pluginSection.createEl("button", { text: "\u66F4\u65B0\u63D2\u4EF6", cls: "mod-cta" });
+      update.addEventListener("click", () => {
+        void this.doUpdatePlugin(update);
       });
     }
     const themeSection = contentEl.createDiv({ cls: "vpb-update-item" });
     themeSection.createEl("strong", { text: "\u535A\u5BA2\u4E3B\u9898" });
-    themeSection.createEl("div", {
-      text: `\u5C06\u628A\u535A\u5BA2\u4ED3\u5E93 ${this.deps.blogRepo} \u9489\u5B9A\u5230\u6700\u65B0\u4E3B\u9898\u7248\u672C\uFF1A\u66F4\u65B0 .github/workflows/deploy.yml \u4E2D\u7684\u4E3B\u9898 commit\uFF08\u535A\u5BA2\u4ED3\u5E93\u7684\u552F\u4E00\u6587\u4EF6\uFF09\uFF0C\u63A8\u9001\u540E\u81EA\u52A8\u89E6\u53D1\u6784\u5EFA\u3002\u65E0\u9700\u5220\u9664\u6216\u91CD\u5EFA\u4ED3\u5E93\u3002`,
-      cls: "vpb-modal-hint"
-    });
-    const update = themeSection.createEl("button", { text: "\u66F4\u65B0\u4E3B\u9898\uFF08\u91CD\u5EFA\u535A\u5BA2\uFF09", cls: "mod-cta" });
-    update.addEventListener("click", () => {
-      void this.doUpdateTheme(update);
-    });
+    if (this.deps.blog.isBlogThemeSource()) {
+      themeSection.createEl("div", {
+        text: "\u5F53\u524D\u535A\u5BA2\u4ED3\u5E93\u662F\u4E3B\u9898\u4ED3\u5E93\uFF08\u6F14\u793A\u7AD9\u6A21\u5F0F\uFF09\uFF1A\u4E3B\u9898\u66F4\u65B0\u5DF2\u7981\u7528\u3002\u53D1\u5E03\u5185\u5BB9\u4ECD\u4F1A\u6B63\u5E38\u6784\u5EFA\u6F14\u793A\u7AD9\u3002",
+        cls: "vpb-update-ok"
+      });
+    } else {
+      themeSection.createEl("div", {
+        text: `\u5C06\u628A\u535A\u5BA2\u4ED3\u5E93 ${this.deps.blogRepo} \u9489\u5B9A\u5230\u6700\u65B0\u4E3B\u9898\u7248\u672C\uFF1A\u66F4\u65B0 .github/workflows/deploy.yml \u4E2D\u7684\u4E3B\u9898 commit\uFF08\u535A\u5BA2\u4ED3\u5E93\u7684\u552F\u4E00\u6587\u4EF6\uFF09\uFF0C\u63A8\u9001\u540E\u81EA\u52A8\u89E6\u53D1\u6784\u5EFA\u3002\u65E0\u9700\u5220\u9664\u6216\u91CD\u5EFA\u4ED3\u5E93\u3002`,
+        cls: "vpb-modal-hint"
+      });
+      const update = themeSection.createEl("button", { text: "\u66F4\u65B0\u4E3B\u9898", cls: "mod-cta" });
+      update.addEventListener("click", () => {
+        void this.doUpdateTheme(update);
+      });
+    }
     const footer = contentEl.createDiv({ cls: "modal-button-container" });
     footer.createEl("button", { text: "\u5173\u95ED", cls: "mod-cta" }).addEventListener("click", () => this.close());
   }

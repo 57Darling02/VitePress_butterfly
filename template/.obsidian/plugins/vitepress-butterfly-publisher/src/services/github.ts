@@ -312,6 +312,55 @@ export class GitHubClient {
     return `${this.repositoryPath(repository)}/git/refs/heads/${encodeURIComponent(branch)}`;
   }
 
+  /** Latest release metadata and its asset names with browser download URLs. */
+  async getLatestRelease(repository: RepoRef): Promise<{
+    tagName: string;
+    assets: Array<{ name: string; downloadUrl: string }>;
+  }> {
+    const result = await this.request<{
+      tag_name: string;
+      assets: Array<{ name: string; browser_download_url: string }>;
+    }>(
+      `${this.repositoryPath(repository)}/releases/latest`,
+    );
+    return {
+      tagName: result.tag_name,
+      assets: result.assets.map((asset) => ({
+        name: asset.name,
+        downloadUrl: asset.browser_download_url,
+      })),
+    };
+  }
+
+  /** Downloads a public release asset (text) by its browser download URL. */
+  async downloadReleaseAsset(url: string): Promise<string> {
+    const controller = new AbortController();
+    let timedOut = false;
+    const timeout = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new GitHubApiError(`下载插件文件失败（HTTP ${response.status}）。`, response.status, url);
+      }
+      return await response.text();
+    } catch (error) {
+      if (error instanceof GitHubApiError) {
+        throw error;
+      }
+      if (timedOut || isAbortError(error)) {
+        throw new GitHubRequestTimeoutError(REQUEST_TIMEOUT_MS, url);
+      }
+      const networkError = new Error("无法下载插件文件，请检查网络后重试。");
+      (networkError as Error & { cause?: unknown }).cause = error;
+      throw networkError;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
   private async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const url = this.url(path, options.query);
     const controller = new AbortController();

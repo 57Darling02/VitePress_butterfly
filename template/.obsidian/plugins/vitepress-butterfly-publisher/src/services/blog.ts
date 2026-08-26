@@ -12,13 +12,8 @@ import type { PluginSettings } from "../settings";
 
 const PLUGIN_DIR = ".obsidian/plugins/vitepress-butterfly-publisher";
 const PLUGIN_FILES = ["main.js", "manifest.json", "styles.css"];
-/** The plugin is distributed with the template repository, regardless of the user's article repo name. */
-const PLUGIN_SOURCE_REPO: GitHubRepositoryRef = {
-  owner: "57Darling02",
-  name: "vitepress-butterfly-wiki",
-};
 
-/** The theme repository: the single source of truth for theme code and versions. */
+/** The theme repository: the single source of truth for theme code, versions and the plugin runtime. */
 const THEME_SOURCE_REPO: GitHubRepositoryRef = {
   owner: "57Darling02",
   name: "VitePress_butterfly",
@@ -269,15 +264,20 @@ export class BlogService {
   }
 
   /**
-   * Compares the local plugin version with the version in the article
-   * repository (the plugin's distribution source).
+   * Compares the local plugin version with the version published in the
+   * theme repository's latest release (the plugin's distribution source).
    */
   async checkPluginUpdate(): Promise<{ latest: boolean; current: string; latestVersion: string }> {
     const settings = this.requirePat("更新插件");
     const client = this.client();
 
-    const remote = await client.getFileContent(PLUGIN_SOURCE_REPO, `${PLUGIN_DIR}/manifest.json`);
-    const remoteVersion = parseManifestVersion(decodeBase64(remote.content));
+    const release = await client.getLatestRelease(THEME_SOURCE_REPO);
+    const manifestAsset = release.assets.find((asset) => asset.name === "manifest.json");
+    if (!manifestAsset) {
+      throw new Error("主题仓库最新 Release 缺少 manifest.json 资产，请稍后重试。");
+    }
+    const manifestText = await client.downloadReleaseAsset(manifestAsset.downloadUrl);
+    const remoteVersion = parseManifestVersion(manifestText);
     return {
       latest: remoteVersion === this.deps.pluginVersion,
       current: this.deps.pluginVersion,
@@ -290,13 +290,32 @@ export class BlogService {
    * from the article repository and writes them into the plugin directory.
    * data.json is never touched, so local settings survive.
    */
+  /**
+   * True when the configured blog repository IS the theme source repo
+   * (demo-site mode): theme updates must stay disabled, because they would
+   * rewrite the demo site's full deploy workflow into the shell template
+   * (its GitHub Pages is not enabled).
+   */
+  isBlogThemeSource(): boolean {
+    const settings = this.deps.getSettings();
+    const login = settings.githubConnection?.login ?? "";
+    return (
+      settings.blogRepoName.trim().toLowerCase() === THEME_SOURCE_REPO.name.toLowerCase()
+      && (login === "" || login.toLowerCase() === THEME_SOURCE_REPO.owner.toLowerCase())
+    );
+  }
+
   async updatePlugin(): Promise<void> {
     const settings = this.requirePat("更新插件");
     const client = this.client();
 
+    const release = await client.getLatestRelease(THEME_SOURCE_REPO);
     for (const file of PLUGIN_FILES) {
-      const remote = await client.getFileContent(PLUGIN_SOURCE_REPO, `${PLUGIN_DIR}/${file}`);
-      const text = decodeBase64(remote.content);
+      const asset = release.assets.find((candidate) => candidate.name === file);
+      if (!asset) {
+        throw new Error(`主题仓库最新 Release 缺少 ${file} 资产，请稍后重试。`);
+      }
+      const text = await client.downloadReleaseAsset(asset.downloadUrl);
       await this.deps.app.vault.adapter.write(`${PLUGIN_DIR}/${file}`, text);
     }
   }
@@ -454,6 +473,48 @@ export class BlogService {
   // ------------------------------------------------------------------
 
   /** Existing blog repository: update WIKI_URL and PAT only. */
+  /**
+   * Existing blog repository, "follow" mode: rewrite its deploy workflow to
+   * the latest shell template pinned to the current theme head (the blog is
+   * a pure shell, so this is the whole content), then configure secrets,
+   * Pages and dispatch a build. Old full-copy blogs are migrated in place.
+   */
+  async configureBlogRepository(): Promise<RepositoryConfigurationResult> {
+    const settings = this.requireConnectedRepositoryNames("配置博客仓库");
+    const client = this.client();
+    const user = await client.getAuthenticatedUser();
+    const articleName = validateRepoName(settings.repoName, "文章仓库");
+    const blog = { owner: user.login, name: validateRepoName(settings.blogRepoName, "博客仓库") };
+
+    const themeHead = await client.getBranchHead(THEME_SOURCE_REPO, DEFAULT_BRANCH);
+    const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, themeHead.sha);
+    const existing = await client.getFileContent(blog, DEPLOY_WORKFLOW_PATH).catch(() => null);
+    if (!existing || decodeBase64(existing.content) !== shell) {
+      await client.writeFileContent(
+        blog,
+        DEPLOY_WORKFLOW_PATH,
+        shell,
+        `chore: 对齐壳博客（钉定主题 ${themeHead.sha.slice(0, 7)}）`,
+        existing?.sha,
+      );
+    }
+
+    const vercel = this.readVercelSecrets(settings);
+    const vercelConfigured = await this.writeBlogSecrets(
+      client, blog, user.login, articleName, settings.pat, vercel,
+    );
+
+    let warning: string | undefined;
+    try {
+      await client.configurePages(blog);
+    } catch (error) {
+      warning = `Pages 未能自动配置：${errorMessage(error)}。可稍后在 GitHub 仓库 Settings → Pages 中选择 GitHub Actions。`;
+    }
+
+    return { repository: blog, created: false, initialized: true, warning, vercelConfigured };
+  }
+
+  /** Existing blog repository, "secrets only" mode: never touch content. */
   async configureBlogSecretsOnly(): Promise<RepositoryConfigurationResult> {
     const settings = this.requireConnectedRepositoryNames("配置博客仓库");
     const client = this.client();
@@ -465,12 +526,11 @@ export class BlogService {
     const vercelConfigured = await this.writeBlogSecrets(
       client, blog, user.login, articleName, settings.pat, vercel,
     );
-    const warning = await this.dispatchBlogBuild(client, blog);
 
     if (settings.pendingBlogRepo) {
       await this.deps.saveSettings({ pendingBlogRepo: "" });
     }
-    return { repository: blog, created: false, initialized: false, warning, vercelConfigured };
+    return { repository: blog, created: false, initialized: false, warning: undefined, vercelConfigured };
   }
 
   /**
@@ -530,10 +590,6 @@ export class BlogService {
         warning = `Pages 未能自动配置：${errorMessage(error)}。可稍后在 GitHub 仓库 Settings → Pages 中选择 GitHub Actions。`;
       }
 
-      const dispatchWarning = await this.dispatchBlogBuild(client, blog);
-      warning = warning && dispatchWarning
-        ? `${warning} ${dispatchWarning}`
-        : warning ?? dispatchWarning;
       await this.deps.saveSettings({ pendingBlogRepo: "" });
     }
 
@@ -544,18 +600,6 @@ export class BlogService {
       warning,
       vercelConfigured,
     };
-  }
-
-  private async dispatchBlogBuild(
-    client: GitHubClient,
-    blog: GitHubRepositoryRef,
-  ): Promise<string | undefined> {
-    try {
-      await client.dispatchRepositoryEvent(blog, "contents-updated");
-    } catch (error) {
-      return `构建未能自动触发：${errorMessage(error)}。可稍后点击「触发构建」。`;
-    }
-    return undefined;
   }
 
   private async writeBlogSecrets(
@@ -603,13 +647,18 @@ export class BlogService {
   // ------------------------------------------------------------------
 
   /**
-   * Pins the blog to a theme commit by rewriting the ref line of the shell
-   * deploy workflow (the blog repository's only file). The contents-API push
-   * triggers the deployment automatically. Pass an explicit ref to roll
-   * back to a previous theme version.
+   * Updates the blog to the current theme head by aligning its deploy
+   * workflow with the latest shell template (the blog repository's only
+   * file, pinned to the latest theme commit). Same implementation as the
+   * "follow" mode during initialization; the contents-API push triggers the
+   * deployment automatically. Pass an explicit ref to roll back to a
+   * previous theme version.
    */
   async updateTheme(ref?: string): Promise<{ themeSha: string }> {
     const settings = this.requireConnectedRepositoryNames("更新主题");
+    if (this.isBlogThemeSource()) {
+      throw new Error("当前博客仓库就是主题仓库（演示站模式），主题更新已禁用。");
+    }
     const client = this.client();
     const user = await client.getAuthenticatedUser();
     const blog = { owner: user.login, name: validateRepoName(settings.blogRepoName, "博客仓库") };
@@ -623,9 +672,18 @@ export class BlogService {
     }
     const content = decodeBase64(existing.content);
     if (!/ref:\s+[0-9a-f]{40}/.test(content)) {
-      throw new Error(
-        "deploy.yml 不是壳版模板（缺少主题版本钉定行）。请手动删除博客仓库后重新初始化。",
+      // Legacy full-copy blog: migrate it in place to the current shell
+      // template pinned to the target commit (same as the "follow" mode
+      // during initialization).
+      const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, target);
+      await client.writeFileContent(
+        blog,
+        DEPLOY_WORKFLOW_PATH,
+        shell,
+        `chore: 迁移为壳博客（钉定主题 ${target.slice(0, 7)}）`,
+        existing.sha,
       );
+      return { themeSha: target };
     }
     const updated = content.replace(/ref:\s+[0-9a-f]{40}/, `ref: ${target}`);
     if (updated === content) {

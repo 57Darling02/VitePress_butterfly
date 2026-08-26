@@ -1,4 +1,4 @@
-export type DeploymentStatus = "waiting" | "building" | "success" | "failure";
+export type DeploymentStatus = "waiting" | "building" | "success" | "failure" | "cancelled";
 
 /** A successful live PAT check. The PAT itself remains in the local setting. */
 export interface GitHubConnection {

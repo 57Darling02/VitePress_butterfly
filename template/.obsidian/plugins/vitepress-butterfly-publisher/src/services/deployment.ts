@@ -10,7 +10,8 @@ export type ConsolePhase =
 	| "waiting"
 	| "building"
 	| "success"
-	| "failure";
+	| "failure"
+	| "cancelled";
 
 export interface DeploymentSnapshot {
 	readonly phase: ConsolePhase;
@@ -162,6 +163,12 @@ export class DeploymentMonitor {
 			status = "building";
 		} else if (run.status === "completed" && run.conclusion === "success") {
 			status = "success";
+		} else if (run.status === "completed" && run.conclusion === "cancelled") {
+			// A newer run may cancel this one (concurrency). Cancellation is not
+			// a failure: superseded runs should never surface as deployment
+			// errors. A cancelled run that is still the latest one is shown as
+			// such and can be retried.
+			status = "cancelled";
 		} else if (run.status === "completed") {
 			status = "failure";
 		} else {
@@ -205,6 +212,13 @@ export class DeploymentMonitor {
 					phase: "failure",
 					title: "部署失败",
 					detail: record.message ? `最近部署失败：${record.message}` : "最近一次部署失败，请查看操作记录。",
+				};
+			case "cancelled":
+				return {
+					...common,
+					phase: "cancelled",
+					title: "构建已取消",
+					detail: record.message ? `构建被新请求取代：${record.message}` : "该次构建已被取消（通常因触发新构建）。",
 				};
 		}
 	}
