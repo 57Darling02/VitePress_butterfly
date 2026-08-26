@@ -205,3 +205,6 @@ cd .obsidian/plugins/vitepress-butterfly-publisher
 pnpm install
 pnpm build
 ```
+
+---
+updated: 1787759561
