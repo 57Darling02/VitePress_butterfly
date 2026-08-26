@@ -752,29 +752,18 @@ export class BlogService {
     if (!existing) {
       throw new Error("博客仓库缺少 .github/workflows/deploy.yml，请先初始化博客仓库。");
     }
-    const content = decodeBase64(existing.content);
-    if (!/ref:\s+[0-9a-f]{40}/.test(content)) {
-      // Legacy full-copy blog: migrate it in place to the current shell
-      // template pinned to the target commit (same as the "follow" mode
-      // during initialization).
-      const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, target);
-      await client.writeFileContent(
-        blog,
-        DEPLOY_WORKFLOW_PATH,
-        shell,
-        `chore: 迁移为壳博客（钉定主题 ${target.slice(0, 7)}）`,
-        existing.sha,
-      );
-      return { themeSha: target };
-    }
-    const updated = content.replace(/ref:\s+[0-9a-f]{40}/, `ref: ${target}`);
-    if (updated === content) {
-      throw new Error(`博客已钉在该主题版本（${target.slice(0, 7)}），无需更新。`);
+    // Align the whole workflow with the current shell template pinned to the
+    // target commit. Comparing entire content (not just the ref line) also
+    // repairs legacy templates written by older plugin versions.
+    const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, target);
+    const current = decodeBase64(existing.content);
+    if (current === shell) {
+      throw new Error(`博客已钉在该版本（${target.slice(0, 7)}），无需更新。`);
     }
     await client.writeFileContent(
       blog,
       DEPLOY_WORKFLOW_PATH,
-      updated,
+      shell,
       `chore: 更新主题到 ${target.slice(0, 7)}`,
       existing.sha,
     );

@@ -4234,26 +4234,15 @@ var BlogService = class {
     if (!existing) {
       throw new Error("\u535A\u5BA2\u4ED3\u5E93\u7F3A\u5C11 .github/workflows/deploy.yml\uFF0C\u8BF7\u5148\u521D\u59CB\u5316\u535A\u5BA2\u4ED3\u5E93\u3002");
     }
-    const content = decodeBase64(existing.content);
-    if (!/ref:\s+[0-9a-f]{40}/.test(content)) {
-      const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, target);
-      await client.writeFileContent(
-        blog,
-        DEPLOY_WORKFLOW_PATH,
-        shell,
-        `chore: \u8FC1\u79FB\u4E3A\u58F3\u535A\u5BA2\uFF08\u9489\u5B9A\u4E3B\u9898 ${target.slice(0, 7)}\uFF09`,
-        existing.sha
-      );
-      return { themeSha: target };
-    }
-    const updated = content.replace(/ref:\s+[0-9a-f]{40}/, `ref: ${target}`);
-    if (updated === content) {
-      throw new Error(`\u535A\u5BA2\u5DF2\u9489\u5728\u8BE5\u4E3B\u9898\u7248\u672C\uFF08${target.slice(0, 7)}\uFF09\uFF0C\u65E0\u9700\u66F4\u65B0\u3002`);
+    const shell = BLOG_WORKFLOW_YAML.replace(THEME_REF_PLACEHOLDER, target);
+    const current = decodeBase64(existing.content);
+    if (current === shell) {
+      throw new Error(`\u535A\u5BA2\u5DF2\u9489\u5728\u8BE5\u7248\u672C\uFF08${target.slice(0, 7)}\uFF09\uFF0C\u65E0\u9700\u66F4\u65B0\u3002`);
     }
     await client.writeFileContent(
       blog,
       DEPLOY_WORKFLOW_PATH,
-      updated,
+      shell,
       `chore: \u66F4\u65B0\u4E3B\u9898\u5230 ${target.slice(0, 7)}`,
       existing.sha
     );
