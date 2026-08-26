@@ -3834,8 +3834,13 @@ var BlogService = class {
    * Compares the local plugin version with the version published in the
    * theme repository's latest release (the plugin's distribution source).
    */
-  async checkPluginUpdate() {
-    const settings = this.requirePat("\u66F4\u65B0\u63D2\u4EF6");
+  /**
+   * Unified update status: the plugin version and the blog's pinned theme
+   * commit are one release unit (a theme release ships both). Returns
+   * latest=true only when both are aligned.
+   */
+  async checkUpdates() {
+    const settings = this.requirePat("\u68C0\u67E5\u66F4\u65B0");
     const client = this.client();
     const release = await client.getLatestRelease(THEME_SOURCE_REPO);
     const manifestAsset = release.assets.find((asset) => asset.name === "manifest.json");
@@ -3843,18 +3848,50 @@ var BlogService = class {
       throw new Error("\u4E3B\u9898\u4ED3\u5E93\u6700\u65B0 Release \u7F3A\u5C11 manifest.json \u8D44\u4EA7\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002");
     }
     const manifestText = await client.downloadReleaseAsset(manifestAsset.downloadUrl);
-    const remoteVersion = parseManifestVersion(manifestText);
+    const latestVersion = parseManifestVersion(manifestText);
+    const currentVersion = this.deps.pluginVersion;
+    const tagHead = await client.getBranchHead(THEME_SOURCE_REPO, release.tagName);
+    const blogRef = await this.readBlogThemeRef(client);
+    const themeSynced = blogRef !== null && blogRef === tagHead.sha;
     return {
-      latest: remoteVersion === this.deps.pluginVersion,
-      current: this.deps.pluginVersion,
-      latestVersion: remoteVersion
+      latest: latestVersion === currentVersion && themeSynced,
+      currentVersion,
+      latestVersion,
+      latestTag: release.tagName,
+      themeSynced,
+      themeCurrent: blogRef,
+      themeLatest: tagHead.sha
     };
   }
   /**
-   * Downloads the plugin runtime files (main.js / manifest.json / styles.css)
-   * from the article repository and writes them into the plugin directory.
+   * One-click update: downloads the plugin runtime from the latest release
+   * AND pins the blog theme to that release's commit. The theme part is
+   * skipped in demo-site mode (blog repository is the theme source).
    * data.json is never touched, so local settings survive.
    */
+  async updateAll() {
+    const settings = this.requirePat("\u66F4\u65B0\u63D2\u4EF6");
+    const client = this.client();
+    const release = await client.getLatestRelease(THEME_SOURCE_REPO);
+    for (const file of PLUGIN_FILES) {
+      const asset = release.assets.find((candidate) => candidate.name === file);
+      if (!asset) {
+        throw new Error(`\u4E3B\u9898\u4ED3\u5E93\u6700\u65B0 Release \u7F3A\u5C11 ${file} \u8D44\u4EA7\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5\u3002`);
+      }
+      const text = await client.downloadReleaseAsset(asset.downloadUrl);
+      await this.deps.app.vault.adapter.write(`${PLUGIN_DIR}/${file}`, text);
+    }
+    const themeSha = (await client.getBranchHead(THEME_SOURCE_REPO, release.tagName)).sha;
+    let themeUpdated = false;
+    if (!this.isBlogThemeSource()) {
+      const current = await this.readBlogThemeRef(client);
+      if (current !== themeSha) {
+        await this.updateTheme(themeSha);
+        themeUpdated = true;
+      }
+    }
+    return { pluginUpdated: true, themeUpdated, themeSha };
+  }
   /**
    * True when the configured blog repository IS the theme source repo
    * (demo-site mode): theme updates must stay disabled, because they would
@@ -3866,6 +3903,23 @@ var BlogService = class {
     const login = settings.githubConnection?.login ?? "";
     return settings.blogRepoName.trim().toLowerCase() === THEME_SOURCE_REPO.name.toLowerCase() && (login === "" || login.toLowerCase() === THEME_SOURCE_REPO.owner.toLowerCase());
   }
+  /** Reads the theme commit pinned in the blog deploy workflow, or null. */
+  async readBlogThemeRef(client) {
+    const settings = this.requireConnectedRepositoryNames("\u68C0\u67E5\u66F4\u65B0");
+    const user = await client.getAuthenticatedUser();
+    const blog = { owner: user.login, name: validateRepoName(settings.blogRepoName, "\u535A\u5BA2\u4ED3\u5E93") };
+    const existing = await client.getFileContent(blog, DEPLOY_WORKFLOW_PATH).catch(() => null);
+    if (!existing) {
+      return null;
+    }
+    const match = decodeBase64(existing.content).match(/ref:\s+([0-9a-f]{40})/);
+    return match ? match[1] : null;
+  }
+  /**
+   * Downloads the plugin runtime files (main.js / manifest.json / styles.css)
+   * from the latest theme repository release and writes them into the plugin
+   * directory. data.json is never touched, so local settings survive.
+   */
   async updatePlugin() {
     const settings = this.requirePat("\u66F4\u65B0\u63D2\u4EF6");
     const client = this.client();
@@ -13369,9 +13423,9 @@ var UpdateModal = class extends import_obsidian7.Modal {
     super(app);
     this.deps = deps;
     this.checking = true;
-    this.plugin = null;
+    this.status = null;
     this.error = null;
-    this.updating = null;
+    this.updating = false;
   }
   onOpen() {
     this.render();
@@ -13385,7 +13439,7 @@ var UpdateModal = class extends import_obsidian7.Modal {
     this.error = null;
     this.render();
     try {
-      this.plugin = await this.deps.blog.checkPluginUpdate();
+      this.status = await this.deps.blog.checkUpdates();
     } catch (error) {
       this.error = error instanceof Error ? error.message : String(error);
     } finally {
@@ -13413,70 +13467,71 @@ var UpdateModal = class extends import_obsidian7.Modal {
       footer2.createEl("button", { text: "\u5173\u95ED" }).addEventListener("click", () => this.close());
       return;
     }
-    const pluginSection = contentEl.createDiv({ cls: "vpb-update-item" });
-    pluginSection.createEl("strong", { text: "\u63D2\u4EF6" });
-    if (this.plugin?.latest) {
-      pluginSection.createEl("div", { text: `\u5DF2\u662F\u6700\u65B0\u7248\u672C\uFF08v${this.plugin.current}\uFF09\u3002`, cls: "vpb-update-ok" });
-    } else {
-      pluginSection.createEl("div", {
-        text: `\u68C0\u6D4B\u5230\u65B0\u7248\u672C\uFF1Av${this.plugin?.current ?? "?"} \u2192 v${this.plugin?.latestVersion ?? "?"}\uFF08\u4ECE\u6A21\u677F\u4ED3\u5E93\u4E0B\u8F7D\uFF0C\u672C\u673A\u8BBE\u7F6E\u4E0D\u53D7\u5F71\u54CD\uFF09\u3002`,
-        cls: "vpb-modal-hint"
-      });
-      const update = pluginSection.createEl("button", { text: "\u66F4\u65B0\u63D2\u4EF6", cls: "mod-cta" });
-      update.addEventListener("click", () => {
-        void this.doUpdatePlugin(update);
-      });
+    const status = this.status;
+    if (!status) {
+      return;
     }
-    const themeSection = contentEl.createDiv({ cls: "vpb-update-item" });
-    themeSection.createEl("strong", { text: "\u535A\u5BA2\u4E3B\u9898" });
-    if (this.deps.blog.isBlogThemeSource()) {
-      themeSection.createEl("div", {
-        text: "\u5F53\u524D\u535A\u5BA2\u4ED3\u5E93\u662F\u4E3B\u9898\u4ED3\u5E93\uFF08\u6F14\u793A\u7AD9\u6A21\u5F0F\uFF09\uFF1A\u4E3B\u9898\u66F4\u65B0\u5DF2\u7981\u7528\u3002\u53D1\u5E03\u5185\u5BB9\u4ECD\u4F1A\u6B63\u5E38\u6784\u5EFA\u6F14\u793A\u7AD9\u3002",
+    const demoMode = this.deps.blog.isBlogThemeSource();
+    const section = contentEl.createDiv({ cls: "vpb-update-item" });
+    section.createEl("strong", { text: "VitePress Butterfly\uFF08\u63D2\u4EF6 + \u4E3B\u9898\uFF09" });
+    if (status.latest) {
+      section.createEl("div", {
+        text: `\u5DF2\u662F\u6700\u65B0\u7248\u672C\uFF08${status.latestTag}\uFF09\uFF1A\u63D2\u4EF6\u4E0E\u535A\u5BA2\u4E3B\u9898\u5747\u5DF2\u540C\u6B65\u3002`,
         cls: "vpb-update-ok"
       });
-    } else {
-      themeSection.createEl("div", {
-        text: `\u5C06\u628A\u535A\u5BA2\u4ED3\u5E93 ${this.deps.blogRepo} \u9489\u5B9A\u5230\u6700\u65B0\u4E3B\u9898\u7248\u672C\uFF1A\u66F4\u65B0 .github/workflows/deploy.yml \u4E2D\u7684\u4E3B\u9898 commit\uFF08\u535A\u5BA2\u4ED3\u5E93\u7684\u552F\u4E00\u6587\u4EF6\uFF09\uFF0C\u63A8\u9001\u540E\u81EA\u52A8\u89E6\u53D1\u6784\u5EFA\u3002\u65E0\u9700\u5220\u9664\u6216\u91CD\u5EFA\u4ED3\u5E93\u3002`,
+      const footer2 = contentEl.createDiv({ cls: "modal-button-container" });
+      footer2.createEl("button", { text: "\u5173\u95ED", cls: "mod-cta" }).addEventListener("click", () => this.close());
+      return;
+    }
+    const parts = [];
+    if (status.currentVersion !== status.latestVersion) {
+      parts.push(`\u63D2\u4EF6 v${status.currentVersion} \u2192 v${status.latestVersion}`);
+    }
+    if (!status.themeSynced) {
+      parts.push(
+        `\u535A\u5BA2\u4E3B\u9898 ${status.themeCurrent ? status.themeCurrent.slice(0, 7) : "\u672A\u9489\u5B9A"} \u2192 ${status.themeLatest.slice(0, 7)}`
+      );
+    }
+    section.createEl("div", {
+      text: `\u68C0\u6D4B\u5230\u65B0\u7248\u672C ${status.latestTag}\uFF1A${parts.join("\uFF1B")}\u3002\u5C06\u540C\u65F6\u66F4\u65B0\u63D2\u4EF6\uFF08\u4ECE Release \u4E0B\u8F7D\uFF09\u4E0E\u535A\u5BA2\u4E3B\u9898\uFF08\u9489\u5B9A\u5BF9\u5E94 commit\uFF09\uFF0C\u6784\u5EFA\u81EA\u52A8\u89E6\u53D1\u3002`,
+      cls: "vpb-modal-hint"
+    });
+    if (demoMode) {
+      section.createEl("div", {
+        text: "\u5F53\u524D\u535A\u5BA2\u4ED3\u5E93\u662F\u4E3B\u9898\u4ED3\u5E93\uFF08\u6F14\u793A\u7AD9\u6A21\u5F0F\uFF09\uFF1A\u4EC5\u66F4\u65B0\u63D2\u4EF6\uFF0C\u4E0D\u4F1A\u4FEE\u6539\u535A\u5BA2\u4E3B\u9898\u3002",
         cls: "vpb-modal-hint"
       });
-      const update = themeSection.createEl("button", { text: "\u66F4\u65B0\u4E3B\u9898", cls: "mod-cta" });
-      update.addEventListener("click", () => {
-        void this.doUpdateTheme(update);
-      });
     }
+    const update = section.createEl("button", {
+      text: demoMode ? "\u66F4\u65B0\u63D2\u4EF6" : "\u66F4\u65B0",
+      cls: "mod-cta"
+    });
+    update.addEventListener("click", () => {
+      void this.doUpdate(update);
+    });
     const footer = contentEl.createDiv({ cls: "modal-button-container" });
     footer.createEl("button", { text: "\u5173\u95ED", cls: "mod-cta" }).addEventListener("click", () => this.close());
   }
-  async doUpdatePlugin(button) {
+  async doUpdate(button) {
     if (this.updating) return;
-    this.updating = "plugin";
+    this.updating = true;
     this.setPending(button);
     try {
-      await this.deps.blog.updatePlugin();
-      new import_obsidian7.Notice("\u63D2\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u8F7D\u63D2\u4EF6\uFF08\u8BBE\u7F6E \u2192 \u7B2C\u4E09\u65B9\u63D2\u4EF6 \u2192 \u5173\u95ED\u518D\u542F\u7528\uFF09\u751F\u6548\u3002", 8e3);
+      const result = await this.deps.blog.updateAll();
+      if (result.themeUpdated) {
+        await this.deps.monitor.recordTrigger(`\u66F4\u65B0\u4E3B\u9898\uFF08${result.themeSha.slice(0, 7)}\uFF09`);
+        this.deps.onChanged();
+      }
+      new import_obsidian7.Notice(
+        result.themeUpdated ? "\u5DF2\u66F4\u65B0\uFF1A\u63D2\u4EF6\u5DF2\u4E0B\u8F7D\uFF08\u91CD\u8F7D\u63D2\u4EF6\u751F\u6548\uFF09\uFF0C\u535A\u5BA2\u4E3B\u9898\u5DF2\u9489\u5B9A\u65B0\u7248\u672C\u5E76\u89E6\u53D1\u6784\u5EFA\u3002" : "\u63D2\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u8F7D\u63D2\u4EF6\uFF08\u8BBE\u7F6E \u2192 \u7B2C\u4E09\u65B9\u63D2\u4EF6 \u2192 \u5173\u95ED\u518D\u542F\u7528\uFF09\u751F\u6548\u3002",
+        8e3
+      );
       this.close();
     } catch (error) {
       this.error = error instanceof Error ? error.message : String(error);
       this.render();
     } finally {
-      this.updating = null;
-    }
-  }
-  async doUpdateTheme(button) {
-    if (this.updating) return;
-    this.updating = "theme";
-    this.setPending(button);
-    try {
-      const result = await this.deps.blog.updateTheme();
-      await this.deps.monitor.recordTrigger(`\u66F4\u65B0\u4E3B\u9898\uFF08${result.themeSha.slice(0, 7)}\uFF09`);
-      this.deps.onChanged();
-      new import_obsidian7.Notice("\u535A\u5BA2\u4ED3\u5E93\u5DF2\u91CD\u5EFA\uFF0C\u6B63\u5728\u6784\u5EFA\u6700\u65B0\u4E3B\u9898\u3002", 6e3);
-      this.close();
-    } catch (error) {
-      this.error = error instanceof Error ? error.message : String(error);
-      this.render();
-    } finally {
-      this.updating = null;
+      this.updating = false;
     }
   }
   setPending(button) {

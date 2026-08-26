@@ -487,9 +487,17 @@ export class OverviewSection {
  */
 class UpdateModal extends Modal {
 	private checking = true;
-	private plugin: { latest: boolean; current: string; latestVersion: string } | null = null;
+	private status: {
+		latest: boolean;
+		currentVersion: string;
+		latestVersion: string;
+		latestTag: string;
+		themeSynced: boolean;
+		themeCurrent: string | null;
+		themeLatest: string;
+	} | null = null;
 	private error: string | null = null;
-	private updating: "plugin" | "theme" | null = null;
+	private updating = false;
 
 	constructor(
 		app: App,
@@ -517,7 +525,7 @@ class UpdateModal extends Modal {
 		this.error = null;
 		this.render();
 		try {
-			this.plugin = await this.deps.blog.checkPluginUpdate();
+			this.status = await this.deps.blog.checkUpdates();
 		} catch (error) {
 			this.error = error instanceof Error ? error.message : String(error);
 		} finally {
@@ -551,79 +559,81 @@ class UpdateModal extends Modal {
 			return;
 		}
 
-		// Plugin section
-		const pluginSection = contentEl.createDiv({ cls: "vpb-update-item" });
-		pluginSection.createEl("strong", { text: "插件" });
-		if (this.plugin?.latest) {
-			pluginSection.createEl("div", { text: `已是最新版本（v${this.plugin.current}）。`, cls: "vpb-update-ok" });
-		} else {
-			pluginSection.createEl("div", {
-				text: `检测到新版本：v${this.plugin?.current ?? "?"} → v${this.plugin?.latestVersion ?? "?"}（从模板仓库下载，本机设置不受影响）。`,
-				cls: "vpb-modal-hint",
+		const status = this.status;
+		if (!status) {
+			return;
+		}
+
+		const demoMode = this.deps.blog.isBlogThemeSource();
+		const section = contentEl.createDiv({ cls: "vpb-update-item" });
+		section.createEl("strong", { text: "VitePress Butterfly（插件 + 主题）" });
+
+		if (status.latest) {
+			section.createEl("div", {
+				text: `已是最新版本（${status.latestTag}）：插件与博客主题均已同步。`,
+				cls: "vpb-update-ok",
 			});
-			const update = pluginSection.createEl("button", { text: "更新插件", cls: "mod-cta" });
-			update.addEventListener("click", () => {
-				void this.doUpdatePlugin(update);
+			const footer = contentEl.createDiv({ cls: "modal-button-container" });
+			footer.createEl("button", { text: "关闭", cls: "mod-cta" })
+				.addEventListener("click", () => this.close());
+			return;
+		}
+
+		const parts: string[] = [];
+		if (status.currentVersion !== status.latestVersion) {
+			parts.push(`插件 v${status.currentVersion} → v${status.latestVersion}`);
+		}
+		if (!status.themeSynced) {
+			parts.push(
+				`博客主题 ${status.themeCurrent ? status.themeCurrent.slice(0, 7) : "未钉定"} → ${status.themeLatest.slice(0, 7)}`,
+			);
+		}
+		section.createEl("div", {
+			text: `检测到新版本 ${status.latestTag}：${parts.join("；")}。将同时更新插件（从 Release 下载）与博客主题（钉定对应 commit），构建自动触发。`,
+			cls: "vpb-modal-hint",
+		});
+		if (demoMode) {
+			section.createEl("div", {
+				text: "当前博客仓库是主题仓库（演示站模式）：仅更新插件，不会修改博客主题。",
+				cls: "vpb-modal-hint",
 			});
 		}
 
-		// Theme section: disabled when the blog repository IS the theme source
-		// (demo-site mode), otherwise it pins the blog to the latest theme
-		// commit by rewriting the ref line of the shell deploy workflow.
-		const themeSection = contentEl.createDiv({ cls: "vpb-update-item" });
-		themeSection.createEl("strong", { text: "博客主题" });
-		if (this.deps.blog.isBlogThemeSource()) {
-			themeSection.createEl("div", {
-				text: "当前博客仓库是主题仓库（演示站模式）：主题更新已禁用。发布内容仍会正常构建演示站。",
-				cls: "vpb-update-ok",
-			});
-		} else {
-			themeSection.createEl("div", {
-				text: `将把博客仓库 ${this.deps.blogRepo} 钉定到最新主题版本：更新 .github/workflows/deploy.yml 中的主题 commit（博客仓库的唯一文件），推送后自动触发构建。无需删除或重建仓库。`,
-				cls: "vpb-modal-hint",
-			});
-			const update = themeSection.createEl("button", { text: "更新主题", cls: "mod-cta" });
-			update.addEventListener("click", () => {
-				void this.doUpdateTheme(update);
-			});
-		}
+		const update = section.createEl("button", {
+			text: demoMode ? "更新插件" : "更新",
+			cls: "mod-cta",
+		});
+		update.addEventListener("click", () => {
+			void this.doUpdate(update);
+		});
 
 		const footer = contentEl.createDiv({ cls: "modal-button-container" });
 		footer.createEl("button", { text: "关闭", cls: "mod-cta" })
 			.addEventListener("click", () => this.close());
 	}
 
-	private async doUpdatePlugin(button: HTMLButtonElement): Promise<void> {
+	private async doUpdate(button: HTMLButtonElement): Promise<void> {
 		if (this.updating) return;
-		this.updating = "plugin";
+		this.updating = true;
 		this.setPending(button);
 		try {
-			await this.deps.blog.updatePlugin();
-			new Notice("插件已更新，请重载插件（设置 → 第三方插件 → 关闭再启用）生效。", 8_000);
+			const result = await this.deps.blog.updateAll();
+			if (result.themeUpdated) {
+				await this.deps.monitor.recordTrigger(`更新主题（${result.themeSha.slice(0, 7)}）`);
+				this.deps.onChanged();
+			}
+			new Notice(
+				result.themeUpdated
+					? "已更新：插件已下载（重载插件生效），博客主题已钉定新版本并触发构建。"
+					: "插件已更新，请重载插件（设置 → 第三方插件 → 关闭再启用）生效。",
+				8_000,
+			);
 			this.close();
 		} catch (error) {
 			this.error = error instanceof Error ? error.message : String(error);
 			this.render();
 		} finally {
-			this.updating = null;
-		}
-	}
-
-	private async doUpdateTheme(button: HTMLButtonElement): Promise<void> {
-		if (this.updating) return;
-		this.updating = "theme";
-		this.setPending(button);
-		try {
-			const result = await this.deps.blog.updateTheme();
-			await this.deps.monitor.recordTrigger(`更新主题（${result.themeSha.slice(0, 7)}）`);
-			this.deps.onChanged();
-			new Notice("博客仓库已重建，正在构建最新主题。", 6_000);
-			this.close();
-		} catch (error) {
-			this.error = error instanceof Error ? error.message : String(error);
-			this.render();
-		} finally {
-			this.updating = null;
+			this.updating = false;
 		}
 	}
 

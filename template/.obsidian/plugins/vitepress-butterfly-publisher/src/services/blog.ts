@@ -280,8 +280,21 @@ export class BlogService {
    * Compares the local plugin version with the version published in the
    * theme repository's latest release (the plugin's distribution source).
    */
-  async checkPluginUpdate(): Promise<{ latest: boolean; current: string; latestVersion: string }> {
-    const settings = this.requirePat("更新插件");
+  /**
+   * Unified update status: the plugin version and the blog's pinned theme
+   * commit are one release unit (a theme release ships both). Returns
+   * latest=true only when both are aligned.
+   */
+  async checkUpdates(): Promise<{
+    latest: boolean;
+    currentVersion: string;
+    latestVersion: string;
+    latestTag: string;
+    themeSynced: boolean;
+    themeCurrent: string | null;
+    themeLatest: string;
+  }> {
+    const settings = this.requirePat("检查更新");
     const client = this.client();
 
     const release = await client.getLatestRelease(THEME_SOURCE_REPO);
@@ -290,19 +303,57 @@ export class BlogService {
       throw new Error("主题仓库最新 Release 缺少 manifest.json 资产，请稍后重试。");
     }
     const manifestText = await client.downloadReleaseAsset(manifestAsset.downloadUrl);
-    const remoteVersion = parseManifestVersion(manifestText);
+    const latestVersion = parseManifestVersion(manifestText);
+    const currentVersion = this.deps.pluginVersion;
+
+    // The theme commit of this release (the blog ref pins the same commit).
+    const tagHead = await client.getBranchHead(THEME_SOURCE_REPO, release.tagName);
+    const blogRef = await this.readBlogThemeRef(client);
+    const themeSynced = blogRef !== null && blogRef === tagHead.sha;
+
     return {
-      latest: remoteVersion === this.deps.pluginVersion,
-      current: this.deps.pluginVersion,
-      latestVersion: remoteVersion,
+      latest: latestVersion === currentVersion && themeSynced,
+      currentVersion,
+      latestVersion,
+      latestTag: release.tagName,
+      themeSynced,
+      themeCurrent: blogRef,
+      themeLatest: tagHead.sha,
     };
   }
 
   /**
-   * Downloads the plugin runtime files (main.js / manifest.json / styles.css)
-   * from the article repository and writes them into the plugin directory.
+   * One-click update: downloads the plugin runtime from the latest release
+   * AND pins the blog theme to that release's commit. The theme part is
+   * skipped in demo-site mode (blog repository is the theme source).
    * data.json is never touched, so local settings survive.
    */
+  async updateAll(): Promise<{ pluginUpdated: boolean; themeUpdated: boolean; themeSha: string }> {
+    const settings = this.requirePat("更新插件");
+    const client = this.client();
+
+    const release = await client.getLatestRelease(THEME_SOURCE_REPO);
+    for (const file of PLUGIN_FILES) {
+      const asset = release.assets.find((candidate) => candidate.name === file);
+      if (!asset) {
+        throw new Error(`主题仓库最新 Release 缺少 ${file} 资产，请稍后重试。`);
+      }
+      const text = await client.downloadReleaseAsset(asset.downloadUrl);
+      await this.deps.app.vault.adapter.write(`${PLUGIN_DIR}/${file}`, text);
+    }
+
+    const themeSha = (await client.getBranchHead(THEME_SOURCE_REPO, release.tagName)).sha;
+    let themeUpdated = false;
+    if (!this.isBlogThemeSource()) {
+      const current = await this.readBlogThemeRef(client);
+      if (current !== themeSha) {
+        await this.updateTheme(themeSha);
+        themeUpdated = true;
+      }
+    }
+    return { pluginUpdated: true, themeUpdated, themeSha };
+  }
+
   /**
    * True when the configured blog repository IS the theme source repo
    * (demo-site mode): theme updates must stay disabled, because they would
@@ -318,6 +369,24 @@ export class BlogService {
     );
   }
 
+  /** Reads the theme commit pinned in the blog deploy workflow, or null. */
+  private async readBlogThemeRef(client: GitHubClient): Promise<string | null> {
+    const settings = this.requireConnectedRepositoryNames("检查更新");
+    const user = await client.getAuthenticatedUser();
+    const blog = { owner: user.login, name: validateRepoName(settings.blogRepoName, "博客仓库") };
+    const existing = await client.getFileContent(blog, DEPLOY_WORKFLOW_PATH).catch(() => null);
+    if (!existing) {
+      return null;
+    }
+    const match = decodeBase64(existing.content).match(/ref:\s+([0-9a-f]{40})/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Downloads the plugin runtime files (main.js / manifest.json / styles.css)
+   * from the latest theme repository release and writes them into the plugin
+   * directory. data.json is never touched, so local settings survive.
+   */
   async updatePlugin(): Promise<void> {
     const settings = this.requirePat("更新插件");
     const client = this.client();
