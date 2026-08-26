@@ -2997,7 +2997,7 @@ __export(main_exports, {
   default: () => VitePressButterflyPublisher
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 
 // src/settings.ts
 var DEFAULT_SETTINGS = {
@@ -3016,9 +3016,10 @@ var DEFAULT_SETTINGS = {
 };
 
 // src/services/blog.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/services/github.ts
+var import_obsidian = require("obsidian");
 var API_URL = "https://api.github.com";
 var API_VERSION = "2022-11-28";
 var REQUEST_TIMEOUT_MS = 15e3;
@@ -3219,32 +3220,29 @@ var GitHubClient = class {
       }))
     };
   }
-  /** Downloads a public release asset (text) by its browser download URL. */
+  /**
+   * Downloads a public release asset (text) by its browser download URL.
+   * Uses Obsidian's requestUrl: the asset redirects to object storage which
+   * has no CORS headers, so a renderer-process fetch would be blocked.
+   */
   async downloadReleaseAsset(url) {
-    const controller = new AbortController();
-    let timedOut = false;
-    const timeout = window.setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (!response.ok) {
+      const response = await (0, import_obsidian.requestUrl)({ url, throw: false });
+      if (response.status < 200 || response.status >= 300) {
         throw new GitHubApiError(`\u4E0B\u8F7D\u63D2\u4EF6\u6587\u4EF6\u5931\u8D25\uFF08HTTP ${response.status}\uFF09\u3002`, response.status, url);
       }
-      return await response.text();
+      return response.text;
     } catch (error) {
       if (error instanceof GitHubApiError) {
         throw error;
       }
-      if (timedOut || isAbortError(error)) {
+      const timeout = error instanceof Error && /timeout|abort/i.test(error.message);
+      if (timeout) {
         throw new GitHubRequestTimeoutError(REQUEST_TIMEOUT_MS, url);
       }
       const networkError = new Error("\u65E0\u6CD5\u4E0B\u8F7D\u63D2\u4EF6\u6587\u4EF6\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5\u3002");
       networkError.cause = error;
       throw networkError;
-    } finally {
-      window.clearTimeout(timeout);
     }
   }
   async request(path, options = {}) {
@@ -3456,7 +3454,7 @@ var ObsidianGitVaultGit = class _ObsidianGitVaultGit {
 };
 
 // src/services/template.ts
-var import_obsidian = require("obsidian");
+var import_obsidian2 = require("obsidian");
 var SITE_CONFIG_PATH = "site_config.yml";
 var PUBLIC_DIR = "public";
 var TRIGGER_WORKFLOW_PATH = ".github/workflows/trigger.yml";
@@ -3632,7 +3630,7 @@ async function ensureTemplateFiles(app) {
     created.push(TRIGGER_WORKFLOW_PATH);
   }
   if (created.length > 0) {
-    new import_obsidian.Notice(`\u5DF2\u521B\u5EFA\u6A21\u677F\u6587\u4EF6\uFF1A${created.join("\u3001")}`, 6e3);
+    new import_obsidian2.Notice(`\u5DF2\u521B\u5EFA\u6A21\u677F\u6587\u4EF6\uFF1A${created.join("\u3001")}`, 6e3);
   }
   return created;
 }
@@ -4322,7 +4320,7 @@ var BlogService = class {
     try {
       await git.reload();
     } catch {
-      new import_obsidian2.Notice("\u6587\u7AE0\u5DF2\u4E0A\u4F20\uFF1Bobsidian-git \u5237\u65B0\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u542F Obsidian\u3002", 8e3);
+      new import_obsidian3.Notice("\u6587\u7AE0\u5DF2\u4E0A\u4F20\uFF1Bobsidian-git \u5237\u65B0\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u542F Obsidian\u3002", 8e3);
     }
   }
   /**
@@ -4447,7 +4445,7 @@ function wait(durationMs) {
 }
 
 // src/ui/ConsoleView.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 
 // src/services/deployment.ts
 var DEPLOY_WORKFLOW_PATH2 = ".github/workflows/deploy.yml";
@@ -4615,11 +4613,11 @@ var DeploymentMonitor = class {
 };
 
 // src/ui/OverviewSection.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/ui/NewArticleModal.ts
-var import_obsidian3 = require("obsidian");
-var NewArticleModal = class extends import_obsidian3.Modal {
+var import_obsidian4 = require("obsidian");
+var NewArticleModal = class extends import_obsidian4.Modal {
   constructor(app, onSubmit) {
     super(app);
     this.onSubmit = onSubmit;
@@ -4648,14 +4646,14 @@ var NewArticleModal = class extends import_obsidian3.Modal {
       void this.submit();
     });
     let titleInput;
-    new import_obsidian3.Setting(formEl).setName("\u6807\u9898").setDesc("\u6587\u7AE0\u6587\u4EF6\u540D\u5C06\u7531\u6807\u9898\u751F\u6210\u3002").addText((text) => {
+    new import_obsidian4.Setting(formEl).setName("\u6807\u9898").setDesc("\u6587\u7AE0\u6587\u4EF6\u540D\u5C06\u7531\u6807\u9898\u751F\u6210\u3002").addText((text) => {
       text.setPlaceholder("\u8F93\u5165\u6587\u7AE0\u6807\u9898");
       text.onChange((value) => {
         this.title = value;
       });
       titleInput = text.inputEl;
     });
-    new import_obsidian3.Setting(formEl).setName("\u76EE\u5F55").setDesc("\u9009\u62E9\u6587\u7AE0\u6240\u5728\u6587\u4EF6\u5939\uFF1B\u7559\u7A7A\u4E3A Vault \u6839\u76EE\u5F55\u3002").addDropdown((dropdown) => {
+    new import_obsidian4.Setting(formEl).setName("\u76EE\u5F55").setDesc("\u9009\u62E9\u6587\u7AE0\u6240\u5728\u6587\u4EF6\u5939\uFF1B\u7559\u7A7A\u4E3A Vault \u6839\u76EE\u5F55\u3002").addDropdown((dropdown) => {
       dropdown.addOption("", "Vault \u6839\u76EE\u5F55");
       for (const folder of listContentFolders(this.app)) {
         dropdown.addOption(folder, folder);
@@ -4667,12 +4665,12 @@ var NewArticleModal = class extends import_obsidian3.Modal {
     const advanced = formEl.createEl("details", { cls: "vpb-advanced" });
     advanced.createEl("summary", { text: "\u9AD8\u7EA7\u8BBE\u7F6E\uFF08\u53EF\u9009\uFF09" });
     const box = advanced.createDiv({ cls: "vpb-advanced-body" });
-    new import_obsidian3.Setting(box).setName("\u4F5C\u8005").setDesc("\u7559\u7A7A\u5219\u4F7F\u7528\u7AD9\u70B9\u9ED8\u8BA4\u4F5C\u8005\u3002").addText((text) => {
+    new import_obsidian4.Setting(box).setName("\u4F5C\u8005").setDesc("\u7559\u7A7A\u5219\u4F7F\u7528\u7AD9\u70B9\u9ED8\u8BA4\u4F5C\u8005\u3002").addText((text) => {
       text.onChange((value) => {
         this.author = value;
       });
     });
-    const coverSetting = new import_obsidian3.Setting(box).setName("\u5C01\u9762").setDesc("\u53EF\u9009\u62E9 public/ \u4E2D\u7684\u56FE\u7247\uFF0C\u6216\u586B\u5199\u5916\u94FE\u5730\u5740\u3002").addText((text) => {
+    const coverSetting = new import_obsidian4.Setting(box).setName("\u5C01\u9762").setDesc("\u53EF\u9009\u62E9 public/ \u4E2D\u7684\u56FE\u7247\uFF0C\u6216\u586B\u5199\u5916\u94FE\u5730\u5740\u3002").addText((text) => {
       text.setPlaceholder("/image/cover.webp \u6216 https://...");
       text.onChange((value) => {
         this.cover = value;
@@ -4688,13 +4686,13 @@ var NewArticleModal = class extends import_obsidian3.Modal {
         });
       });
     });
-    new import_obsidian3.Setting(box).setName("\u6807\u7B7E").setDesc("\u591A\u4E2A\u6807\u7B7E\u7528\u9017\u53F7\u5206\u9694\uFF0C\u4F8B\u5982\uFF1A\u65E5\u8BB0, \u751F\u6D3B\u3002").addText((text) => {
+    new import_obsidian4.Setting(box).setName("\u6807\u7B7E").setDesc("\u591A\u4E2A\u6807\u7B7E\u7528\u9017\u53F7\u5206\u9694\uFF0C\u4F8B\u5982\uFF1A\u65E5\u8BB0, \u751F\u6D3B\u3002").addText((text) => {
       text.setPlaceholder("\u6807\u7B7E1, \u6807\u7B7E2");
       text.onChange((value) => {
         this.tagsText = value;
       });
     });
-    new import_obsidian3.Setting(box).setName("\u63CF\u8FF0").setDesc("\u7528\u4E8E SEO \u6458\u8981\uFF1B\u7559\u7A7A\u5219\u4ECE\u6B63\u6587\u81EA\u52A8\u622A\u53D6\u3002").addTextArea((text) => {
+    new import_obsidian4.Setting(box).setName("\u63CF\u8FF0").setDesc("\u7528\u4E8E SEO \u6458\u8981\uFF1B\u7559\u7A7A\u5219\u4ECE\u6B63\u6587\u81EA\u52A8\u622A\u53D6\u3002").addTextArea((text) => {
       text.inputEl.rows = 3;
       text.onChange((value) => {
         this.description = value;
@@ -4716,7 +4714,7 @@ var NewArticleModal = class extends import_obsidian3.Modal {
   async choosePublicImage(onChoose) {
     const images = this.app.vault.getFiles().filter((file) => file.path.startsWith("public/") && /\.(avif|gif|jpe?g|png|svg|webp)$/i.test(file.path)).map((file) => `/${file.path.slice("public/".length)}`).sort((left, right) => left.localeCompare(right));
     if (images.length === 0) {
-      new import_obsidian3.Notice("public/ \u76EE\u5F55\u4E2D\u6CA1\u6709\u53EF\u9009\u56FE\u7247\u3002", 5e3);
+      new import_obsidian4.Notice("public/ \u76EE\u5F55\u4E2D\u6CA1\u6709\u53EF\u9009\u56FE\u7247\u3002", 5e3);
       return;
     }
     new PublicImageSuggestModal(this.app, images, onChoose).open();
@@ -4727,7 +4725,7 @@ var NewArticleModal = class extends import_obsidian3.Modal {
     }
     const title = this.title.trim();
     if (!title) {
-      new import_obsidian3.Notice("\u8BF7\u8F93\u5165\u6587\u7AE0\u6807\u9898");
+      new import_obsidian4.Notice("\u8BF7\u8F93\u5165\u6587\u7AE0\u6807\u9898");
       return;
     }
     this.isSubmitting = true;
@@ -4746,16 +4744,16 @@ var NewArticleModal = class extends import_obsidian3.Modal {
       await this.onSubmit(input);
       this.close();
     } catch (error) {
-      new import_obsidian3.Notice(error instanceof Error && error.message ? error.message : "\u521B\u5EFA\u6587\u7AE0\u5931\u8D25");
+      new import_obsidian4.Notice(error instanceof Error && error.message ? error.message : "\u521B\u5EFA\u6587\u7AE0\u5931\u8D25");
     } finally {
       this.isSubmitting = false;
     }
   }
 };
 function listContentFolders(app) {
-  return app.vault.getAllLoadedFiles().filter((file) => file instanceof import_obsidian3.TFolder).map((folder) => folder.path).filter((path) => !path.split("/").some((segment) => segment.startsWith(".") || segment === "node_modules")).sort((left, right) => left.localeCompare(right));
+  return app.vault.getAllLoadedFiles().filter((file) => file instanceof import_obsidian4.TFolder).map((folder) => folder.path).filter((path) => !path.split("/").some((segment) => segment.startsWith(".") || segment === "node_modules")).sort((left, right) => left.localeCompare(right));
 }
-var PublicImageSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
+var PublicImageSuggestModal = class extends import_obsidian4.FuzzySuggestModal {
   constructor(app, images, onChoose) {
     super(app);
     this.images = images;
@@ -4774,7 +4772,7 @@ var PublicImageSuggestModal = class extends import_obsidian3.FuzzySuggestModal {
 };
 
 // src/ui/SiteConfigModal.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // node_modules/.pnpm/yaml@2.9.0/node_modules/yaml/browser/dist/nodes/identity.js
 var ALIAS = Symbol.for("yaml.alias");
@@ -11572,7 +11570,7 @@ function renderFaIcon(parent, icon) {
   const svg = parent.createSvg("svg", { cls: "vpb-fa-icon", attr: { viewBox: brand.viewBox } });
   svg.createSvg("path", { attr: { d: brand.path, fill: "currentColor" } });
 }
-var SiteConfigModal = class extends import_obsidian4.Modal {
+var SiteConfigModal = class extends import_obsidian5.Modal {
   constructor(app, onSaved) {
     super(app);
     this.onSaved = onSaved;
@@ -11614,7 +11612,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
     if (this.loading) {
       const loading = this.contentEl.createDiv({ cls: "vpb-config-loading" });
       const icon = loading.createSpan();
-      (0, import_obsidian4.setIcon)(icon, "loader-2");
+      (0, import_obsidian5.setIcon)(icon, "loader-2");
       loading.createSpan({ text: "\u6B63\u5728\u8BFB\u53D6\u7AD9\u70B9\u914D\u7F6E\u2026" });
       return;
     }
@@ -11656,7 +11654,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
       cls: "vpb-icon-button",
       attr: { "aria-label": "\u6253\u5F00\u539F\u59CB YAML" }
     });
-    (0, import_obsidian4.setIcon)(raw, "file-code-2");
+    (0, import_obsidian5.setIcon)(raw, "file-code-2");
     raw.addEventListener("click", () => {
       void this.openRawConfig();
     });
@@ -11668,7 +11666,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
         cls: `vpb-config-tab${tab.id === this.activeTab ? " is-active" : ""}`,
         attr: { "aria-label": tab.label }
       });
-      (0, import_obsidian4.setIcon)(button, tab.icon);
+      (0, import_obsidian5.setIcon)(button, tab.icon);
       button.createSpan({ text: tab.label });
       button.addEventListener("click", () => {
         if (this.activeTab === tab.id) return;
@@ -11707,13 +11705,13 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
     button.classList.add("is-pending");
     const loader = button.createSpan({ cls: "vpb-btn-loader" });
     button.insertBefore(loader, button.firstChild);
-    (0, import_obsidian4.setIcon)(loader, "loader-2");
+    (0, import_obsidian5.setIcon)(loader, "loader-2");
     try {
       const snapshot = await this.service.save(this.config, this.source);
       this.source = snapshot.source;
       this.error = null;
       this.onSaved();
-      new import_obsidian4.Notice("\u7AD9\u70B9\u914D\u7F6E\u5DF2\u4FDD\u5B58\u3002", 4e3);
+      new import_obsidian5.Notice("\u7AD9\u70B9\u914D\u7F6E\u5DF2\u4FDD\u5B58\u3002", 4e3);
       this.close();
     } catch (error) {
       this.error = errorText(error);
@@ -11726,7 +11724,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
   async openRawConfig() {
     const file = this.app.vault.getFileByPath("site_config.yml");
     if (!file) {
-      new import_obsidian4.Notice("\u8BF7\u5148\u4FDD\u5B58\u4E00\u6B21\u7AD9\u70B9\u914D\u7F6E\u4EE5\u521B\u5EFA site_config.yml\u3002", 6e3);
+      new import_obsidian5.Notice("\u8BF7\u5148\u4FDD\u5B58\u4E00\u6B21\u7AD9\u70B9\u914D\u7F6E\u4EE5\u521B\u5EFA site_config.yml\u3002", 6e3);
       return;
     }
     await this.app.workspace.getLeaf(false).openFile(file);
@@ -11935,21 +11933,21 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
     container.createEl("h4", { text, cls: "vpb-config-heading" });
   }
   textSetting(container, name, desc, value, onChange, placeholder = "") {
-    new import_obsidian4.Setting(container).setName(name).setDesc(desc).addText((text) => {
+    new import_obsidian5.Setting(container).setName(name).setDesc(desc).addText((text) => {
       text.setValue(value);
       if (placeholder) text.setPlaceholder(placeholder);
       text.onChange(onChange);
     });
   }
   textAreaSetting(container, name, desc, value, onChange) {
-    new import_obsidian4.Setting(container).setName(name).setDesc(desc).addTextArea((text) => {
+    new import_obsidian5.Setting(container).setName(name).setDesc(desc).addTextArea((text) => {
       text.setValue(value);
       text.inputEl.rows = 3;
       text.onChange(onChange);
     });
   }
   numberSetting(container, name, desc, value, minimum, maximum, onChange) {
-    new import_obsidian4.Setting(container).setName(name).setDesc(desc).addText((text) => {
+    new import_obsidian5.Setting(container).setName(name).setDesc(desc).addText((text) => {
       text.inputEl.type = "number";
       text.inputEl.min = String(minimum);
       text.inputEl.max = String(maximum);
@@ -11963,20 +11961,20 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
     });
   }
   toggleSetting(container, name, desc, value, onChange) {
-    new import_obsidian4.Setting(container).setName(name).setDesc(desc).addToggle((toggle) => {
+    new import_obsidian5.Setting(container).setName(name).setDesc(desc).addToggle((toggle) => {
       toggle.setValue(value);
       toggle.onChange(onChange);
     });
   }
   dropdownSetting(container, name, desc, value, options, onChange) {
-    new import_obsidian4.Setting(container).setName(name).setDesc(desc).addDropdown((dropdown) => {
+    new import_obsidian5.Setting(container).setName(name).setDesc(desc).addDropdown((dropdown) => {
       dropdown.addOptions(options);
       dropdown.setValue(value in options ? value : Object.keys(options)[0]);
       dropdown.onChange(onChange);
     });
   }
   segmentedSetting(container, name, desc, value, options, onChange) {
-    const setting = new import_obsidian4.Setting(container).setName(name).setDesc(desc);
+    const setting = new import_obsidian5.Setting(container).setName(name).setDesc(desc);
     const segment = setting.controlEl.createDiv({ cls: "vpb-segmented" });
     for (const option of options) {
       const button = segment.createEl("button", {
@@ -11992,7 +11990,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
     }
   }
   sliderSetting(container, name, desc, value, onChange) {
-    new import_obsidian4.Setting(container).setName(name).setDesc(desc).addSlider((slider) => {
+    new import_obsidian5.Setting(container).setName(name).setDesc(desc).addSlider((slider) => {
       slider.setLimits(0, 1, 0.1);
       slider.setDisplayFormat((next) => `${Math.round(next * 100)}%`);
       slider.setValue(value);
@@ -12000,7 +11998,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
     });
   }
   assetSetting(container, name, desc, value, onChange, allowColor = false, kind = "image") {
-    const setting = new import_obsidian4.Setting(container).setName(name).setDesc(desc).addText((text) => {
+    const setting = new import_obsidian5.Setting(container).setName(name).setDesc(desc).addText((text) => {
       text.setValue(value);
       text.setPlaceholder(kind === "image" ? allowColor ? "#1e293b \u6216 /image/background.webp" : "/image/avatar.png" : "/music/song.mp3");
       text.onChange(onChange);
@@ -12245,7 +12243,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
       attr: { "aria-label": label }
     });
     button.disabled = disabled;
-    (0, import_obsidian4.setIcon)(button, icon);
+    (0, import_obsidian5.setIcon)(button, icon);
     button.addEventListener("click", onClick);
   }
   recordIcon(container, label, value, onChange) {
@@ -12263,7 +12261,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
       } else if (value.startsWith("fa-")) {
         renderFaIcon(preview, value);
       } else {
-        (0, import_obsidian4.setIcon)(preview, value);
+        (0, import_obsidian5.setIcon)(preview, value);
       }
     };
     render();
@@ -12278,7 +12276,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
       cls: "vpb-icon-clear",
       attr: { "aria-label": "\u6E05\u9664\u56FE\u6807" }
     });
-    (0, import_obsidian4.setIcon)(clear, "trash-2");
+    (0, import_obsidian5.setIcon)(clear, "trash-2");
     clear.addEventListener("click", () => {
       value = "";
       onChange("");
@@ -12298,7 +12296,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
   async chooseAsset(kind, onChoose) {
     const assets = await this.service.listPublicAssets(kind);
     if (assets.length === 0) {
-      new import_obsidian4.Notice(kind === "image" ? "public/ \u76EE\u5F55\u4E2D\u6CA1\u6709\u53EF\u9009\u56FE\u7247\u3002" : "public/ \u76EE\u5F55\u4E2D\u6CA1\u6709\u53EF\u9009\u97F3\u9891\u3002", 5e3);
+      new import_obsidian5.Notice(kind === "image" ? "public/ \u76EE\u5F55\u4E2D\u6CA1\u6709\u53EF\u9009\u56FE\u7247\u3002" : "public/ \u76EE\u5F55\u4E2D\u6CA1\u6709\u53EF\u9009\u97F3\u9891\u3002", 5e3);
       return;
     }
     new AssetSuggestModal(this.app, assets, onChoose).open();
@@ -12308,7 +12306,7 @@ var SiteConfigModal = class extends import_obsidian4.Modal {
     return this.config;
   }
 };
-var AssetSuggestModal = class extends import_obsidian4.FuzzySuggestModal {
+var AssetSuggestModal = class extends import_obsidian5.FuzzySuggestModal {
   constructor(app, assets, onChoose) {
     super(app);
     this.assets = assets;
@@ -12325,7 +12323,7 @@ var AssetSuggestModal = class extends import_obsidian4.FuzzySuggestModal {
     this.onChoose(item);
   }
 };
-var IconSuggestModal = class extends import_obsidian4.Modal {
+var IconSuggestModal = class extends import_obsidian5.Modal {
   constructor(app, onChoose) {
     super(app);
     this.onChoose = onChoose;
@@ -12377,7 +12375,7 @@ var IconSuggestModal = class extends import_obsidian4.Modal {
         if (icon.startsWith("fa-")) {
           renderFaIcon(button, icon);
         } else {
-          (0, import_obsidian4.setIcon)(button, icon);
+          (0, import_obsidian5.setIcon)(button, icon);
         }
         button.addEventListener("click", () => {
           this.onChoose(icon);
@@ -12420,7 +12418,7 @@ function collectMenuKeys(items) {
 }
 
 // src/ui/StatusModal.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 var INIT_STEPS = [
   "\u6587\u7AE0\u4ED3\u5E93\uFF1A\u521B\u5EFA\u6216\u8FDE\u63A5\uFF0C\u5199\u5165 BLOG_REPO \u4E0E PAT",
   "\u535A\u5BA2\u4ED3\u5E93\uFF1A\u4ECE\u6A21\u677F\u521B\u5EFA\u6216\u4EC5\u66F4\u65B0\u53D8\u91CF",
@@ -12430,7 +12428,7 @@ var INIT_STEPS = [
 function errorText2(error) {
   return error instanceof Error && error.message ? error.message : String(error);
 }
-var StatusModal = class extends import_obsidian5.Modal {
+var StatusModal = class extends import_obsidian6.Modal {
   constructor(deps, mode) {
     super(deps.app);
     this.deps = deps;
@@ -12483,7 +12481,7 @@ var StatusModal = class extends import_obsidian5.Modal {
       text: "\u4F7F\u7528\u5177\u6709 repo + workflow \u6743\u9650\u7684 Tokens (classic)\u3002PAT \u53EA\u4FDD\u5B58\u5728\u672C\u673A\u8BBE\u7F6E\u548C GitHub \u52A0\u5BC6 secrets \u4E2D\u3002"
     });
     let patInput;
-    new import_obsidian5.Setting(this.contentEl).setName("GitHub PAT").addText((text) => {
+    new import_obsidian6.Setting(this.contentEl).setName("GitHub PAT").addText((text) => {
       patInput = text.inputEl;
       text.inputEl.type = "password";
       text.inputEl.autocomplete = "off";
@@ -12568,14 +12566,14 @@ var StatusModal = class extends import_obsidian5.Modal {
     const settings = this.deps.getSettings();
     this.articleInputValue = settings.repoName;
     this.blogInputValue = settings.blogRepoName;
-    new import_obsidian5.Setting(this.contentEl).setName("\u6587\u7AE0\u4ED3\u5E93").setDesc("\u4FDD\u5B58\u6587\u7AE0\u548C\u7AD9\u70B9\u914D\u7F6E\u7684\u79C1\u5BC6\u4ED3\u5E93\u3002").addText((text) => {
+    new import_obsidian6.Setting(this.contentEl).setName("\u6587\u7AE0\u4ED3\u5E93").setDesc("\u4FDD\u5B58\u6587\u7AE0\u548C\u7AD9\u70B9\u914D\u7F6E\u7684\u79C1\u5BC6\u4ED3\u5E93\u3002").addText((text) => {
       text.setPlaceholder("my-blog-wiki");
       text.setValue(this.articleInputValue);
       text.onChange((value) => {
         this.articleInputValue = value.trim();
       });
     });
-    new import_obsidian5.Setting(this.contentEl).setName("\u535A\u5BA2\u4ED3\u5E93").setDesc("\u516C\u5F00\u7684\u535A\u5BA2\u4E3B\u9898\u4ED3\u5E93\uFF1B\u4E0D\u5B58\u5728\u65F6\u4ECE\u5B98\u65B9\u6A21\u677F\u521B\u5EFA\u3002").addText((text) => {
+    new import_obsidian6.Setting(this.contentEl).setName("\u535A\u5BA2\u4ED3\u5E93").setDesc("\u516C\u5F00\u7684\u535A\u5BA2\u4E3B\u9898\u4ED3\u5E93\uFF1B\u4E0D\u5B58\u5728\u65F6\u4ECE\u5B98\u65B9\u6A21\u677F\u521B\u5EFA\u3002").addText((text) => {
       text.setPlaceholder("yourname.github.io");
       text.setValue(this.blogInputValue);
       text.onChange((value) => {
@@ -12717,12 +12715,12 @@ var StatusModal = class extends import_obsidian5.Modal {
       const current = index === this.stepIndex;
       if (done) {
         item.addClass("is-done");
-        (0, import_obsidian5.setIcon)(item.createSpan({ cls: "vpb-step-icon" }), "check");
+        (0, import_obsidian6.setIcon)(item.createSpan({ cls: "vpb-step-icon" }), "check");
       } else if (current) {
         item.addClass("is-current");
-        (0, import_obsidian5.setIcon)(item.createSpan({ cls: "vpb-step-icon" }), "loader-2");
+        (0, import_obsidian6.setIcon)(item.createSpan({ cls: "vpb-step-icon" }), "loader-2");
       } else {
-        (0, import_obsidian5.setIcon)(item.createSpan({ cls: "vpb-step-icon" }), "circle");
+        (0, import_obsidian6.setIcon)(item.createSpan({ cls: "vpb-step-icon" }), "circle");
       }
       item.createEl("span", { text: label });
     });
@@ -12936,7 +12934,7 @@ var StatusModal = class extends import_obsidian5.Modal {
       { key: "vercelProjectId", name: "Vercel Project ID", placeholder: "prj_xxx" }
     ];
     for (const field of fields) {
-      new import_obsidian5.Setting(this.contentEl).setName(field.name).addText((text) => {
+      new import_obsidian6.Setting(this.contentEl).setName(field.name).addText((text) => {
         text.inputEl.type = "password";
         text.inputEl.autocomplete = "off";
         text.inputEl.spellcheck = false;
@@ -12944,7 +12942,7 @@ var StatusModal = class extends import_obsidian5.Modal {
         text.setValue(this.deps.getSettings()[field.key]);
         text.onChange((value) => {
           void this.deps.saveSettings({ [field.key]: value.trim() }).catch((error) => {
-            new import_obsidian5.Notice(errorText2(error));
+            new import_obsidian6.Notice(errorText2(error));
           });
         });
       });
@@ -13072,7 +13070,7 @@ var OverviewSection = class {
     ).open();
   }
   openMoreMenu(event) {
-    const menu = new import_obsidian6.Menu();
+    const menu = new import_obsidian7.Menu();
     menu.addItem((item) => {
       item.setTitle("\u91CD\u65B0\u8FDE\u63A5 GitHub").setIcon("plug").onClick(() => this.openStatusModal("connect"));
     });
@@ -13118,11 +13116,11 @@ var OverviewSection = class {
     try {
       const triggeredAt = await this.deps.blog.triggerDeploy();
       await this.deps.monitor.recordTrigger("\u624B\u52A8\u89E6\u53D1\u6784\u5EFA", triggeredAt);
-      new import_obsidian6.Notice("\u5DF2\u89E6\u53D1\u535A\u5BA2\u91CD\u65B0\u6784\u5EFA\u3002", 4e3);
+      new import_obsidian7.Notice("\u5DF2\u89E6\u53D1\u535A\u5BA2\u91CD\u65B0\u6784\u5EFA\u3002", 4e3);
       this.deps.onChanged();
       void this.deps.monitor.refresh();
     } catch (error) {
-      new import_obsidian6.Notice(`\u89E6\u53D1\u6784\u5EFA\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`, 8e3);
+      new import_obsidian7.Notice(`\u89E6\u53D1\u6784\u5EFA\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`, 8e3);
     }
   }
   // ------------------------------------------------------------------
@@ -13290,7 +13288,7 @@ var OverviewSection = class {
       cls: "vpb-icon-button",
       attr: { "aria-label": label }
     });
-    (0, import_obsidian6.setIcon)(button, icon);
+    (0, import_obsidian7.setIcon)(button, icon);
     return button;
   }
   createRefreshButton(container, label, action) {
@@ -13304,16 +13302,16 @@ var OverviewSection = class {
     button.disabled = true;
     button.setAttribute("aria-busy", "true");
     button.classList.add("is-pending");
-    (0, import_obsidian6.setIcon)(button, "loader-2");
+    (0, import_obsidian7.setIcon)(button, "loader-2");
     try {
       await action();
     } catch (error) {
-      new import_obsidian6.Notice(`${label}\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
+      new import_obsidian7.Notice(`${label}\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
     } finally {
       button.disabled = false;
       button.removeAttribute("aria-busy");
       button.classList.remove("is-pending");
-      (0, import_obsidian6.setIcon)(button, "refresh-cw");
+      (0, import_obsidian7.setIcon)(button, "refresh-cw");
     }
   }
   actionButton(container, label, action) {
@@ -13330,7 +13328,7 @@ var OverviewSection = class {
       await action();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      new import_obsidian6.Notice(`VitePress Butterfly\uFF1A${message}`, 8e3);
+      new import_obsidian7.Notice(`VitePress Butterfly\uFF1A${message}`, 8e3);
     } finally {
       button.textContent = label;
       this.setButtonPending(button, false);
@@ -13347,13 +13345,13 @@ var OverviewSection = class {
     if (pending && !existing) {
       const loader = button.createSpan({ cls: "vpb-btn-loader" });
       button.insertBefore(loader, button.firstChild);
-      (0, import_obsidian6.setIcon)(loader, "loader-2");
+      (0, import_obsidian7.setIcon)(loader, "loader-2");
     } else if (!pending && existing) {
       existing.remove();
     }
   }
 };
-var UpdateModal = class extends import_obsidian6.Modal {
+var UpdateModal = class extends import_obsidian7.Modal {
   constructor(app, deps) {
     super(app);
     this.deps = deps;
@@ -13389,7 +13387,7 @@ var UpdateModal = class extends import_obsidian6.Modal {
     if (this.checking) {
       const loading = contentEl.createDiv({ cls: "vpb-config-loading" });
       const icon = loading.createSpan();
-      (0, import_obsidian6.setIcon)(icon, "loader-2");
+      (0, import_obsidian7.setIcon)(icon, "loader-2");
       loading.createSpan({ text: "\u6B63\u5728\u68C0\u67E5\u63D2\u4EF6\u4E0E\u4E3B\u9898\u66F4\u65B0\u2026" });
       return;
     }
@@ -13442,7 +13440,7 @@ var UpdateModal = class extends import_obsidian6.Modal {
     this.setPending(button);
     try {
       await this.deps.blog.updatePlugin();
-      new import_obsidian6.Notice("\u63D2\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u8F7D\u63D2\u4EF6\uFF08\u8BBE\u7F6E \u2192 \u7B2C\u4E09\u65B9\u63D2\u4EF6 \u2192 \u5173\u95ED\u518D\u542F\u7528\uFF09\u751F\u6548\u3002", 8e3);
+      new import_obsidian7.Notice("\u63D2\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u8F7D\u63D2\u4EF6\uFF08\u8BBE\u7F6E \u2192 \u7B2C\u4E09\u65B9\u63D2\u4EF6 \u2192 \u5173\u95ED\u518D\u542F\u7528\uFF09\u751F\u6548\u3002", 8e3);
       this.close();
     } catch (error) {
       this.error = error instanceof Error ? error.message : String(error);
@@ -13459,7 +13457,7 @@ var UpdateModal = class extends import_obsidian6.Modal {
       const result = await this.deps.blog.updateTheme();
       await this.deps.monitor.recordTrigger(`\u66F4\u65B0\u4E3B\u9898\uFF08${result.themeSha.slice(0, 7)}\uFF09`);
       this.deps.onChanged();
-      new import_obsidian6.Notice("\u535A\u5BA2\u4ED3\u5E93\u5DF2\u91CD\u5EFA\uFF0C\u6B63\u5728\u6784\u5EFA\u6700\u65B0\u4E3B\u9898\u3002", 6e3);
+      new import_obsidian7.Notice("\u535A\u5BA2\u4ED3\u5E93\u5DF2\u91CD\u5EFA\uFF0C\u6B63\u5728\u6784\u5EFA\u6700\u65B0\u4E3B\u9898\u3002", 6e3);
       this.close();
     } catch (error) {
       this.error = error instanceof Error ? error.message : String(error);
@@ -13473,10 +13471,10 @@ var UpdateModal = class extends import_obsidian6.Modal {
     button.classList.add("is-pending");
     const loader = button.createSpan({ cls: "vpb-btn-loader" });
     button.insertBefore(loader, button.firstChild);
-    (0, import_obsidian6.setIcon)(loader, "loader-2");
+    (0, import_obsidian7.setIcon)(loader, "loader-2");
   }
 };
-var CommitMessageModal = class extends import_obsidian6.Modal {
+var CommitMessageModal = class extends import_obsidian7.Modal {
   constructor() {
     super(...arguments);
     this.message = "";
@@ -13491,7 +13489,7 @@ var CommitMessageModal = class extends import_obsidian6.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.createEl("h3", { text: "\u63D0\u4EA4\u5E76\u53D1\u5E03" });
-    new import_obsidian6.Setting(contentEl).setName("\u63D0\u4EA4\u8BF4\u660E").setDesc("\u8FD9\u6BB5\u6587\u5B57\u4F1A\u4F5C\u4E3A Git commit message\uFF1B\u7559\u7A7A\u4F7F\u7528\u9ED8\u8BA4\u503C\u3002").addText((text) => {
+    new import_obsidian7.Setting(contentEl).setName("\u63D0\u4EA4\u8BF4\u660E").setDesc("\u8FD9\u6BB5\u6587\u5B57\u4F1A\u4F5C\u4E3A Git commit message\uFF1B\u7559\u7A7A\u4F7F\u7528\u9ED8\u8BA4\u503C\u3002").addText((text) => {
       text.setPlaceholder("Update blog content");
       text.inputEl.addEventListener("input", () => {
         this.message = text.getValue();
@@ -13521,7 +13519,7 @@ var CommitMessageModal = class extends import_obsidian6.Modal {
 // src/ui/ConsoleView.ts
 var CONSOLE_VIEW_TYPE = "vitepress-butterfly-console";
 var DEPLOYMENT_POLL_INTERVAL = 2e4;
-var ConsoleView = class extends import_obsidian7.ItemView {
+var ConsoleView = class extends import_obsidian8.ItemView {
   constructor(leaf, deps) {
     super(leaf);
     this.deps = deps;
@@ -13599,7 +13597,7 @@ var ConsoleView = class extends import_obsidian7.ItemView {
 };
 
 // src/main.ts
-var VitePressButterflyPublisher = class extends import_obsidian8.Plugin {
+var VitePressButterflyPublisher = class extends import_obsidian9.Plugin {
   async onload() {
     await this.loadSettings();
     this.blog = new BlogService({
@@ -13735,7 +13733,7 @@ var VitePressButterflyPublisher = class extends import_obsidian8.Plugin {
     try {
       await action();
     } catch (error) {
-      new import_obsidian8.Notice(`${name}\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
+      new import_obsidian9.Notice(`${name}\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
     }
   }
 };

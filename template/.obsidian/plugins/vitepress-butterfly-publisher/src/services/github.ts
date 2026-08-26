@@ -1,3 +1,5 @@
+import { requestUrl } from "obsidian";
+
 const API_URL = "https://api.github.com";
 const API_VERSION = "2022-11-28";
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -332,32 +334,29 @@ export class GitHubClient {
     };
   }
 
-  /** Downloads a public release asset (text) by its browser download URL. */
+  /**
+   * Downloads a public release asset (text) by its browser download URL.
+   * Uses Obsidian's requestUrl: the asset redirects to object storage which
+   * has no CORS headers, so a renderer-process fetch would be blocked.
+   */
   async downloadReleaseAsset(url: string): Promise<string> {
-    const controller = new AbortController();
-    let timedOut = false;
-    const timeout = window.setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (!response.ok) {
+      const response = await requestUrl({ url, throw: false });
+      if (response.status < 200 || response.status >= 300) {
         throw new GitHubApiError(`下载插件文件失败（HTTP ${response.status}）。`, response.status, url);
       }
-      return await response.text();
+      return response.text;
     } catch (error) {
       if (error instanceof GitHubApiError) {
         throw error;
       }
-      if (timedOut || isAbortError(error)) {
+      const timeout = error instanceof Error && /timeout|abort/i.test(error.message);
+      if (timeout) {
         throw new GitHubRequestTimeoutError(REQUEST_TIMEOUT_MS, url);
       }
       const networkError = new Error("无法下载插件文件，请检查网络后重试。");
       (networkError as Error & { cause?: unknown }).cause = error;
       throw networkError;
-    } finally {
-      window.clearTimeout(timeout);
     }
   }
 
