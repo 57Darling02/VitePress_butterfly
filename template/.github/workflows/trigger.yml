@@ -1,0 +1,65 @@
+# Place this workflow in your content/wiki repository (not the blog repo).
+name: Trigger Blog Rebuild
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check blog repository is ready
+        id: check
+        env:
+          PAT: ${{ secrets.PAT }}
+          BLOG_REPO: ${{ secrets.BLOG_REPO }}
+        run: |
+          if [ -z "$PAT" ] || [ -z "$BLOG_REPO" ]; then
+            echo "::notice::尚未完成博客配置，本次推送不触发构建。"
+            exit 0
+          fi
+
+          if [[ ! "$BLOG_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "::warning::BLOG_REPO 格式无效，本次推送不触发构建。"
+            exit 0
+          fi
+
+          status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 \
+            --output /dev/null --write-out '%{http_code}' \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $PAT" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$BLOG_REPO" || true)"
+          if [ "$status" != "200" ]; then
+            if [ "$status" = "404" ]; then
+              echo "::notice::博客仓库尚未就绪，本次推送不触发构建。"
+            else
+              echo "::warning::无法验证博客仓库（HTTP ${status:-network error}），请检查 PAT 权限或网络。"
+            fi
+            exit 0
+          fi
+
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch event to blog repo
+        if: steps.check.outputs.ready == 'true'
+        env:
+          PAT: ${{ secrets.PAT }}
+          BLOG_REPO: ${{ secrets.BLOG_REPO }}
+        run: |
+          status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 \
+            --output /dev/null --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $PAT" \
+            --header 'Content-Type: application/json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --data '{"event_type":"contents-updated"}' \
+            "https://api.github.com/repos/$BLOG_REPO/dispatches" || true)"
+
+          if [ "$status" != "204" ]; then
+            echo "::error::触发博客重建失败（HTTP ${status:-network error}），请检查 PAT 权限或网络。"
+            exit 1
+          fi

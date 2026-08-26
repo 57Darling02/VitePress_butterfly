@@ -1,0 +1,8 @@
+{
+  "showUnsupportedFiles": true,
+  "newLinkFormat": "relative",
+  "useMarkdownLinks": true,
+  "alwaysUpdateLinks": true,
+  "attachmentFolderPath": "./附件",
+  "promptDelete": false
+}

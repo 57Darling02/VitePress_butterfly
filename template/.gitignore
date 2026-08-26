@@ -1,0 +1,15 @@
+# Obsidian 个人状态（每台设备不同，不入库）
+.obsidian/workspace.json
+.obsidian/cache
+# 插件设置（含 PAT 等敏感信息，绝不上传）
+.obsidian/plugins/*/data.json
+.trash/
+
+# 内置插件开发依赖
+.obsidian/plugins/vitepress-butterfly-publisher/node_modules/
+.obsidian/plugins/vitepress-butterfly-publisher/main.js.map
+
+# 系统与编辑器噪音
+.DS_Store
+Thumbs.db
+*.log
