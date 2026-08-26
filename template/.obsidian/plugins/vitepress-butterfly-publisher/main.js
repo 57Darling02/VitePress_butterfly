@@ -3644,122 +3644,127 @@ var THEME_SOURCE_REPO = {
 };
 var DEFAULT_BRANCH = "main";
 var DEPLOY_WORKFLOW_PATH = ".github/workflows/deploy.yml";
-var THEME_REF_PLACEHOLDER = "THEME_REF_PLACEHOLDER";
-var BLOG_WORKFLOW_YAML = `name: Deploy Site
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-  repository_dispatch:
-    types: [contents-updated]
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: site-deploy
-  cancel-in-progress: true
-env:
-  VERCEL_ORG_ID: \${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: \${{ secrets.VERCEL_PROJECT_ID }}
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: \${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Check readiness
-        id: readiness
-        env:
-          WIKI_URL: \${{ secrets.WIKI_URL }}
-          PAT: \${{ secrets.PAT }}
-        run: |
-          if [ -z "$WIKI_URL" ] || [ -z "$PAT" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          wiki_url="\${{WIKI_URL%/}"
-          if [[ ! "$wiki_url" =~ ^https://github\\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)(\\.git)?$ ]]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          owner="\${{BASH_REMATCH[1]}"
-          repository="\${{BASH_REMATCH[2]%.git}"
-          status="000"
-          for attempt in {1..5}; do
-            status="$(curl --silent --show-error --connect-timeout 5 --max-time 15               --output /dev/null --write-out '%{http_code}'               --header 'Accept: application/vnd.github+json'               --header "Authorization: Bearer $PAT"               "https://api.github.com/repos/$owner/$repository/git/ref/heads/main" || true)"
-            if [ "$status" = "200" ]; then
-              echo "ready=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            if [ "$attempt" -lt 5 ]; then
-              sleep 2
-            fi
-          done
-          echo "ready=false" >> "$GITHUB_OUTPUT"
-      - name: Checkout theme
-        if: steps.readiness.outputs.ready == 'true'
-        uses: actions/checkout@v4
-        with:
-          repository: 57Darling02/VitePress_butterfly
-          ref: ${THEME_REF_PLACEHOLDER}
-          path: theme
-      - name: Install pnpm
-        if: steps.readiness.outputs.ready == 'true'
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9.15.0
-      - name: Setup Node
-        if: steps.readiness.outputs.ready == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: theme/pnpm-lock.yaml
-      - name: Install dependencies
-        if: steps.readiness.outputs.ready == 'true'
-        run: pnpm --dir theme install --frozen-lockfile
-      - name: Build with VitePress
-        if: steps.readiness.outputs.ready == 'true'
-        env:
-          WIKI_URL: \${{ secrets.WIKI_URL }}
-          PAT: \${{ secrets.PAT }}
-        run: pnpm --dir theme docs:build
-      - name: Upload Pages artifact
-        if: steps.readiness.outputs.ready == 'true'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: theme/.vitepress/dist
-      - name: Deploy to GitHub Pages
-        id: deployment
-        if: steps.readiness.outputs.ready == 'true'
-        uses: actions/deploy-pages@v4
-      - name: Upload site artifact
-        if: steps.readiness.outputs.ready == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: site-dist
-          path: theme/.vitepress/dist
-          retention-days: 7
-      - name: Check Vercel config
-        if: steps.readiness.outputs.ready == 'true'
-        id: vercel
-        env:
-          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: \${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: \${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Deploy to Vercel (optional)
-        if: steps.readiness.outputs.ready == 'true' && steps.vercel.outputs.enabled == 'true'
-        run: |
-          npx vercel deploy --prod --yes --token=\${{ secrets.VERCEL_TOKEN }} theme/.vitepress/dist
-`;
+var THEME_REF_PLACEHOLDER = "__THEME_REF__";
+var BLOG_WORKFLOW_YAML = [
+  "name: Deploy Site",
+  "on:",
+  "  push:",
+  "    branches: [main]",
+  "  workflow_dispatch:",
+  "  repository_dispatch:",
+  "    types: [contents-updated]",
+  "permissions:",
+  "  contents: read",
+  "  pages: write",
+  "  id-token: write",
+  "concurrency:",
+  "  group: site-deploy",
+  "  cancel-in-progress: true",
+  "env:",
+  "  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}",
+  "  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}",
+  "jobs:",
+  "  deploy:",
+  "    runs-on: ubuntu-latest",
+  "    environment:",
+  "      name: github-pages",
+  "      url: ${{ steps.deployment.outputs.page_url }}",
+  "    steps:",
+  "      - name: Check readiness",
+  "        id: readiness",
+  "        env:",
+  "          WIKI_URL: ${{ secrets.WIKI_URL }}",
+  "          PAT: ${{ secrets.PAT }}",
+  "        run: |",
+  '          if [ -z "$WIKI_URL" ] || [ -z "$PAT" ]; then',
+  '            echo "ready=false" >> "$GITHUB_OUTPUT"',
+  "            exit 0",
+  "          fi",
+  '          wiki_url="${WIKI_URL%/}"',
+  '          if [[ ! "$wiki_url" =~ ^https://github\\\\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)(\\\\.git)?$ ]]; then',
+  '            echo "ready=false" >> "$GITHUB_OUTPUT"',
+  "            exit 0",
+  "          fi",
+  '          owner="${BASH_REMATCH[1]}"',
+  '          repository="${BASH_REMATCH[2]%.git}"',
+  '          status="000"',
+  "          for attempt in {1..5}; do",
+  '            status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 \\',
+  "              --output /dev/null --write-out '%{http_code}' \\",
+  "              --header 'Accept: application/vnd.github+json' \\",
+  '              --header "Authorization: Bearer $PAT" \\',
+  '              "https://api.github.com/repos/$owner/$repository/git/ref/heads/main" || true)"',
+  '            if [ "$status" = "200" ]; then',
+  '              echo "ready=true" >> "$GITHUB_OUTPUT"',
+  "              exit 0",
+  "            fi",
+  '            if [ "$attempt" -lt 5 ]; then',
+  "              sleep 2",
+  "            fi",
+  "          done",
+  '          echo "ready=false" >> "$GITHUB_OUTPUT"',
+  "      - name: Checkout theme",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        uses: actions/checkout@v4",
+  "        with:",
+  "          repository: 57Darling02/VitePress_butterfly",
+  "          ref: __THEME_REF__",
+  "          path: theme",
+  "      - name: Install pnpm",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        uses: pnpm/action-setup@v3",
+  "        with:",
+  "          version: 9.15.0",
+  "      - name: Setup Node",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        uses: actions/setup-node@v4",
+  "        with:",
+  "          node-version: 22",
+  "          cache: pnpm",
+  "          cache-dependency-path: theme/pnpm-lock.yaml",
+  "      - name: Install dependencies",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        run: pnpm --dir theme install --frozen-lockfile",
+  "      - name: Build with VitePress",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        env:",
+  "          WIKI_URL: ${{ secrets.WIKI_URL }}",
+  "          PAT: ${{ secrets.PAT }}",
+  "        run: pnpm --dir theme docs:build",
+  "      - name: Upload Pages artifact",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        uses: actions/upload-pages-artifact@v3",
+  "        with:",
+  "          path: theme/.vitepress/dist",
+  "      - name: Deploy to GitHub Pages",
+  "        id: deployment",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        uses: actions/deploy-pages@v4",
+  "      - name: Upload site artifact",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        uses: actions/upload-artifact@v4",
+  "        with:",
+  "          name: site-dist",
+  "          path: theme/.vitepress/dist",
+  "          retention-days: 7",
+  "      - name: Check Vercel config",
+  "        if: steps.readiness.outputs.ready == 'true'",
+  "        id: vercel",
+  "        env:",
+  "          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}",
+  "          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}",
+  "          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}",
+  "        run: |",
+  '          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then',
+  '            echo "enabled=true" >> "$GITHUB_OUTPUT"',
+  "          else",
+  '            echo "enabled=false" >> "$GITHUB_OUTPUT"',
+  "          fi",
+  "      - name: Deploy to Vercel (optional)",
+  "        if: steps.readiness.outputs.ready == 'true' && steps.vercel.outputs.enabled == 'true'",
+  "        run: |",
+  "          npx vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} theme/.vitepress/dist"
+].join("\n");
 var BlogService = class {
   constructor(deps) {
     this.deps = deps;
