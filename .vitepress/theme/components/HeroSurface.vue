@@ -68,7 +68,7 @@ const props = withDefaults(defineProps<{
   appearance: 'blurred',
 })
 
-const { theme, isDark } = useData<ThemeConfig>()
+const { theme } = useData<ThemeConfig>()
 const { isMobile } = useLayoutState()
 const waveId = `hero-surface-wave-${useId()}`
 const coverFailed = ref(false)
@@ -97,7 +97,8 @@ const isDefaultBackground = computed(() => !imageSource.value && !themeBackgroun
 const backgroundStyle = computed(() => ({
   backgroundColor: themeBackgroundColor.value || 'var(--hero-ground)',
 }))
-const showRainfall = computed(() => theme.value.bg_rainfall && !isDark.value && !isMobile.value)
+// Stars drift on both light and dark themes; mobile and reduced-motion skip them.
+const showRainfall = computed(() => theme.value.bg_rainfall && !isMobile.value)
 
 function handleImageError() {
   if (imageSource.value?.kind === 'cover') {
@@ -123,6 +124,7 @@ watch(themeBackground, () => {
 .hero-surface {
   --hero-min-height: max(24rem, 65vh);
   --hero-ground: var(--vp-c-content-ground);
+  --hero-star-color: antiquewhite;
   --hero-wave-far: color-mix(in srgb, var(--hero-ground) 84%, var(--vp-c-brand) 16%);
   --hero-wave-back: color-mix(in srgb, var(--hero-ground) 92%, var(--vp-c-brand) 8%);
   --hero-wave-middle: color-mix(in srgb, var(--hero-ground) 96%, var(--vp-c-brand) 4%);
@@ -267,6 +269,7 @@ watch(themeBackground, () => {
 }
 
 :global(.dark) .hero-surface {
+  --hero-star-color: rgb(255 255 255 / 0.72);
   --hero-wave-far: color-mix(in srgb, var(--hero-ground) 74%, var(--vp-c-brand) 26%);
   --hero-wave-back: color-mix(in srgb, var(--hero-ground) 82%, var(--vp-c-brand) 18%);
   --hero-wave-middle: color-mix(in srgb, var(--hero-ground) 92%, var(--vp-c-brand) 8%);
@@ -278,24 +281,31 @@ watch(themeBackground, () => {
     linear-gradient(155deg, #172b2a 0%, #1b2b32 46%, #2a2936 74%, var(--hero-ground) 100%);
 }
 
-@function getShadows($count, $seed) {
+@function getStarShadows($count, $seed, $blur: 0px) {
   $shadows: ();
 
   @for $index from 1 through $count {
-    $x: math.div(($index * $index * 37 + $index * 61 + $seed * 17) % 10000, 100);
-    $y: math.div(($index * $index * 71 + $index * 19 + $seed * 29) % 10000, 100);
-    $shadows: list.append($shadows, #{$x}vw #{$y}vh #fff, comma);
+    // Integer vw/vh offsets keep the shadow list compact; box-shadow cannot
+    // take percentages, and sub-percent precision is invisible at these sizes.
+    $x: math.round(math.div(($index * $index * 37 + $index * 61 + $seed * 17) % 10000, 100)) * 1vw;
+    $y: math.round(math.div(($index * $index * 71 + $index * 19 + $seed * 29) % 10000, 100)) * 1vh;
+    // currentColor keeps a single shadow set valid for both themes.
+    $shadows: list.append($shadows, #{$x} #{$y} #{$blur} currentColor, comma);
   }
 
   @return $shadows;
 }
 
-$duration: 400s;
-$count: 250;
+$duration: 480s;
+// The loop halves the count on its first pass, so this base yields 150 dots
+// on layer2 (the densest layer); the other layers keep the 50% ratio.
+$count: 300;
 
 @for $i from 2 through 5 {
   $duration: math.div($duration, 2);
   $count: math.floor(math.div($count, 2));
+  $seed: $i * 97;
+  $blur: ($i - 2) * 0.4px;
 
   .hero-surface-star-layer.layer#{$i} {
     $size: $i * 1.2px;
@@ -306,13 +316,30 @@ $count: 250;
     width: $size;
     height: $size;
     border-radius: 50%;
-    background-color: antiquewhite;
-    box-shadow: getShadows($count, $i * 97);
+    color: var(--hero-star-color);
+    background-color: currentColor;
+    box-shadow: getStarShadows($count, $seed, $blur);
     animation: hero-stars-rise $duration linear infinite;
 
+    // Wider viewports get more dots so the field keeps a constant density
+    // instead of thinning out. Every tier reuses the same seed, so extra
+    // dots extend the original pattern rather than replacing it.
+    @media (min-width: 1280px) {
+      box-shadow: getStarShadows(math.round($count * 1.33), $seed, $blur);
+    }
+
+    @media (min-width: 1680px) {
+      box-shadow: getStarShadows(math.round($count * 2.27), $seed, $blur);
+    }
+
+    @media (min-width: 2200px) {
+      box-shadow: getStarShadows(math.round($count * 4), $seed, $blur);
+    }
+
     &::after {
+      // The duplicate sits one viewport below, so the -100vh travel loops seamlessly.
       position: absolute;
-      top: 100%;
+      top: 100vh;
       left: 0;
       width: inherit;
       height: inherit;
